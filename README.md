@@ -1,4 +1,71 @@
-# Simple-BEV: What Really Matters for Multi-Sensor BEV Perception?
+# DD2414 Simple-BEV Reproduction and Label-Free Extension
+
+This repository contains the first project milestone for KTH DD2414. We
+reproduce the official Simple-BEV camera and camera-plus-radar pipelines on
+nuScenes mini, document the data and model flow, and prototype a label-free BEV
+learning direction using frozen DINOv2 image features and radar measurements.
+
+The repository is derived from the official
+[aharley/simple_bev](https://github.com/aharley/simple_bev) implementation at
+commit `be46f0ef71960c233341852f3d9bc3677558ab6d`. The original paper, authors,
+license, and citation are retained below. Course-project changes are developed
+on branches and reviewed through pull requests so they remain distinguishable
+from the upstream code.
+
+## Current milestone
+
+- Reproduced camera-only and camera-plus-radar inference, training, checkpoint
+  save/reload, and visualization on nuScenes mini.
+- Evaluated both official checkpoints on the same fixed 10-sample subset:
+  camera-only mean IoU `0.121`, camera-plus-radar mean IoU `0.291`, with radar
+  higher on all 10 samples. This is a small functionality study, not a paper
+  benchmark.
+- Verified the supervised learning loop with a deliberate four-sample overfit:
+  mean IoU increased from `0.273` to `0.803` on those same training samples.
+- Built radar-anchored DINOv2 BEV targets without using box-derived losses and
+  verified a four-sample, randomly initialized student experiment (`1.023` to
+  `0.196` mean cosine loss in the pre-push regression).
+- Audited all 19 nuScenes radar fields, corrected velocity coordinate rotation,
+  and implemented a standalone seven-field point/voxel radar encoder producing
+  `(B,64,200,200)` BEV features.
+
+![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
+
+## Project documentation
+
+- [Project progress and meeting report](PROJECT_PROGRESS.md)
+- [Local environment and reproduction commands](SETUP_LOCAL.md)
+- [Simple-BEV architecture notes](SIMPLE_BEV_NOTES.md)
+- [Label-free extension plan](SELF_SUPERVISED_EXTENSION_PLAN.md)
+- [Radar field audit and encoder notes](RADAR_ENCODER_NOTES.md)
+
+The next bounded implementation step is to connect the standalone radar encoder
+to the camera BEV feature and verify shape, forward pass, gradient flow, empty
+radar behavior, and GPU memory before adding a motion objective.
+
+## Quick reproduction
+
+The scripts default to a `simplebev` Conda environment and nuScenes under
+`${HOME}/datasets/nuscenes`. Override `CONDA_ROOT`, `CONDA_ENV`, or
+`NUSCENES_ROOT` when your paths differ.
+
+```bash
+./scripts/check_environment.sh
+./scripts/smoke_test_mini.sh --data-only
+./scripts/smoke_test_mini.sh --use-radar --use-metaradar
+./scripts/run_mini_subset_eval.sh
+./scripts/run_dinov2_mini4.sh
+./scripts/run_radar_point_encoder_test.sh
+```
+
+Checkpoints, datasets, cached teacher features, logs, and generated model files
+are intentionally excluded from version control.
+
+---
+
+## Upstream Simple-BEV project
+
+### Simple-BEV: What Really Matters for Multi-Sensor BEV Perception?
 
 This is the official code release for our arXiv paper on BEV perception. 
 
