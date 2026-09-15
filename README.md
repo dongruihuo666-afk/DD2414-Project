@@ -1,4 +1,4 @@
-# DD2414 Simple-BEV Reproduction and Label-Free Extension
+# DD2414 Project: Multi-Sensor and Label-Free BEV Perception
 
 This repository contains the first project milestone for KTH DD2414. We
 reproduce the official Simple-BEV camera and camera-plus-radar pipelines on
