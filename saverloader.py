@@ -44,7 +44,9 @@ def load(ckpt_dir, model, optimizer=None, scheduler=None, model_ema=None, step=0
                 
                 print('ignoring', ignore_load)
 
-                checkpoint = torch.load(path, map_location=device)['model_state_dict']
+                checkpoint = torch.load(
+                    path, map_location=device, weights_only=True
+                )['model_state_dict']
 
                 model_dict = model.state_dict()
 
@@ -59,7 +61,7 @@ def load(ckpt_dir, model, optimizer=None, scheduler=None, model_ema=None, step=0
                 model.load_state_dict(model_dict, strict=False)
                                                                                                              
             else:
-                checkpoint = torch.load(path, map_location=device)
+                checkpoint = torch.load(path, map_location=device, weights_only=True)
                 model.load_state_dict(checkpoint['model_state_dict'], strict=False)
                 
             if optimizer is not None:

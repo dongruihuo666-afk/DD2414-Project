@@ -27,7 +27,10 @@ import utils.geom
 import itertools
 import matplotlib.pyplot as plt
 
-from lyft_dataset_sdk.lyftdataset import LyftDataset
+try:
+    from lyft_dataset_sdk.lyftdataset import LyftDataset
+except ImportError:
+    LyftDataset = None
 
 discard_invisible = False
 
@@ -140,7 +143,28 @@ def get_lidar_data(nusc, sample_rec, nsweeps, min_distance, dataroot):
 
     return points
 
-def get_radar_data(nusc, sample_rec, nsweeps, min_distance, use_radar_filters, dataroot):
+def rotate_radar_velocity_channels(points, rotation):
+    """Rotate radar velocity vectors without applying sensor translation.
+
+    nuScenes stores raw velocity in rows 6:8 and ego-motion-compensated
+    velocity in rows 8:10. PointCloud.transform() only transforms XYZ, so these
+    planar vectors need an explicit rotation when sensors are merged.
+    """
+    if points.shape[0] < 10:
+        raise ValueError('nuScenes radar points must have at least 10 channels')
+    if rotation.shape != (3, 3):
+        raise ValueError('rotation must have shape (3, 3)')
+    for start in (6, 8):
+        velocity_3d = np.vstack(
+            (points[start:start + 2], np.zeros((1, points.shape[1])))
+        )
+        points[start:start + 2] = np.dot(rotation, velocity_3d)[:2]
+    return points
+
+
+def get_radar_data(nusc, sample_rec, nsweeps, min_distance,
+                   use_radar_filters, dataroot,
+                   rotate_radar_velocity=False):
     """
     Returns at most nsweeps of lidar in the ego frame.
     Returned tensor is 5(x, y, z, reflectance, dt, ring_index) x N
@@ -189,6 +213,10 @@ def get_radar_data(nusc, sample_rec, nsweeps, min_distance, use_radar_filters, d
 
             # Fuse four transformation matrices into one and perform transform.
             trans_matrix = reduce(np.dot, [car_from_global, global_from_car, car_from_current])
+            if rotate_radar_velocity:
+                rotate_radar_velocity_channels(
+                    current_pc.points, trans_matrix[:3, :3]
+                )
             current_pc.transform(trans_matrix)
 
             # Add time vector which can be used as a temporal feature.
@@ -568,13 +596,14 @@ def get_local_map(nmap, center, stretch, layer_names, line_names):
 
 
 class NuscData(torch.utils.data.Dataset):
-    def __init__(self, nusc, is_train, data_aug_conf, centroid=None, bounds=None, res_3d=None, nsweeps=1, seqlen=1, refcam_id=1, get_tids=False, temporal_aug=False, use_radar_filters=False, do_shuffle_cams=True):
+    def __init__(self, nusc, is_train, data_aug_conf, centroid=None, bounds=None, res_3d=None, nsweeps=1, seqlen=1, refcam_id=1, get_tids=False, temporal_aug=False, use_radar_filters=False, do_shuffle_cams=True, rotate_radar_velocity=False):
         self.nusc = nusc
         self.is_train = is_train
         self.data_aug_conf = data_aug_conf
         # self.grid_conf = grid_conf
         self.nsweeps = nsweeps
         self.use_radar_filters = use_radar_filters
+        self.rotate_radar_velocity = rotate_radar_velocity
         self.do_shuffle_cams = do_shuffle_cams
         self.res_3d = res_3d
         self.bounds = bounds
@@ -584,7 +613,7 @@ class NuscData(torch.utils.data.Dataset):
         self.refcam_id = refcam_id
 
 
-        self.is_lyft = isinstance(nusc, LyftDataset)
+        self.is_lyft = LyftDataset is not None and isinstance(nusc, LyftDataset)
 
         if self.is_lyft:
             self.dataroot = self.nusc.data_path
@@ -805,7 +834,12 @@ class NuscData(torch.utils.data.Dataset):
         if self.is_lyft:
             pts = np.zeros((3,100))
         else:
-            pts = get_radar_data(self.nusc, rec, nsweeps=nsweeps, min_distance=2.2, use_radar_filters=self.use_radar_filters, dataroot=self.dataroot)
+            pts = get_radar_data(
+                self.nusc, rec, nsweeps=nsweeps, min_distance=2.2,
+                use_radar_filters=self.use_radar_filters,
+                dataroot=self.dataroot,
+                rotate_radar_velocity=self.rotate_radar_velocity,
+            )
         return torch.Tensor(pts)
 
     def get_binimg(self, rec):
@@ -1240,9 +1274,15 @@ def worker_rnd_init(x):
 
 def compile_data(version, dataroot, data_aug_conf, centroid, bounds, res_3d, bsz,
                  nworkers, shuffle=True, nsweeps=1, nworkers_val=1, seqlen=1, refcam_id=1, get_tids=False,
-                 temporal_aug=False, use_radar_filters=False, do_shuffle_cams=True):
+                 temporal_aug=False, use_radar_filters=False, do_shuffle_cams=True,
+                 rotate_radar_velocity=False):
 
     if 'lyft' in version:
+        if LyftDataset is None:
+            raise ImportError(
+                "LyftDataset support requires lyft-dataset-sdk; "
+                "it is not needed for nuScenes runs."
+            )
         print('loading lyft...')
         dataroot = os.path.join(dataroot, 'trainval')
         nusc = LyftDataset(data_path=dataroot,
@@ -1250,8 +1290,15 @@ def compile_data(version, dataroot, data_aug_conf, centroid, bounds, res_3d, bsz
                            verbose=True)
     else:
         print('loading nuscenes...')
+        release = 'v1.0-{}'.format(version)
+        standard_root = dataroot
+        legacy_root = os.path.join(dataroot, version)
+        if os.path.isdir(os.path.join(standard_root, release)):
+            nuscenes_root = standard_root
+        else:
+            nuscenes_root = legacy_root
         nusc = NuScenes(version='v1.0-{}'.format(version),
-                        dataroot=os.path.join(dataroot, version),
+                        dataroot=nuscenes_root,
                         verbose=False)
     print('making parser...')
     traindata = VizData(
@@ -1267,7 +1314,8 @@ def compile_data(version, dataroot, data_aug_conf, centroid, bounds, res_3d, bsz
         get_tids=get_tids,
         temporal_aug=temporal_aug,
         use_radar_filters=use_radar_filters,
-        do_shuffle_cams=do_shuffle_cams)
+        do_shuffle_cams=do_shuffle_cams,
+        rotate_radar_velocity=rotate_radar_velocity)
     valdata = VizData(
         nusc,
         is_train=False,
@@ -1281,7 +1329,8 @@ def compile_data(version, dataroot, data_aug_conf, centroid, bounds, res_3d, bsz
         get_tids=get_tids,
         temporal_aug=False,
         use_radar_filters=use_radar_filters,
-        do_shuffle_cams=False)
+        do_shuffle_cams=False,
+        rotate_radar_velocity=rotate_radar_velocity)
 
     trainloader = torch.utils.data.DataLoader(
         traindata,

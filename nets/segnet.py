@@ -58,7 +58,7 @@ class UpsamplingAdd(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, in_channels, n_classes, predict_future_flow):
         super().__init__()
-        backbone = resnet18(pretrained=False, zero_init_residual=True)
+        backbone = resnet18(weights=None, zero_init_residual=True)
         self.first_conv = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = backbone.bn1
         self.relu = backbone.relu
@@ -156,11 +156,13 @@ class Decoder(nn.Module):
         }
 
 import torchvision
+from torchvision.models import ResNet50_Weights, ResNet101_Weights
 class Encoder_res101(nn.Module):
-    def __init__(self, C):
+    def __init__(self, C, pretrained=True):
         super().__init__()
         self.C = C
-        resnet = torchvision.models.resnet101(pretrained=True)
+        weights = ResNet101_Weights.DEFAULT if pretrained else None
+        resnet = torchvision.models.resnet101(weights=weights)
         self.backbone = nn.Sequential(*list(resnet.children())[:-4])
         self.layer3 = resnet.layer3
 
@@ -176,10 +178,11 @@ class Encoder_res101(nn.Module):
         return x
 
 class Encoder_res50(nn.Module):
-    def __init__(self, C):
+    def __init__(self, C, pretrained=True):
         super().__init__()
         self.C = C
-        resnet = torchvision.models.resnet50(pretrained=True)
+        weights = ResNet50_Weights.DEFAULT if pretrained else None
+        resnet = torchvision.models.resnet50(weights=weights)
         self.backbone = nn.Sequential(*list(resnet.children())[:-4])
         self.layer3 = resnet.layer3
 
@@ -195,16 +198,17 @@ class Encoder_res50(nn.Module):
         return x
 
 class Encoder_eff(nn.Module):
-    def __init__(self, C, version='b4'):
+    def __init__(self, C, version='b4', pretrained=True):
         super().__init__()
         self.C = C
         self.downsample = 8
         self.version = version
 
-        if self.version == 'b0':
-            self.backbone = EfficientNet.from_pretrained('efficientnet-b0')
-        elif self.version == 'b4':
-            self.backbone = EfficientNet.from_pretrained('efficientnet-b4')
+        model_name = 'efficientnet-%s' % self.version
+        if pretrained:
+            self.backbone = EfficientNet.from_pretrained(model_name)
+        else:
+            self.backbone = EfficientNet.from_name(model_name)
         self.delete_unused_layers()
 
         if self.downsample == 16:
@@ -293,7 +297,8 @@ class Segnet(nn.Module):
                  do_rgbcompress=True,
                  rand_flip=False,
                  latent_dim=128,
-                 encoder_type="res101"):
+                 encoder_type="res101",
+                 pretrained_backbone=True):
         super(Segnet, self).__init__()
         assert (encoder_type in ["res101", "res50", "effb0", "effb4"])
 
@@ -306,20 +311,32 @@ class Segnet(nn.Module):
         self.latent_dim = latent_dim
         self.encoder_type = encoder_type
 
-        self.mean = torch.as_tensor([0.485, 0.456, 0.406]).reshape(1,3,1,1).float().cuda()
-        self.std = torch.as_tensor([0.229, 0.224, 0.225]).reshape(1,3,1,1).float().cuda()
+        self.register_buffer(
+            'mean',
+            torch.as_tensor([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1).float(),
+            persistent=False,
+        )
+        self.register_buffer(
+            'std',
+            torch.as_tensor([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1).float(),
+            persistent=False,
+        )
         
         # Encoder
         self.feat2d_dim = feat2d_dim = latent_dim
         if encoder_type == "res101":
-            self.encoder = Encoder_res101(feat2d_dim)
+            self.encoder = Encoder_res101(feat2d_dim, pretrained=pretrained_backbone)
         elif encoder_type == "res50":
-            self.encoder = Encoder_res50(feat2d_dim)
+            self.encoder = Encoder_res50(feat2d_dim, pretrained=pretrained_backbone)
         elif encoder_type == "effb0":
-            self.encoder = Encoder_eff(feat2d_dim, version='b0')
+            self.encoder = Encoder_eff(
+                feat2d_dim, version='b0', pretrained=pretrained_backbone
+            )
         else:
             # effb4
-            self.encoder = Encoder_eff(feat2d_dim, version='b4')
+            self.encoder = Encoder_eff(
+                feat2d_dim, version='b4', pretrained=pretrained_backbone
+            )
 
         # BEV compressor
         if self.use_radar:
@@ -372,7 +389,8 @@ class Segnet(nn.Module):
         else:
             self.xyz_camA = None
         
-    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util, rad_occ_mem0=None):
+    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util,
+                rad_occ_mem0=None, return_shared_bev=False):
         '''
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
         rgb_camXs: (B,S,C,H,W)
@@ -463,6 +481,14 @@ class Segnet(nn.Module):
             else:
                 feat_bev = torch.sum(feat_mem, dim=3)
 
+        if return_shared_bev:
+            self.last_forward_shapes = {
+                'image_features_packed': tuple(feat_camXs_.shape),
+                'camera_features_3d': tuple(feat_mems.shape),
+                'fused_bev_features': tuple(feat_bev.shape),
+            }
+            return feat_bev
+
         # bev decoder
         out_dict = self.decoder(feat_bev, (self.bev_flip1_index, self.bev_flip2_index) if self.rand_flip else None)
 
@@ -472,5 +498,14 @@ class Segnet(nn.Module):
         center_e = out_dict['instance_center']
         offset_e = out_dict['instance_offset']
 
-        return raw_e, feat_e, seg_e, center_e, offset_e
+        self.last_forward_shapes = {
+            'image_features_packed': tuple(feat_camXs_.shape),
+            'camera_features_3d': tuple(feat_mems.shape),
+            'fused_bev_features': tuple(feat_bev.shape),
+            'decoder_features': tuple(feat_e.shape),
+            'segmentation': tuple(seg_e.shape),
+            'instance_center': tuple(center_e.shape),
+            'instance_offset': tuple(offset_e.shape),
+        }
 
+        return raw_e, feat_e, seg_e, center_e, offset_e
