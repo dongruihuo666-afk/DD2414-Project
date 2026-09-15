@@ -5,6 +5,7 @@ import numpy as np
 import saverloader
 from fire import Fire
 from nets.segnet import Segnet
+from nets.radar_encoder import transform_radar_to_camera_bev
 import utils.misc
 import utils.improc
 import utils.vox
@@ -145,6 +146,11 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None, return_outputs=False)
     
     xyz_cam0 = utils.geom.apply_4x4(cams_T_velo[:,0], xyz_velo0)
     rad_xyz_cam0 = utils.geom.apply_4x4(cams_T_velo[:,0], xyz_rad)
+    radar_points_cam0 = None
+    if getattr(model_core, 'use_radar_encoder', False):
+        radar_points_cam0 = transform_radar_to_camera_bev(
+            rad_data, cams_T_velo[:, 0]
+        )
 
     lrtlist_cam0 = utils.geom.apply_4x4_to_lrtlist(cams_T_velo[:,0], lrtlist_velo)
 
@@ -182,7 +188,8 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None, return_outputs=False)
             pix_T_cams=pix_T_cams,
             cam0_T_camXs=cam0_T_camXs,
             vox_util=vox_util,
-            rad_occ_mem0=in_occ_mem0)
+            rad_occ_mem0=in_occ_mem0,
+            radar_points=radar_points_cam0)
 
     ce_loss = loss_fn(seg_bev_e, seg_bev_g, valid_bev_g)
     center_loss = balanced_mse_loss(center_bev_e, center_bev_g)
@@ -222,7 +229,8 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None, return_outputs=False)
     metrics['iou'] = iou.item()
 
     if sw is not None and sw.save_this:
-        if model_core.use_radar or model_core.use_lidar:
+        if (model_core.use_radar or model_core.use_lidar
+                or getattr(model_core, 'use_radar_encoder', False)):
             sw.summ_occ('0_inputs/rad_occ_mem0', rad_occ_mem0)
         sw.summ_occ('0_inputs/occ_mem0', occ_mem0)
         sw.summ_rgb('0_inputs/rgb_camXs', torch.cat(rgb_camXs[0:1].unbind(1), dim=-1))
@@ -289,6 +297,7 @@ def main(
         use_radar_filters=False,
         use_lidar=False,
         use_metaradar=False,
+        use_radar_encoder=False,
         do_rgbcompress=True,
         do_shuffle_cams=True,
         # cuda
@@ -365,6 +374,7 @@ def main(
         nsweeps=nsweeps,
         do_shuffle_cams=do_shuffle_cams,
         get_tids=True,
+        rotate_radar_velocity=use_radar_encoder,
     )
     train_iterloader = iter(train_dataloader)
     val_iterloader = iter(val_dataloader)
@@ -377,7 +387,16 @@ def main(
 
     # set up model & seg loss
     seg_loss_fn = SimpleLoss(2.13).to(device) # value from lift-splat
-    model = Segnet(Z, Y, X, vox_util, use_radar=use_radar, use_lidar=use_lidar, use_metaradar=use_metaradar, do_rgbcompress=do_rgbcompress, encoder_type=encoder_type, rand_flip=rand_flip)
+    model = Segnet(
+        Z, Y, X, vox_util,
+        use_radar=use_radar,
+        use_lidar=use_lidar,
+        use_metaradar=use_metaradar,
+        use_radar_encoder=use_radar_encoder,
+        do_rgbcompress=do_rgbcompress,
+        encoder_type=encoder_type,
+        rand_flip=rand_flip,
+    )
     model = model.to(device)
     model = torch.nn.DataParallel(model, device_ids=device_ids)
     parameters = list(model.parameters())

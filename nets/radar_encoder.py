@@ -167,11 +167,12 @@ class RadarPointEncoder(nn.Module):
 
         voxel_count = self.Z * self.Y * self.X
         flat_size = batch_size * voxel_count
-        feature_sum = radar.new_zeros((flat_size, self.out_channels))
-        feature_max = radar.new_full(
+        # Match the MLP output dtype so this path also works under AMP.
+        feature_sum = point_features.new_zeros((flat_size, self.out_channels))
+        feature_max = point_features.new_full(
             (flat_size, self.out_channels), -torch.inf
         )
-        counts = radar.new_zeros((flat_size, 1))
+        counts = point_features.new_zeros((flat_size, 1))
 
         rounded = xyz_memory.round().long()
         x_index, y_index, z_index = rounded.unbind(dim=-1)
@@ -185,7 +186,8 @@ class RadarPointEncoder(nn.Module):
         if flat_index.numel() > 0:
             feature_sum.index_add_(0, flat_index, valid_features)
             counts.index_add_(
-                0, flat_index, radar.new_ones((flat_index.numel(), 1))
+                0, flat_index,
+                point_features.new_ones((flat_index.numel(), 1)),
             )
             expanded_index = flat_index[:, None].expand_as(valid_features)
             feature_max.scatter_reduce_(

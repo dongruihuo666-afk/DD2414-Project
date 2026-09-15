@@ -12,6 +12,11 @@ import torch
 from PIL import Image, ImageDraw
 
 
+torch.manual_seed(125)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(125)
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -51,7 +56,7 @@ def describe(name, value):
         print(f'{name:24s} type={type(value).__name__}')
 
 
-def make_visualization(outputs, output_path):
+def make_visualization(outputs, output_path, show_radar=False):
     rgb = (outputs['rgb_camXs'][0].detach().cpu() + 0.5).clamp(0, 1)
     camera_images = []
     for camera in rgb:
@@ -59,7 +64,8 @@ def make_visualization(outputs, output_path):
         camera_images.append(Image.fromarray(array))
 
     camera_w, camera_h = camera_images[0].size
-    canvas = Image.new('RGB', (camera_w * 3, camera_h * 2 + 240), 'white')
+    canvas_width = max(camera_w * 3, 660 if show_radar else 450)
+    canvas = Image.new('RGB', (canvas_width, camera_h * 2 + 240), 'white')
     draw = ImageDraw.Draw(canvas)
     for index, camera in enumerate(camera_images):
         x = (index % 3) * camera_w
@@ -80,6 +86,19 @@ def make_visualization(outputs, output_path):
     canvas.paste(gt_image, (230, panel_y))
     draw.text((10, panel_y - 20), 'prediction probability', fill='black')
     draw.text((230, panel_y - 20), 'ground truth', fill='black')
+    if show_radar:
+        radar = (
+            outputs['radar_voxels'][0, 0].detach().float().sum(dim=1)
+            .clamp(0, 1).cpu().numpy()
+        )
+        radar_rgb = np.zeros((*radar.shape, 3), dtype=np.uint8)
+        radar_rgb[..., 1] = (radar * 235).astype(np.uint8)
+        radar_rgb[..., 2] = (radar * 255).astype(np.uint8)
+        radar_image = Image.fromarray(radar_rgb).resize(
+            (200, 200), Image.Resampling.NEAREST
+        )
+        canvas.paste(radar_image, (450, panel_y))
+        draw.text((450, panel_y - 20), 'radar points in BEV', fill='black')
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(output_path)
@@ -98,6 +117,11 @@ def parse_args():
     parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--use-radar', action='store_true')
     parser.add_argument('--use-metaradar', action='store_true')
+    parser.add_argument('--use-radar-encoder', action='store_true')
+    parser.add_argument(
+        '--pretrained-backbone', action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument('--data-only', action='store_true')
     parser.add_argument('--backward', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument('--amp', action=argparse.BooleanOptionalAction, default=True)
@@ -114,6 +138,10 @@ def main():
         )
     if args.use_metaradar and not args.use_radar:
         raise ValueError('--use-metaradar requires --use-radar')
+    if args.use_radar_encoder and (args.use_radar or args.use_metaradar):
+        raise ValueError(
+            '--use-radar-encoder is separate from the legacy radar flags'
+        )
 
     # Encoder skip connections require stride-8 features to be exactly twice
     # the stride-16 size. Align reduced smoke-test inputs to 16 pixels.
@@ -144,6 +172,7 @@ def main():
         shuffle=False, nsweeps=args.nsweeps, seqlen=1, refcam_id=1,
         get_tids=True, temporal_aug=False, use_radar_filters=False,
         do_shuffle_cams=False,
+        rotate_radar_velocity=args.use_radar_encoder,
     )
     batch = next(iter(train_loader))
     print(f'data_load_seconds: {time.perf_counter() - load_start:.3f}')
@@ -171,8 +200,9 @@ def main():
     model = Segnet(
         Z, Y, X, vox_util=vox_util, use_radar=args.use_radar,
         use_metaradar=args.use_metaradar, do_rgbcompress=True,
+        use_radar_encoder=args.use_radar_encoder,
         encoder_type=args.encoder_type, rand_flip=False,
-        pretrained_backbone=args.checkpoint is None,
+        pretrained_backbone=args.pretrained_backbone and args.checkpoint is None,
     ).to(device)
     if args.checkpoint:
         saverloader.load(str(args.checkpoint), model)
@@ -198,6 +228,22 @@ def main():
     if args.backward:
         backward_start = time.perf_counter()
         loss.backward()
+        if args.use_radar_encoder:
+            radar_gradients = [
+                parameter.grad for parameter in model.radar_encoder.parameters()
+                if parameter.grad is not None
+            ]
+            radar_gradient_norm = torch.sqrt(sum(
+                gradient.float().square().sum()
+                for gradient in radar_gradients
+            ))
+            if not torch.isfinite(radar_gradient_norm) \
+                    or radar_gradient_norm.item() <= 0:
+                raise RuntimeError('radar encoder did not receive a valid gradient')
+            print(
+                'radar_encoder_gradient_norm: '
+                f'{radar_gradient_norm.item():.6f}'
+            )
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         print(f'backward_and_step_seconds: {time.perf_counter() - backward_start:.3f}')
@@ -213,17 +259,51 @@ def main():
             raise RuntimeError('checkpoint reload did not restore model parameters')
         print('checkpoint_reload: OK')
 
+    if args.use_radar_encoder:
+        empty_batch = list(batch)
+        empty_batch[16] = torch.zeros_like(batch[16])
+        model.eval()
+        with torch.no_grad(), torch.autocast(
+            device_type='cuda', dtype=torch.float16, enabled=args.amp
+        ):
+            empty_loss, _, empty_outputs = run_model(
+                model, loss_fn, empty_batch, device=str(device),
+                return_outputs=True,
+            )
+        if not torch.isfinite(empty_loss):
+            raise RuntimeError('empty-radar fusion produced a non-finite loss')
+        if not torch.isfinite(empty_outputs['seg_bev_logits']).all():
+            raise RuntimeError('empty-radar fusion produced non-finite logits')
+        with torch.no_grad():
+            empty_radar_bev = model.radar_encoder(
+                torch.zeros(
+                    (1, batch[16].shape[-1], 19), device=device,
+                    dtype=batch[16].dtype,
+                )
+            )
+        if torch.count_nonzero(empty_radar_bev).item() != 0:
+            raise RuntimeError('empty radar must produce an all-zero BEV feature')
+        print('empty_radar_fusion: OK')
+
     if args.visualization_name:
         visualization_name = args.visualization_name
     elif args.checkpoint:
         visualization_name = 'mini_camera_pretrained.png'
+    elif args.use_radar_encoder:
+        visualization_name = 'mini_learned_radar_fusion_smoke.png'
     elif args.use_radar:
         visualization_name = 'mini_radar_smoke.png'
     else:
         visualization_name = 'mini_camera_smoke.png'
     visualization_path = args.output_dir / visualization_name
-    make_visualization(outputs, visualization_path)
+    make_visualization(
+        outputs, visualization_path, show_radar=args.use_radar_encoder
+    )
     peak_gib = torch.cuda.max_memory_allocated(device) / (1024 ** 3)
+    if args.use_radar_encoder and peak_gib >= 8.0:
+        raise RuntimeError(
+            f'learned radar fusion used {peak_gib:.3f} GiB, exceeding 8 GiB'
+        )
     if args.dump_npz:
         rgb_uint8 = (
             (outputs['rgb_camXs'][0].detach().cpu() + 0.5)
@@ -254,6 +334,8 @@ def main():
         print(f'npz_snapshot: {args.dump_npz}')
     print(f'peak_cuda_memory_gib: {peak_gib:.3f}')
     print(f'visualization: {visualization_path}')
+    if args.use_radar_encoder:
+        print('RADAR_FUSION_TEST_OK')
     print('MODEL_SMOKE_TEST_OK')
 
 

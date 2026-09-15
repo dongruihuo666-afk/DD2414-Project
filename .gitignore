@@ -15,6 +15,7 @@ artifacts/*
 !artifacts/radar_field_audit.csv
 !artifacts/radar_velocity_rotation.png
 !artifacts/radar_point_encoder_test.png
+!artifacts/radar_encoder_fusion_smoke.png
 checkpoints/
 logs_*/
 .env

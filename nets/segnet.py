@@ -13,6 +13,8 @@ import utils.basic
 from torchvision.models.resnet import resnet18
 from efficientnet_pytorch import EfficientNet
 
+from nets.radar_encoder import RadarPointEncoder
+
 EPS = 1e-4
 
 from functools import partial
@@ -298,7 +300,9 @@ class Segnet(nn.Module):
                  rand_flip=False,
                  latent_dim=128,
                  encoder_type="res101",
-                 pretrained_backbone=True):
+                 pretrained_backbone=True,
+                 use_radar_encoder=False,
+                 radar_encoder_channels=64):
         super(Segnet, self).__init__()
         assert (encoder_type in ["res101", "res50", "effb0", "effb4"])
 
@@ -306,10 +310,21 @@ class Segnet(nn.Module):
         self.use_radar = use_radar
         self.use_lidar = use_lidar
         self.use_metaradar = use_metaradar
+        self.use_radar_encoder = use_radar_encoder
         self.do_rgbcompress = do_rgbcompress   
         self.rand_flip = rand_flip
         self.latent_dim = latent_dim
         self.encoder_type = encoder_type
+
+        if self.use_radar_encoder and (self.use_radar or self.use_lidar):
+            raise ValueError(
+                'use_radar_encoder is a separate radar path and cannot be '
+                'combined with use_radar or use_lidar'
+            )
+        if self.use_radar_encoder and self.use_metaradar:
+            raise ValueError(
+                'use_metaradar belongs to the legacy radar path'
+            )
 
         self.register_buffer(
             'mean',
@@ -339,7 +354,33 @@ class Segnet(nn.Module):
             )
 
         # BEV compressor
-        if self.use_radar:
+        if self.use_radar_encoder:
+            if vox_util is None:
+                # Default Simple-BEV bounds after its (0, 1, 0) centroid.
+                radar_bounds = (-50.0, 50.0, -4.0, 6.0, -50.0, 50.0)
+            else:
+                radar_bounds = (
+                    vox_util.XMIN, vox_util.XMAX,
+                    vox_util.YMIN, vox_util.YMAX,
+                    vox_util.ZMIN, vox_util.ZMAX,
+                )
+            self.radar_encoder = RadarPointEncoder(
+                Z=Z, Y=Y, X=X,
+                bounds=radar_bounds,
+                scene_centroid=(0.0, 0.0, 0.0),
+                out_channels=radar_encoder_channels,
+                use_quality_mask=True,
+            )
+            self.bev_compressor = nn.Sequential(
+                nn.Conv2d(
+                    feat2d_dim * Y + radar_encoder_channels,
+                    feat2d_dim, kernel_size=3, padding=1, stride=1,
+                    bias=False,
+                ),
+                nn.InstanceNorm2d(latent_dim),
+                nn.GELU(),
+            )
+        elif self.use_radar:
             if self.use_metaradar:
                 self.bev_compressor = nn.Sequential(
                     nn.Conv2d(feat2d_dim*Y + 16*Y, feat2d_dim, kernel_size=3, padding=1, stride=1, bias=False),
@@ -390,7 +431,8 @@ class Segnet(nn.Module):
             self.xyz_camA = None
         
     def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util,
-                rad_occ_mem0=None, return_shared_bev=False):
+                rad_occ_mem0=None, radar_points=None,
+                return_shared_bev=False):
         '''
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
         rgb_camXs: (B,S,C,H,W)
@@ -402,6 +444,9 @@ class Segnet(nn.Module):
             - (B, 1, Z, Y, X) when use_radar = True, use_metaradar = False
             - (B, 16, Z, Y, X) when use_radar = True, use_metaradar = True
             - (B, 1, Z, Y, X) when use_lidar = True
+        radar_points:
+            - (B, R, 19) in the reference-camera frame when
+              use_radar_encoder = True
         '''
         B, S, C, H, W = rgb_camXs.shape
         assert(C==3)
@@ -456,7 +501,26 @@ class Segnet(nn.Module):
                 rad_occ_mem0[self.bev_flip2_index] = torch.flip(rad_occ_mem0[self.bev_flip2_index], [-3])
 
         # bev compressing
-        if self.use_radar:
+        if self.use_radar_encoder:
+            if radar_points is None:
+                raise ValueError(
+                    'radar_points is required when use_radar_encoder=True'
+                )
+            radar_bev = self.radar_encoder(radar_points)
+            if self.rand_flip:
+                radar_bev[self.bev_flip1_index] = torch.flip(
+                    radar_bev[self.bev_flip1_index], [-1]
+                )
+                radar_bev[self.bev_flip2_index] = torch.flip(
+                    radar_bev[self.bev_flip2_index], [-2]
+                )
+            feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(
+                B, self.feat2d_dim * Y, Z, X
+            )
+            feat_bev = self.bev_compressor(
+                torch.cat((feat_bev_, radar_bev), dim=1)
+            )
+        elif self.use_radar:
             assert(rad_occ_mem0 is not None)
             if not self.use_metaradar:
                 feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
@@ -485,6 +549,10 @@ class Segnet(nn.Module):
             self.last_forward_shapes = {
                 'image_features_packed': tuple(feat_camXs_.shape),
                 'camera_features_3d': tuple(feat_mems.shape),
+                **(
+                    {'radar_features_bev': tuple(radar_bev.shape)}
+                    if self.use_radar_encoder else {}
+                ),
                 'fused_bev_features': tuple(feat_bev.shape),
             }
             return feat_bev
@@ -501,6 +569,10 @@ class Segnet(nn.Module):
         self.last_forward_shapes = {
             'image_features_packed': tuple(feat_camXs_.shape),
             'camera_features_3d': tuple(feat_mems.shape),
+            **(
+                {'radar_features_bev': tuple(radar_bev.shape)}
+                if self.use_radar_encoder else {}
+            ),
             'fused_bev_features': tuple(feat_bev.shape),
             'decoder_features': tuple(feat_e.shape),
             'segmentation': tuple(seg_e.shape),

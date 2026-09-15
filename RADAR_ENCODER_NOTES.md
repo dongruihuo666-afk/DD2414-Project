@@ -161,5 +161,41 @@ same-voxel collision pooling, and nonzero finite-gradient checks.
 
 This proves the radar branch can produce a learnable BEV tensor with correct
 geometry and gradients. It does not yet prove useful learned semantics or
-motion: its weights are random, it is not connected to the camera feature, and
-it has not been trained by the DINO loss. That fusion is the next experiment.
+motion because its weights are random and it has not been trained by the DINO
+loss.
+
+## Camera-BEV integration
+
+The encoder is now connected to the main `Segnet` path behind the independent
+`use_radar_encoder` option. The data flow is:
+
+```text
+six images -> image encoder -> camera BEV volume -> flatten height --+
+                                                                  concat
+radar points -> 7-field point encoder -> 64-channel radar BEV -----+
+                                      -> 3x3 BEV fusion -> decoder
+```
+
+This path is intentionally separate from the official `use_radar` and
+`use_metaradar` flags, so the official checkpoints keep their original tensor
+shapes and behavior. Run the integration test with:
+
+```bash
+./scripts/run_radar_fusion_test.sh
+```
+
+On one real nuScenes mini frame, the test measured:
+
+- radar encoder output `(1,64,200,200)`;
+- fused camera-radar feature `(1,128,200,200)`;
+- finite radar-encoder gradient norm `0.031452`;
+- valid forward output when all radar points were replaced by padding;
+- successful checkpoint save and reload; and
+- peak allocated CUDA memory `3.440 GiB`, below the available 8 GiB budget.
+
+![Learned radar encoder fused with camera BEV](artifacts/radar_encoder_fusion_smoke.png)
+
+This is an engineering integration check, not an accuracy claim. The network
+is randomly initialized in this test, so its prediction and IoU are not
+meaningful yet. The next experiment should decide how the fused feature is
+trained without box-derived labels.

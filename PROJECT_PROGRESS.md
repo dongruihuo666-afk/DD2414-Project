@@ -293,8 +293,8 @@ official radar input, and it has not learned semantics or motion.
   reproducible with scripts.
 - Frozen DINOv2 features and radar range produce local label-free BEV targets.
 - A random student can optimize the four-sample DINO objective.
-- Radar fields, quality states, velocity frames, and the standalone point
-  encoder have been tested explicitly.
+- Radar fields, quality states, velocity frames, the point encoder, and its
+  camera-BEV fusion have been tested explicitly.
 
 ### Not established yet
 
@@ -303,23 +303,28 @@ official radar input, and it has not learned semantics or motion.
 - PCA colors do not prove semantic quality.
 - Radar Doppler is not automatically object velocity; filtering, ego motion,
   uncertainty, and coordinate frames still matter.
-- The standalone radar encoder has not yet been fused with camera BEV.
+- The learned radar encoder is fused with camera BEV and passes a one-frame
+  engineering check, but it has not yet learned useful semantics or motion.
 - Motion supervision, full-mini pretraining, downstream probing/fine-tuning,
   and near/far evaluation remain future work.
 
-## 6. Next bounded step
+## 6. Learned radar fusion integration
 
-Connect the standalone `(B,64,200,200)` radar encoder output to the camera BEV
-feature. Before introducing any motion objective or longer training, test only:
+The standalone `(B,64,200,200)` radar encoder is now connected to the camera
+BEV feature. The bounded integration test passed:
 
-1. tensor shape and coordinate agreement;
-2. a complete forward pass;
-3. gradient flow into the radar encoder;
-4. behavior with an empty radar tensor; and
-5. peak memory on the 8 GiB GPU.
+1. radar tensor shape `(1,64,200,200)` and fused shape `(1,128,200,200)`;
+2. a complete forward pass and checkpoint round trip;
+3. finite nonzero radar-encoder gradient norm `0.031452`;
+4. finite model output with an empty radar tensor; and
+5. peak allocated CUDA memory `3.440 GiB` on the 8 GiB GPU.
 
-If these checks pass, the following experiment can train the fused camera-radar
-representation with the existing DINO loss.
+![Learned radar encoder fused with camera BEV](artifacts/radar_encoder_fusion_smoke.png)
+
+This does not establish accuracy because the integration test uses random
+weights. The next bounded experiment is to train the fused camera-radar
+representation with the existing label-free DINO target, still without a
+motion head.
 
 ## 7. Suggested questions for the supervisor
 
@@ -339,6 +344,7 @@ nuScenes mini and verified inference, learning, checkpointing, and a fixed
 semantics in local BEV regions without box-derived losses; a randomly
 initialized four-sample student reduced mean cosine loss from 1.023 to 0.196.
 We also audited the radar tensor, corrected velocity-frame rotation, and built
-a standalone point/voxel encoder that outputs a tested 64-channel BEV. The next
-step is to connect this encoder to camera BEV and verify geometry, gradients,
-empty-input behavior, and memory before adding motion learning.
+a point/voxel encoder that outputs a tested 64-channel BEV. It is now connected
+to camera BEV: the fused path passes shape, forward, gradient, empty-radar,
+checkpoint, and 3.440 GiB peak-memory checks. The next step is label-free DINO
+training of this fused representation before adding motion learning.
