@@ -34,6 +34,10 @@ from the upstream code.
 - Ran a four-frame radar-only optimization check against identical cached
   frozen-DINOv2 targets for the lightweight and BEVCar encoders. Both reduced
   training-frame cosine loss; this is not held-out accuracy or camera fusion.
+- Extended the check to 12 unseen mini validation frames across two scenes
+  and three random seeds. Both reduced target loss, but swapping radar inputs
+  across scenes barely changed BEVCar's loss; radar-specific learning is not
+  established.
 
 ![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
 
@@ -50,8 +54,9 @@ The standalone lightweight radar encoder is connected to the camera BEV
 feature and passes shape, forward, gradient, empty-radar, checkpoint, and
 8 GiB memory checks. The separate BEVCar adapter and official radar encoder
 pass a one-frame isolated smoke test. A radar-only, same-target four-frame
-optimization comparison now passes; held-out behavior and camera fusion
-remain open before adding motion.
+optimization comparison now passes. A two-scene held-out target-loss check
+also passes, but a radar-swap control is inconclusive for radar-specific
+semantics; camera fusion and downstream behavior remain open before motion.
 
 ## Quick reproduction
 
@@ -71,6 +76,8 @@ bash scripts/run_bevcar_voxel_adapter_test.sh
 # After checking out official BEVCar as explained in RADAR_ENCODER_NOTES.md:
 bash scripts/run_bevcar_encoder_smoke.sh --device cuda
 bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60
+bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
+    --heldout-samples 12 --seed-list 125,126,127
 ```
 
 Checkpoints, datasets, cached teacher features, logs, and generated model files

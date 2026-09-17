@@ -300,5 +300,42 @@ Both branches can optimize this label-free target on the same four frames.
 BEVCar's larger training decrease is **not** evidence of better generalization
 or a controlled architecture win: it has about 14 times more trainable
 parameters, different features/filtering, and no held-out evaluation here.
-This is not a trained camera-radar Simple-BEV model. Next: test a held-out
-mini frame, then compare both branches in camera-radar fusion.
+This is not a trained camera-radar Simple-BEV model. The next section tests
+held-out frames and whether predictions depend on correctly paired radar.
+
+## Two-scene, three-seed held-out check and radar-swap control
+
+To reduce dependence on one frame or one initialization, the same four
+training frames and 60-update budget were evaluated with seeds 125, 126, and
+127. Twelve uniformly spaced frames were selected from the 81-frame mini
+validation split: six from each of its two scenes. The script checks that
+training and validation scene names and sample tokens are disjoint. New
+targets are generated only for evaluation by frozen `dinov2_vits14` with the
+same radar-anchored construction. Validation frames never enter the optimizer.
+
+```bash
+BEVCAR_SOURCE_DIR=/path/to/BEVCar \
+  bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
+  --heldout-samples 12 --seed-list 125,126,127
+```
+
+Across 36 seed-frame evaluations per branch, all 36 losses fell after
+training. Mean validation cosine loss was `0.979 -> 0.903` (light) and
+`0.995 -> 0.493` (BEVCar). Final per-seed means were `0.864-0.925` and
+`0.475-0.515`, respectively. The figures below show the frame-by-frame
+means and seed ranges. This is a small two-scene validation result, not a
+nuScenes test-set benchmark or downstream segmentation accuracy.
+
+![Two-scene held-out radar-only DINOv2 result](artifacts/radar_dino_heldout_comparison.png)
+
+Crucially, we also kept each validation target fixed and exchanged radar
+inputs **across the two validation scenes**. With correctly aligned radar,
+mean final loss was `0.903` (light) and `0.493` (BEVCar); with swapped radar
+it was `0.909` and `0.490`. Thus the light branch shows only a small
+alignment effect, and BEVCar shows **no positive alignment effect** under
+this test. Its large target-loss decrease may reflect common target/spatial
+statistics rather than learning scene-specific radar-to-image semantics.
+Do not present the lower BEVCar loss as proof of superior radar perception.
+The next investigation should use stronger radar-dependence controls or
+different downstream tasks before integrating the larger encoder into the
+camera-fusion model.

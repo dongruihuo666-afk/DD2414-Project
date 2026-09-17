@@ -15,8 +15,10 @@ encoder has passed camera-fusion integration tests but has **not** been trained
 against the DINO target in that fused model. A separate adapter and official
 BEVCar encoder passed a one-frame CUDA smoke test. Both radar encoders have
 now been optimized **standalone** on the same four cached frozen-DINOv2
-targets, without camera fusion or held-out evaluation. No motion head or
-full-dataset self-supervised evaluation exists.
+targets. A standalone 12-frame, two-scene validation check with three seeds
+reduced target loss, but a cross-scene radar-swap control found little or no
+radar-alignment effect. The encoders have not been compared in camera fusion.
+No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
 project-scoped change is pushed there so teammates can follow the work. Check
@@ -70,6 +72,7 @@ legacy-radar Simple-BEV student ----------------> cosine feature loss
 | BEVCar voxel input | `bash scripts/run_bevcar_voxel_adapter_test.sh` | 403 returns -> 251 in range -> 243 voxels; optional quality filter gives 125 points/123 voxels; zero BEV-cell mismatches | Upstream seventh feature verified as valid-point mask; pretrained-checkpoint compatibility not established |
 | Official BEVCar radar encoder | `bash scripts/run_bevcar_encoder_smoke.sh --device cuda` with external BEVCar checkout | 403 returns -> 251 in range -> 243 voxels -> `(1,128,200,200)`; finite nonzero gradients; peak allocated CUDA 0.729 GiB | Isolated random-weight encoder only; no camera fusion, training, accuracy, or checkpoint compatibility claim |
 | Radar-only frozen-DINOv2 comparison | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60` with cached targets and external BEVCar | Same-frame cosine loss: light 0.986 -> 0.890, BEVCar 1.002 -> 0.376; finite encoder gradients | Four training frames only; different capacity/filtering; not held-out accuracy or camera-radar fusion |
+| Radar-only mini validation | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 --heldout-samples 12 --seed-list 125,126,127` | 12 unseen frames, 2 scenes, 3 seeds: loss light 0.979 -> 0.903, BEVCar 0.995 -> 0.493; all 36 seed-frame losses fell | Cross-scene radar swap: light 0.909, BEVCar 0.490, versus aligned 0.903/0.493; no robust BEVCar radar-alignment evidence |
 
 Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
 each plot and its caveats. The official legacy radar checkpoint still loads
@@ -120,11 +123,13 @@ unrelated local work.
 
 ## Next bounded task
 
-Keep the lightweight encoder unchanged. Check held-out mini-frame behavior,
-then compare both radar branches inside camera-radar fusion with fixed data
-and update budgets. Resolve their capacity, feature/filter, frame, and memory
-differences before interpreting losses. Do not use BEVCar's supervised
-checkpoint for a label-free claim, and do not add a motion head yet.
+Keep the lightweight encoder unchanged. Investigate the weak/absent radar
+alignment effect with stronger ablations or a downstream objective before
+claiming semantic radar learning. Then compare both branches inside
+camera-radar fusion with fixed data/update budgets. Resolve capacity,
+feature/filter, frame, and memory differences before interpreting losses.
+Do not use BEVCar's supervised checkpoint for a label-free claim, and do not
+add a motion head yet.
 
 ## Work log and update template
 
@@ -133,6 +138,33 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Two-scene, three-seed held-out radar diagnostic
+
+- Change: extended `scripts/compare_radar_dino_tiny.py` with frozen-DINOv2
+  target generation on 12 uniformly spaced mini validation frames, three
+  initialization seeds, scene/token separation checks, and a cross-scene
+  radar-swap control. Added `artifacts/radar_dino_heldout_comparison.json`
+  and `.png`; updated `scripts/dinov2_bev_demo.py` with an optional validation
+  loader selection, `.gitignore`, `README.md`, `RADAR_ENCODER_NOTES.md`, and
+  this handoff. Existing Simple-BEV and lightweight paths remain unchanged.
+- Verification: `BEVCAR_SOURCE_DIR=<official-checkout> bash
+  scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 --heldout-samples 12
+  --seed-list 125,126,127` passed. Six frames per validation scene; all 36
+  seed-frame losses fell for both branches. Mean loss light `0.979 -> 0.903`,
+  BEVCar `0.995 -> 0.493`. Final seed-mean ranges were `0.864-0.925` and
+  `0.475-0.515`. The paired cross-scene radar swap yielded `0.909` (light)
+  and `0.490` (BEVCar), versus aligned `0.903` and `0.493`.
+- Limitation: BEVCar's validation loss reduction survives unseen scenes but
+  does not show positive dependence on frame-aligned radar under this control.
+  The light branch shows only a small alignment effect. Frozen-teacher cosine
+  loss is not downstream segmentation accuracy, and only two validation
+  scenes were available. Capacity/filtering are still unequal; no complete
+  camera-radar fusion or motion model was tested.
+- Next: strengthen radar-dependence tests before choosing an encoder or
+  claiming radar semantic learning. Continue review in
+  [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1);
+  no automatic `main` merge.
 
 ### 2026-09-18 — Four-frame radar-only DINOv2 target comparison
 

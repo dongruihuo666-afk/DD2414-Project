@@ -22,7 +22,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / 'scripts'))
 
-from dinov2_bev_demo import build_loader  # noqa: E402
+from dinov2_bev_demo import (  # noqa: E402
+    build_loader, camera_geometry, extract_teacher_features, load_teacher,
+    make_radar_bev, radar_anchored_soft_targets,
+)
 from nets.bevcar_voxel_adapter import prepare_bevcar_voxels  # noqa: E402
 from nets.radar_encoder import (  # noqa: E402
     RadarPointEncoder, transform_radar_to_camera_bev,
@@ -43,6 +46,10 @@ def arguments():
     parser.add_argument('--samples', type=int, default=4)
     parser.add_argument('--steps', type=int, default=8)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
+    parser.add_argument('--heldout-samples', type=int, default=0,
+                        help='Spread this many samples across the mini validation split')
+    parser.add_argument('--seed-list', default='125',
+                        help='Comma-separated model initialization seeds')
     return parser.parse_args()
 
 
@@ -121,22 +128,28 @@ def radar_inputs(batch, device):
 
 
 def run_branch(name, inputs, targets, confidences, steps, learning_rate,
-               device, official_class):
-    torch.manual_seed(125)
+               device, official_class, heldout=None, seed=125):
+    torch.manual_seed(seed)
     model = RadarStudent(name, official_class).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate,
                                   weight_decay=1e-5)
     branch_inputs = [entry[0 if name == 'light' else 1] for entry in inputs]
-    def evaluate():
+    def evaluate(source_inputs, source_targets, source_confidences):
         model.eval()
         with torch.inference_mode():
             values = []
-            for radar, target, confidence in zip(branch_inputs, targets, confidences):
+            for radar, target, confidence in zip(
+                    source_inputs, source_targets, source_confidences):
                 loss, _ = semantic_loss(model(radar), target, confidence)
                 values.append(float(loss))
         return values
 
-    initial = evaluate()
+    initial = evaluate(branch_inputs, targets, confidences)
+    if heldout is not None:
+        val_inputs, val_targets, val_confidences = heldout
+        val_branch_inputs = [entry[0 if name == 'light' else 1]
+                             for entry in val_inputs]
+        val_initial = evaluate(val_branch_inputs, val_targets, val_confidences)
     model.train()
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats(device)
@@ -165,10 +178,17 @@ def run_branch(name, inputs, targets, confidences, steps, learning_rate,
         radar_gradients.append(grad_norm)
         print(f'{name} step {step + 1}/{steps}: loss={history[-1]:.6f} '
               f'encoder_grad={grad_norm:.5f}', flush=True)
-    final = evaluate()
+    final = evaluate(branch_inputs, targets, confidences)
+    if heldout is not None:
+        val_final = evaluate(val_branch_inputs, val_targets, val_confidences)
+        # Keep targets fixed but feed each frame a distant validation frame's
+        # radar. With our balanced, scene-sorted selection this swaps scenes.
+        shift = len(val_branch_inputs) // 2
+        shifted_inputs = val_branch_inputs[shift:] + val_branch_inputs[:shift]
+        val_shifted = evaluate(shifted_inputs, val_targets, val_confidences)
     torch.cuda.synchronize(device)
     elapsed = time.monotonic() - started
-    return {
+    result = {
         'trainable_parameters': sum(p.numel() for p in model.parameters()
                                     if p.requires_grad),
         'before_losses': initial,
@@ -178,6 +198,76 @@ def run_branch(name, inputs, targets, confidences, steps, learning_rate,
         'elapsed_seconds': elapsed,
         'peak_allocated_cuda_gib': torch.cuda.max_memory_allocated(device) / 1024**3,
     }
+    if heldout is not None:
+        result['heldout_before_losses'] = val_initial
+        result['heldout_after_losses'] = val_final
+        result['heldout_shifted_radar_losses'] = val_shifted
+    return result
+
+
+def validation_examples(data_root, device, count, train_records, train_scenes):
+    loader = build_loader(data_root, num_workers=0, nsweeps=1,
+                          rotate_radar_velocity=True, split='val')
+    dataset = loader.dataset
+    if count > len(dataset):
+        raise ValueError(f'only {len(dataset)} mini validation frames are available')
+    chosen = np.linspace(0, len(dataset) - 1, count, dtype=int).tolist()
+    if len(set(chosen)) != count:
+        raise AssertionError('validation selection contains duplicate indices')
+    teacher = load_teacher('dinov2_vits14', device)
+    if any(p.requires_grad for p in teacher.parameters()):
+        raise AssertionError('DINOv2 teacher must remain frozen')
+    val_inputs, val_targets, val_confidences, details = [], [], [], []
+    with torch.inference_mode():
+        for index in chosen:
+            record = dataset.ixes[int(dataset.indices[index][0])]
+            if record['token'] in train_records:
+                raise AssertionError('training/validation token overlap')
+            batch = torch.utils.data.default_collate([dataset[index]])
+            images = batch[0][:, 0]
+            features = extract_teacher_features(teacher, images, device)
+            _, pixel_from_camera, _, cameras_from_vehicle = camera_geometry(
+                batch, features.shape[-2], features.shape[-1], device
+            )
+            vox_util = utils.vox.Vox_util(
+                Z, Y, X, scene_centroid=scene_centroid.to(device),
+                bounds=bounds, assert_cube=False,
+            )
+            _, radar_vehicle, radar_camera = make_radar_bev(
+                batch, cameras_from_vehicle, vox_util, device
+            )
+            target, confidence, view_count = radar_anchored_soft_targets(
+                features, pixel_from_camera, cameras_from_vehicle,
+                radar_vehicle, radar_camera, vox_util,
+            )
+            soft_cells = int((confidence > 0.05).sum())
+            if soft_cells == 0:
+                raise RuntimeError(f'validation frame {index} has no target cells')
+            light_input, bevcar_input, counts = radar_inputs(batch, device)
+            val_inputs.append((light_input, bevcar_input))
+            val_targets.append(target[None].half())
+            val_confidences.append(confidence[None].half())
+            scene = dataset.nusc.get('scene', record['scene_token'])['name']
+            if scene in train_scenes:
+                raise AssertionError('training/validation scene overlap')
+            details.append({
+                'split_index': index, 'sample_token': record['token'],
+                'scene': scene, 'soft_target_cells': soft_cells,
+                'visible_radar_points': int((view_count > 0).sum()),
+                'radar_points_in_roi': int(counts['retained_points'][0]),
+            })
+            print(f'held-out index={index} scene={scene} soft_cells={soft_cells}',
+                  flush=True)
+            del features, target, confidence, vox_util
+    del teacher
+    torch.cuda.empty_cache()
+    if len({item['scene'] for item in details}) < 2 and count >= 2:
+        raise AssertionError('held-out examples must cover both mini validation scenes')
+    if count >= 2 and any(
+            details[index]['scene'] == details[(index + count // 2) % count]['scene']
+            for index in range(count)):
+        raise AssertionError('radar-shift control must pair different scenes')
+    return (val_inputs, val_targets, val_confidences), details
 
 
 def plot_report(report, path):
@@ -224,12 +314,78 @@ def plot_report(report, path):
     image.save(path)
 
 
+def plot_heldout(report, path):
+    image = Image.new('RGB', (1120, 715), '#f6f8fb')
+    draw = ImageDraw.Draw(image)
+    font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+    bold_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+    body = ImageFont.truetype(font_path, 17)
+    title = ImageFont.truetype(bold_path, 25)
+    small = ImageFont.truetype(font_path, 14)
+    draw.text((30, 22), 'Radar-only DINOv2: mini validation frames',
+              font=title, fill='#1c2736')
+    draw.text((30, 62),
+              f'4 training frames / {report["heldout_samples"]} unseen validation frames; '
+              f'{report["steps_per_branch"]} updates per branch',
+              font=body, fill='#455468')
+    colors = {'light': '#3678cc', 'bevcar': '#d06431'}
+    left, top, right, bottom = 80, 142, 1060, 474
+    draw.rectangle((left, top, right, bottom), fill='white',
+                   outline='#b8c1ce', width=2)
+    for value in (0.4, 0.6, 0.8, 1.0):
+        y = bottom - 25 - (value - 0.2) / 1.0 * (bottom - top - 50)
+        draw.line((left + 1, y, right - 1, y), fill='#e3e8ef', width=1)
+        draw.text((35, y - 10), f'{value:.1f}', font=small, fill='#455468')
+    n = report['heldout_samples']
+    for name in ('light', 'bevcar'):
+        all_values = np.asarray([
+            report['seed_results'][str(seed)][name]['heldout_after_losses']
+            for seed in report['seeds']
+        ])
+        values = all_values.mean(axis=0)
+        points = [(left + 25 + index * (right - left - 50) / max(n - 1, 1),
+                   bottom - 25 - (value - 0.2) / 1.0 * (bottom - top - 50))
+                  for index, value in enumerate(values)]
+        draw.line(points, fill=colors[name], width=4)
+        for index, (x, y) in enumerate(points):
+            high = all_values[:, index].max()
+            low = all_values[:, index].min()
+            y_high = bottom - 25 - (high - 0.2) / 1.0 * (bottom - top - 50)
+            y_low = bottom - 25 - (low - 0.2) / 1.0 * (bottom - top - 50)
+            draw.line((x, y_high, x, y_low), fill=colors[name], width=2)
+            draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=colors[name])
+    draw.text((80, 482), 'Held-out frame index (spread over both mini validation scenes)',
+              font=small, fill='#455468')
+    for index, name in enumerate(('light', 'bevcar')):
+        runs = [report['seed_results'][str(seed)][name]
+                for seed in report['seeds']]
+        before = np.mean([np.mean(r['heldout_before_losses']) for r in runs])
+        after = np.mean([np.mean(r['heldout_after_losses']) for r in runs])
+        after_range = [np.mean(r['heldout_after_losses']) for r in runs]
+        shifted = np.mean([np.mean(r['heldout_shifted_radar_losses'])
+                           for r in runs])
+        y = 520 + index * 55
+        draw.rectangle((80, y + 3, 101, y + 24), fill=colors[name])
+        draw.text((113, y),
+                  f'{name}: held-out mean {before:.3f} -> {after:.3f}; '
+                  f'seed range {min(after_range):.3f}-{max(after_range):.3f}; '
+                  f'shifted radar {shifted:.3f}',
+                  font=body, fill='#1c2736')
+    draw.text((30, 660),
+              'Unseen scenes; points show seed mean, whiskers show seed range. Not segmentation accuracy.',
+              font=small, fill='#a14929')
+    image.save(path)
+
+
 def main():
     args = arguments()
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is required for this small comparison')
-    if not 1 <= args.samples <= 4 or args.steps < 1:
-        raise ValueError('use 1-4 cached samples and at least one update')
+    if not 1 <= args.samples <= 4 or args.steps < 1 or args.heldout_samples < 0:
+        raise ValueError('use 1-4 cached samples, >=1 update, >=0 held-out samples')
+    seeds = [int(part.strip()) for part in args.seed_list.split(',')]
+    if not seeds or len(set(seeds)) != len(seeds):
+        raise ValueError('seed-list must have distinct integer seeds')
     torch.set_num_threads(2)
     device = torch.device('cuda')
     loader = build_loader(args.data_root, num_workers=0, nsweeps=1,
@@ -248,14 +404,34 @@ def main():
         confidences.append(confidence)
         inputs.append((light_input, bevcar_input))
         counts.append({key: int(value[0]) for key, value in info.items()})
-    official_class = official_voxelnet(args.bevcar_source)
-    results = {}
-    for branch in ('light', 'bevcar'):
-        results[branch] = run_branch(
-            branch, inputs, targets, confidences, args.steps,
-            args.learning_rate, device, official_class,
+    train_dataset = loader.dataset
+    train_records = {
+        train_dataset.ixes[int(train_dataset.indices[index][0])]['token']
+        for index in range(args.samples)
+    }
+    train_scenes = {
+        train_dataset.nusc.get('scene',
+            train_dataset.ixes[int(train_dataset.indices[index][0])]['scene_token'])['name']
+        for index in range(args.samples)
+    }
+    heldout, heldout_details = (None, [])
+    if args.heldout_samples:
+        heldout, heldout_details = validation_examples(
+            args.data_root, device, args.heldout_samples,
+            train_records, train_scenes,
         )
-        torch.cuda.empty_cache()
+    official_class = official_voxelnet(args.bevcar_source)
+    seed_results = {}
+    for seed in seeds:
+        seed_results[str(seed)] = {}
+        for branch in ('light', 'bevcar'):
+            seed_results[str(seed)][branch] = run_branch(
+                branch, inputs, targets, confidences, args.steps,
+                args.learning_rate, device, official_class,
+                heldout=heldout, seed=seed,
+            )
+            torch.cuda.empty_cache()
+    results = seed_results[str(seeds[0])]
     report = {
         'scope': 'radar-only, same frozen-DINOv2 cached targets, random weights',
         'samples': args.samples, 'steps_per_branch': args.steps,
@@ -264,19 +440,38 @@ def main():
         'supervised_bev_checkpoint_loaded': False,
         'box_loss_used': False,
         'input_counts': counts,
+        'train_sample_tokens': sorted(train_records),
+        'train_scenes': sorted(train_scenes),
+        'heldout_samples': args.heldout_samples,
+        'heldout_frames': heldout_details,
+        'seeds': seeds,
+        'seed_results': seed_results,
         'branches': results,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    path = args.output_dir / 'radar_dino_tiny_comparison.json'
+    stem = ('radar_dino_heldout_comparison' if heldout is not None
+            else 'radar_dino_tiny_comparison')
+    path = args.output_dir / f'{stem}.json'
     path.write_text(json.dumps(report, indent=2) + '\n')
-    figure = args.output_dir / 'radar_dino_tiny_comparison.png'
-    plot_report(report, figure)
+    figure = args.output_dir / f'{stem}.png'
+    if heldout is None:
+        plot_report(report, figure)
+    else:
+        plot_heldout(report, figure)
     print(f'report: {path}')
     print(f'figure: {figure}')
-    for branch, result in results.items():
-        print(f'{branch}: before={np.mean(result["before_losses"]):.6f} '
-              f'after={np.mean(result["after_losses"]):.6f} '
-              f'peak_cuda_gib={result["peak_allocated_cuda_gib"]:.3f}')
+    for seed in seeds:
+        for branch, result in seed_results[str(seed)].items():
+            print(f'seed {seed} {branch}: '
+                  f'train={np.mean(result["before_losses"]):.6f}'
+                  f'->{np.mean(result["after_losses"]):.6f} '
+                  f'peak_cuda_gib={result["peak_allocated_cuda_gib"]:.3f}')
+            if heldout is not None:
+                print(f'seed {seed} {branch} heldout: '
+                      f'{np.mean(result["heldout_before_losses"]):.6f}'
+                      f'->{np.mean(result["heldout_after_losses"]):.6f} '
+                      f'shifted_radar='
+                      f'{np.mean(result["heldout_shifted_radar_losses"]):.6f}')
     print('RADAR_DINO_TINY_COMPARISON_OK')
 
 

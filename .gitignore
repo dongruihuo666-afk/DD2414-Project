@@ -20,6 +20,8 @@ artifacts/*
 !artifacts/bevcar_voxel_adapter_audit.png
 !artifacts/radar_dino_tiny_comparison.png
 !artifacts/radar_dino_tiny_comparison.json
+!artifacts/radar_dino_heldout_comparison.png
+!artifacts/radar_dino_heldout_comparison.json
 checkpoints/
 logs_*/
 .env

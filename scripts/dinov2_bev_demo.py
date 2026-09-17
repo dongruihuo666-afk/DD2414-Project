@@ -56,7 +56,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def build_loader(data_root, num_workers, nsweeps, rotate_radar_velocity=False):
+def build_loader(data_root, num_workers, nsweeps, rotate_radar_velocity=False,
+                 split='train'):
+    if split not in ('train', 'val'):
+        raise ValueError('split must be train or val')
     data_aug_conf = {
         'crop_offset': 0,
         'resize_lim': [1.0, 1.0],
@@ -69,7 +72,7 @@ def build_loader(data_root, num_workers, nsweeps, rotate_radar_velocity=False):
         ],
         'ncams': 6,
     }
-    train_loader, _ = nuscenesdataset.compile_data(
+    train_loader, val_loader = nuscenesdataset.compile_data(
         'mini', str(data_root), data_aug_conf=data_aug_conf,
         centroid=scene_centroid_py, bounds=bounds, res_3d=(Z, Y, X),
         bsz=1, nworkers=num_workers, nworkers_val=num_workers,
@@ -78,7 +81,7 @@ def build_loader(data_root, num_workers, nsweeps, rotate_radar_velocity=False):
         do_shuffle_cams=False,
         rotate_radar_velocity=rotate_radar_velocity,
     )
-    return train_loader
+    return train_loader if split == 'train' else val_loader
 
 
 def load_teacher(model_name, device):
