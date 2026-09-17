@@ -14,8 +14,11 @@ label-free student experiment using the **legacy radar path**. The new radar
 encoder has passed integration tests but has **not** been trained against the
 DINO target. No motion head or full-dataset self-supervised evaluation exists.
 
-The collaboration branch is `dd2414-mini-baseline`. Check the GitHub PR state
-before assuming that its commits are on `main`.
+The collaboration branch is `dd2414-mini-baseline`. Each completed,
+project-scoped change is pushed there so teammates can follow the work. Check
+the GitHub PR state before assuming that its commits are on `main`. Merge only
+after the bounded feature and its checks are complete and the team has reviewed
+the PR; the routine per-task push does not merge anything.
 
 ## Data and pretrained weights
 
@@ -81,11 +84,12 @@ after the new opt-in path was added.
 
 `AGENTS.md` gives repository-wide instructions to Codex. The project-local
 `.codex/hooks.json` uses a read-only `Stop` hook to notice uncommitted local
-changes and ask for one final handoff review. On each machine, trust the
+changes **or committed work ahead of the upstream feature branch** and ask for
+one final handoff/push review. On each machine, trust the
 project's `.codex/` configuration and review the hook with Codex `/hooks`;
 untrusted hooks are skipped. The hook never performs a Git write or contacts
-GitHub. It does not fire for a clean worktree and it does not turn a read-only
-question into permission to edit or push.
+GitHub. It remains quiet when the worktree is clean and there are no unpushed
+commits. It does not turn a read-only question into permission to edit or push.
 
 After a material code or experiment change, the responsible agent should:
 
@@ -93,12 +97,19 @@ After a material code or experiment change, the responsible agent should:
 2. list the exact changed paths, test command and observed result, limitations,
    and next action;
 3. inspect `git status`, stage only in-scope files, commit with an English
-   message, and push the collaboration branch if authorized; and
+   message, push the collaboration branch as the default completion step, and
+   verify the remote branch head; and
 4. give teammates the commit/PR link and any blocked or omitted step.
 
 The agent should do this **before** declaring the task complete; a lifecycle
 hook is a fallback reminder, not a guarantee that interrupted or offline work
 can be published.
+
+Routine pushes to the feature branch are already authorized by the project
+owner; another conversational confirmation is unnecessary. Codex may still
+need to follow an environment-level network or filesystem approval. This
+workflow does not authorize automatic `main` merges, force-pushes, or uploading
+unrelated local work.
 
 ## Next bounded task
 
@@ -116,6 +127,21 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Push-on-feature-branch workflow
+
+- Change: clarified that each completed project change is committed and pushed
+  to the active feature branch without a new conversational permission request;
+  the `Stop` reminder now also detects commits ahead of the upstream branch.
+- Reason: keep teammates' clones and coding agents synchronized while reserving
+  `main` for reviewed, completed features.
+- Verification: hook JSON, Python compile, simulated dirty/continued events,
+  and a real ahead-of-upstream check before the push of this documentation
+  change.
+- Limitation: the hook itself never pushes and cannot bypass Codex environment
+  approvals or guarantee publication while offline.
+- Next: finish and review the radar+DINO experiment before deciding when to
+  merge its feature branch into `main`.
 
 ### 2026-09-18 — Technical handoff and Codex workflow
 

@@ -19,12 +19,18 @@ pipeline, experiments, or project documentation.
   docs when necessary.
 - Check `git status` before staging. Do not stage unrelated user/teammate files,
   datasets, checkpoints, cached DINO features, credentials, or logs.
-- Run checks proportionate to the change, then commit and push the scoped work
-  to the current collaboration branch when authorized and connectivity allows.
-  If push is blocked, record the local commit and explain the blocker. Never
-  merge a PR or force-push solely because of this instruction.
+- Treat project-scoped commits and pushes to the current feature branch as
+  authorized by the project owner. After proportionate checks, commit and push
+  each completed repository-changing task to that branch without requesting
+  another conversational confirmation. Verify the remote branch received the
+  commit. If the environment requires a tool approval, follow that boundary;
+  if a push is blocked, report the local commit and blocker.
+- Do not develop directly on `main`, force-push, or merge a PR as part of the
+  per-task push routine. Merge a feature branch into `main` only after the
+  bounded feature and its checks are complete and the team has reviewed it.
 - Read-only questions do not authorize edits or GitHub writes. For those turns,
   use the existing handoff document and leave the repository unchanged.
 
-The repository-local `Stop` hook is a reminder for unfinished local changes,
-not a replacement for this review process or an automatic Git push.
+The repository-local `Stop` hook reminds the agent about unfinished local
+changes or commits that are ahead of the feature branch's upstream. It never
+pushes on its own and does not replace reviewing the exact files being sent.
