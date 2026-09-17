@@ -20,7 +20,10 @@ reduced target loss, but a cross-scene radar-swap control found little or no
 radar-alignment effect. Further no-radar and measurement ablations found that
 the target loss does not require radar measurements in either branch and does
 not require radar at all for the BEVCar branch. The encoders have not been
-compared in camera fusion.
+compared under a matched camera-fusion training budget. A separate **supervised**
+Simple-BEV + BEVCar mini demo now shows a modest radar-dependent IoU gain on
+adaptation-held-out frames using box-derived labels; it does not solve the
+self-supervised objective.
 No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
@@ -77,6 +80,7 @@ legacy-radar Simple-BEV student ----------------> cosine feature loss
 | Radar-only frozen-DINOv2 comparison | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60` with cached targets and external BEVCar | Same-frame cosine loss: light 0.986 -> 0.890, BEVCar 1.002 -> 0.376; finite encoder gradients | Four training frames only; different capacity/filtering; not held-out accuracy or camera-radar fusion |
 | Radar-only mini validation | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 --heldout-samples 12 --seed-list 125,126,127` | 12 unseen frames, 2 scenes, 3 seeds: loss light 0.979 -> 0.903, BEVCar 0.995 -> 0.493; all 36 seed-frame losses fell | Cross-scene radar swap: light 0.909, BEVCar 0.490, versus aligned 0.903/0.493; no robust BEVCar radar-alignment evidence |
 | Fixed-model radar ablation | Add `--diagnose-radar` to the validation command | Correct/no-radar loss light 0.903/0.911; BEVCar 0.493/0.489; zeroing or mixing radar numeric values barely changes either | Current DINO target loss does not prove use of radar measurements; BEVCar needs no radar to retain its low loss |
+| Supervised BEVCar fusion demo | `bash scripts/run_bevcar_supervised_mini.sh --steps 80 --seed 125` and repeat seeds 126/127, then `python scripts/summarize_bevcar_supervised.py` | Mean 12-frame IoU across 3 seeds: correct radar 0.180, empty 0.166, wrong scene 0.171; SVFE/CML gradients nonzero | Human-box-derived labels; 4-frame adaptation, camera/decoder pretrained on broader nuScenes; not self-supervised or matched-budget benchmark |
 
 Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
 each plot and its caveats. The official legacy radar checkpoint still loads
@@ -127,12 +131,13 @@ unrelated local work.
 
 ## Next bounded task
 
-Keep the lightweight encoder unchanged. Investigate why the current DINOv2
-target loss is insensitive to radar removal/measurements. Check prediction
-sensitivity and add an objective or control in which matched radar must beat
-empty and mismatched radar before claiming semantic radar learning. Only then
-compare both branches inside camera-radar fusion with fixed data/update
-budgets. Resolve capacity, feature/filter, frame, and memory differences.
+Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
+as a small positive radar-use control, not a solution to DINOv2 insensitivity.
+Investigate why the self-supervised target loss ignores radar removal and
+measurements; test output-map sensitivity and add an objective/control in
+which matched radar beats empty and mismatched radar. Any architecture claim
+requires matched data/update budgets and a larger genuinely unseen split.
+Resolve capacity, feature/filter, frame, and memory differences.
 Do not use BEVCar's supervised checkpoint for a label-free claim, and do not
 add a motion head yet.
 
@@ -143,6 +148,40 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Supervised Simple-BEV + BEVCar meeting demo
+
+- Change: added `nets/bevcar_radar_bridge.py` to import official external
+  VoxelNet and project its output into the existing Simple-BEV experimental
+  fusion interface. Added `scripts/bevcar_supervised_mini.py`, its shell
+  launcher, `scripts/summarize_bevcar_supervised.py`, three-seed JSON metrics,
+  a representative prediction/radar/label panel, and a three-seed summary
+  figure; updated `.gitignore`, `README.md`, `RADAR_ENCODER_NOTES.md`, and this
+  handoff. The official legacy and lightweight paths remain unchanged.
+- Reason: separate the earlier self-supervised objective failure from the
+  question of whether BEVCar VoxelNet can help under Simple-BEV's original
+  human-box-derived labels. Transfer official camera-only encoder/decoder and
+  image-fusion weights, freeze camera/decoder, train new radar/fusion layers.
+- Verification: `BEVCAR_SOURCE_DIR=<official-checkout> bash
+  scripts/run_bevcar_supervised_mini.sh --steps 80 --train-samples 4
+  --val-samples 12 --seed <125|126|127>` passed for all three seeds;
+  `python scripts/summarize_bevcar_supervised.py` produced the summary. Mean
+  12-frame validation IoU was correct radar `0.180`, same fused model with
+  empty radar `0.166`, wrong-scene radar `0.171`, and unadapted camera-only
+  context `0.121`. Correct radar beat empty in 29/36 seed-frame cases and
+  wrong radar in 30/36. SVFE and CML gradient norms were positive in each
+  run; peak allocated CUDA memory was 3.623 GiB. A one-step smoke test passed.
+- Limitations: supervised labels are derived from human 3D boxes; DINOv2 is
+  absent. Only four mini frames were used for adaptation; the 12 validation
+  frames are scene-disjoint from that adaptation, but the official camera
+  checkpoint was pretrained on broader nuScenes data. The unadapted camera
+  model is not a matched-budget comparison. IoU gains are modest and not
+  universal across frames. One radar sweep and a custom adapter differ from
+  released BEVCar preprocessing; no BEVCar supervised weights were used.
+- Next: keep this as the supervised meeting baseline and fix the separate
+  self-supervised objective/controls before claiming label-free radar learning.
+  Continue review in [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1);
+  do not merge `main` as a routine push step.
 
 ### 2026-09-18 — Fixed-model radar-input ablation
 

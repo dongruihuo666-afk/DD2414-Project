@@ -382,3 +382,64 @@ The result is consistent with a statistical or spatial shortcut. Before
 expanding the encoder, test prediction sensitivity directly and redesign the
 objective/control so that matched radar must outperform empty or mismatched
 radar. Do not claim radar-image semantic alignment from these losses alone.
+
+## Supervised Simple-BEV + official BEVCar radar encoder: meeting demo
+
+The DINOv2 ablation above diagnoses the **self-supervised objective**, not an
+intrinsic inability of BEVCar's VoxelNet to use radar. As a separate,
+explicitly **supervised** check, `nets/bevcar_radar_bridge.py` imports the
+official BEVCar `VoxelNet` from an external checkout, applies our documented
+mini-frame voxel adapter, and projects its 128-channel BEV output to the
+existing Simple-BEV 64-channel experimental fusion interface. Official
+camera-only Simple-BEV encoder/decoder weights and the image part of its
+fusion convolution are transferred; the camera and decoder are frozen. The
+new radar VoxelNet, 1x1 projection, and fusion convolution are trainable.
+No BEVCar supervised checkpoint or DINOv2 teacher is loaded in this test.
+
+The objective is Simple-BEV's original human-3D-box-derived BEV segmentation,
+center and offset loss. Four mini training frames from `scene-0757` receive
+80 updates. Twelve mini validation frames are spread evenly over
+`scene-0916` and `scene-0103`. A single trained model is evaluated with the
+same camera and label but (a) correct radar, (b) all-zero radar, or (c) radar
+from the other validation scene. The unadapted official camera-only model is
+reported separately as context, **not** as a matched-budget architecture
+comparison. Runs use three initialization seeds (125, 126, 127).
+
+```bash
+BEVCAR_SOURCE_DIR=/path/to/BEVCar bash scripts/run_bevcar_supervised_mini.sh \
+  --steps 80 --seed 125
+BEVCAR_SOURCE_DIR=/path/to/BEVCar bash scripts/run_bevcar_supervised_mini.sh \
+  --steps 80 --seed 126
+BEVCAR_SOURCE_DIR=/path/to/BEVCar bash scripts/run_bevcar_supervised_mini.sh \
+  --steps 80 --seed 127
+python scripts/summarize_bevcar_supervised.py
+```
+
+Mean validation IoU across the three seeds:
+
+| Unadapted camera | Fused, correct radar | Same fused model, no radar | Same fused model, wrong-scene radar |
+| ---: | ---: | ---: | ---: |
+| 0.121 | 0.180 | 0.166 | 0.171 |
+
+Correct radar beats empty radar on 29/36 seed-frame comparisons and wrong
+radar on 30/36. Mean supervised segmentation loss is 4.843 with correct
+radar versus 4.998 empty and 4.955 wrong-scene radar. The official BEVCar
+point-feature (SVFE) and 3D-convolution (CML) layers had finite nonzero
+gradients in all three runs. Peak PyTorch CUDA allocation was 3.623 GiB.
+Pure training took about 13 seconds per 80-update run on the local GPU;
+data preparation and validation are additional.
+
+![Three-seed supervised BEVCar meeting summary](artifacts/bevcar_supervised_summary.png)
+
+![Representative supervised BEVCar predictions](artifacts/bevcar_supervised_mini.png)
+
+This supports a **modest radar-dependent supervised effect** in this tiny
+setup; it does **not** repair the self-supervised objective or establish that
+BEVCar is better than Simple-BEV's released radar pipeline. Only four mini
+frames were used for adaptation; the official camera/decoder checkpoint had
+broader nuScenes training, so these 12 scenes/frames are held out from the
+mini adaptation, not necessarily from its pretraining. IoU changes are small
+and some individual frames get worse. BEVCar's released preprocessing and
+our camera-frame adapter differ, and this run uses one radar sweep. A fair
+architecture benchmark needs matched training/data/compute and a larger
+genuinely unseen split.

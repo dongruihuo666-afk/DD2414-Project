@@ -41,6 +41,11 @@ from the upstream code.
 - A fixed-model radar ablation found that removing all radar barely changes
   lightweight loss and does not worsen BEVCar loss. The current target loss
   therefore cannot substantiate a radar-dependent semantic learning claim.
+- Added a separate **supervised** Simple-BEV + official BEVCar VoxelNet mini
+  demo using human-box-derived labels. On 12 adaptation-held-out mini frames,
+  correct radar improved mean IoU over empty/wrong radar across three seeds;
+  this does not resolve the self-supervised objective or constitute a matched
+  benchmark.
 
 ![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
 
@@ -60,7 +65,8 @@ pass a one-frame isolated smoke test. A radar-only, same-target four-frame
 optimization comparison now passes. The held-out target-loss improvement
 survives two scenes and three seeds, but removal and swap controls do not
 establish radar-dependent semantics. Revise the objective/control before
-claiming radar learning or extending camera fusion and motion.
+claiming self-supervised radar learning. A separate supervised BEVCar fusion
+demo now gives a small radar-dependent IoU gain on mini; motion remains open.
 
 ## Quick reproduction
 
@@ -84,6 +90,8 @@ bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
     --heldout-samples 12 --seed-list 125,126,127
 bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
     --heldout-samples 12 --seed-list 125,126,127 --diagnose-radar
+BEVCAR_SOURCE_DIR=/path/to/BEVCar bash scripts/run_bevcar_supervised_mini.sh \
+    --steps 80 --seed 125
 ```
 
 Checkpoints, datasets, cached teacher features, logs, and generated model files

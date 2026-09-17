@@ -24,6 +24,12 @@ artifacts/*
 !artifacts/radar_dino_heldout_comparison.json
 !artifacts/radar_dino_ablation.png
 !artifacts/radar_dino_ablation.json
+!artifacts/bevcar_supervised_mini.png
+!artifacts/bevcar_supervised_mini.json
+!artifacts/bevcar_supervised_mini_seed126.json
+!artifacts/bevcar_supervised_mini_seed127.json
+!artifacts/bevcar_supervised_summary.png
+!artifacts/bevcar_supervised_summary.json
 checkpoints/
 logs_*/
 .env
