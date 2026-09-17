@@ -33,6 +33,7 @@ from the upstream code.
 
 ## Project documentation
 
+- [Technical handoff and work log](PROJECT_HANDOFF.md)
 - [Project progress and meeting report](PROJECT_PROGRESS.md)
 - [Local environment and reproduction commands](SETUP_LOCAL.md)
 - [Simple-BEV architecture notes](SIMPLE_BEV_NOTES.md)

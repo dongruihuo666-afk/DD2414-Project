@@ -1,0 +1,135 @@
+# DD2414 project technical handoff
+
+This is the short, continuously updated entry point for teammates and coding
+agents. `README.md` introduces the repository; `PROJECT_PROGRESS.md` contains
+the broader experiment report; this file records the current implementation,
+reproduction method, evidence, limitations, and handoff decisions.
+
+## Current state
+
+The official Simple-BEV camera-only and camera-plus-radar pipelines run on
+nuScenes v1.0-mini. A separate, opt-in radar point encoder has been integrated
+with the camera BEV feature. Frozen DINOv2 targets have driven a four-sample
+label-free student experiment using the **legacy radar path**. The new radar
+encoder has passed integration tests but has **not** been trained against the
+DINO target. No motion head or full-dataset self-supervised evaluation exists.
+
+The collaboration branch is `dd2414-mini-baseline`. Check the GitHub PR state
+before assuming that its commits are on `main`.
+
+## Data and pretrained weights
+
+| Component | Exact choice and provenance | Local role |
+| --- | --- | --- |
+| nuScenes | Official `v1.0-mini` archive from [nuScenes](https://www.nuscenes.org/tutorials/nuscenes_tutorial.html), not a "mini-batch" | 10 scenes / 404 key samples; this loader exposes 323 train and 81 validation samples |
+| Simple-BEV | Official upstream [aharley/simple_bev](https://github.com/aharley/simple_bev) base commit `be46f0ef71960c233341852f3d9bc3677558ab6d` | Official camera and camera+radar checkpoints for baseline inference and supervised sanity checks |
+| DINOv2 teacher | Meta's pretrained [`dinov2_vits14`](https://github.com/facebookresearch/dinov2#pretrained-models) ViT-S/14 backbone, **without registers or a task head**; weight file [`dinov2_vits14_pretrain.pth`](https://dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth) | Extracts 384-channel patch features; `eval()` and `requires_grad_(False)` keep every teacher parameter frozen |
+| New radar point encoder | `nets/radar_encoder.py`, randomly initialized in the integration smoke test | Converts seven numeric radar fields to a `(B,64,200,200)` BEV feature |
+
+The DINO code loads from a local PyTorch Hub cache if present, otherwise from
+`facebookresearch/dinov2`. **We did not fine-tune DINOv2 on nuScenes.** The
+adaptation is geometric: camera calibration and measured radar range place
+frozen image features into soft BEV target regions. The trainable student is
+Simple-BEV plus a semantic projection head. In the four-sample experiment, the
+student starts without a supervised BEV checkpoint, but its original radar
+input path is enabled. Distinguish this from the later *new* radar encoder.
+
+Datasets, pretrained weights, official checkpoints, generated student
+checkpoints, logs, and raw teacher caches are local dependencies excluded from
+Git; teammates must obtain them separately. See `SETUP_LOCAL.md`.
+
+## Implemented pipeline and evidence
+
+```text
+six cameras -> calibrated camera BEV -------------------------+
+                                                          fusion -> shared BEV
+radar points -> new 7-field encoder -> 64-channel radar BEV --+
+
+separate label-free experiment:
+six cameras -> frozen DINOv2 patch features --+
+radar range + calibration --------------------+-> soft BEV targets
+legacy-radar Simple-BEV student ----------------> cosine feature loss
+```
+
+| Check | Reproduce | Observed result | Interpretation |
+| --- | --- | --- | --- |
+| Official camera/radar demo | `./scripts/run_meeting_demo.sh` | One mini frame displayed with both predictions and radar positions | Visual coordinate sanity check, not a benchmark |
+| Official fixed subset | `./scripts/run_mini_subset_eval.sh` | Mean IoU 0.121 camera vs. 0.291 camera+radar on 10 fixed validation samples; radar higher on 10/10 | Small-subset official-checkpoint comparison; checkpoints were separately trained |
+| Supervised loop | `./scripts/run_baseline_overfit.sh` | Four training-sample IoU 0.273 -> 0.803 | Uses human-box-derived labels; overfit check only |
+| DINO target geometry | `./scripts/run_dinov2_bev_demo.sh` | Frozen teacher output `(6,384,14,24)`; radar-anchored local BEV targets | No box-derived target/loss |
+| Label-free student | `./scripts/run_dinov2_mini4.sh` | Four-sample mean DINO cosine loss 1.023 -> 0.196 over 60 updates | Trains the legacy-radar student, **not** the new radar encoder; memorization only |
+| New radar encoder | `./scripts/run_radar_point_encoder_test.sh` | 403 returns -> 125 quality/ROI points -> `(1,64,200,200)` | Point transform, pooling, empty input, order invariance, and gradient checks pass |
+| New fusion integration | `./scripts/run_radar_fusion_test.sh` | Fused `(1,128,200,200)`; gradient norm 0.031452; empty radar and checkpoint reload pass; peak 3.440 GiB | Random-weight engineering check; no accuracy claim |
+
+Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
+each plot and its caveats. The official legacy radar checkpoint still loads
+after the new opt-in path was added.
+
+## Reproduction notes
+
+1. Follow `SETUP_LOCAL.md` to install the `simplebev` environment, obtain
+   nuScenes mini, and obtain the official Simple-BEV checkpoints. Shell scripts
+   accept `CONDA_ROOT`, `CONDA_ENV`, `NUSCENES_ROOT`, and `OUTPUT_DIR` overrides.
+2. Start with `./scripts/check_environment.sh` and
+   `./scripts/smoke_test_mini.sh --data-only`.
+3. Run the bounded scripts in the table above for the specific pipeline under
+   investigation. They are not a single end-to-end benchmark command.
+4. Check `git status`, branch/PR state, and test outputs before reporting a
+   result. Small-sample training curves must not be described as validation.
+
+## Agent handoff workflow
+
+`AGENTS.md` gives repository-wide instructions to Codex. The project-local
+`.codex/hooks.json` uses a read-only `Stop` hook to notice uncommitted local
+changes and ask for one final handoff review. On each machine, trust the
+project's `.codex/` configuration and review the hook with Codex `/hooks`;
+untrusted hooks are skipped. The hook never performs a Git write or contacts
+GitHub. It does not fire for a clean worktree and it does not turn a read-only
+question into permission to edit or push.
+
+After a material code or experiment change, the responsible agent should:
+
+1. update this file's `Current state` and append one dated work-log entry;
+2. list the exact changed paths, test command and observed result, limitations,
+   and next action;
+3. inspect `git status`, stage only in-scope files, commit with an English
+   message, and push the collaboration branch if authorized; and
+4. give teammates the commit/PR link and any blocked or omitted step.
+
+The agent should do this **before** declaring the task complete; a lifecycle
+hook is a fallback reminder, not a guarantee that interrupted or offline work
+can be published.
+
+## Next bounded task
+
+Train the *new* radar-encoder-plus-camera BEV path against the already
+implemented frozen-DINOv2 target on a fixed tiny subset. Compare with the
+legacy radar student using the same examples, target cache, update budget,
+and initialisation policy. Record DINO loss, nonzero radar-encoder gradients,
+parameter change, memory, empty-radar behavior, and a held-out-sample check.
+Do not add a motion head until this experiment is stable.
+
+## Work log and update template
+
+Append a dated entry here for each material repository-changing task. Keep the
+entry concise and factual: changed paths, reason, exact command(s), observed
+result, limitation, next action, commit/PR link or push blocker. Update the
+`Current state` section when a milestone changes. Do not duplicate entire
+chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Technical handoff and Codex workflow
+
+- Change: documented dataset/DINO checkpoint provenance, frozen-teacher versus
+  trainable-student roles, reproducible experiments, and current radar-fusion
+  status; added repository-level agent instructions and a read-only `Stop` hook
+  that reminds Codex to review unfinished local changes.
+- Reason: let teammates and their coding agents distinguish completed results
+  from the next experiment and find the exact reproduction commands.
+- Verification: `python3 -m json.tool .codex/hooks.json`, Python compile,
+  simulated dirty/continued `Stop` events, Markdown link inspection, and
+  `git diff --check` passed. The simulated dirty event requested one handoff
+  continuation; a second event with `stop_hook_active=true` returned `{}`.
+- Limitation: hooks must be trusted in each Codex installation and cannot
+  safely auto-push arbitrary local changes; read-only chats should not mutate
+  the repository.
+- Next: run the new radar+DINO tiny-subset experiment after team review.
