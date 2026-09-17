@@ -38,6 +38,9 @@ from the upstream code.
   and three random seeds. Both reduced target loss, but swapping radar inputs
   across scenes barely changed BEVCar's loss; radar-specific learning is not
   established.
+- A fixed-model radar ablation found that removing all radar barely changes
+  lightweight loss and does not worsen BEVCar loss. The current target loss
+  therefore cannot substantiate a radar-dependent semantic learning claim.
 
 ![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
 
@@ -54,9 +57,10 @@ The standalone lightweight radar encoder is connected to the camera BEV
 feature and passes shape, forward, gradient, empty-radar, checkpoint, and
 8 GiB memory checks. The separate BEVCar adapter and official radar encoder
 pass a one-frame isolated smoke test. A radar-only, same-target four-frame
-optimization comparison now passes. A two-scene held-out target-loss check
-also passes, but a radar-swap control is inconclusive for radar-specific
-semantics; camera fusion and downstream behavior remain open before motion.
+optimization comparison now passes. The held-out target-loss improvement
+survives two scenes and three seeds, but removal and swap controls do not
+establish radar-dependent semantics. Revise the objective/control before
+claiming radar learning or extending camera fusion and motion.
 
 ## Quick reproduction
 
@@ -78,6 +82,8 @@ bash scripts/run_bevcar_encoder_smoke.sh --device cuda
 bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60
 bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
     --heldout-samples 12 --seed-list 125,126,127
+bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
+    --heldout-samples 12 --seed-list 125,126,127 --diagnose-radar
 ```
 
 Checkpoints, datasets, cached teacher features, logs, and generated model files

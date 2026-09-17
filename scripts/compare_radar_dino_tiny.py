@@ -50,6 +50,8 @@ def arguments():
                         help='Spread this many samples across the mini validation split')
     parser.add_argument('--seed-list', default='125',
                         help='Comma-separated model initialization seeds')
+    parser.add_argument('--diagnose-radar', action='store_true',
+                        help='Evaluate radar-removal and measurement ablations')
     return parser.parse_args()
 
 
@@ -86,6 +88,39 @@ class RadarStudent(nn.Module):
         feature = (self.encoder(*radar_input) if isinstance(radar_input, tuple)
                    else self.encoder(radar_input))
         return self.head(self.projection(feature))
+
+
+def ablate_radar(radar, branch, mode):
+    """Change only the test-time radar input; keep weights and targets fixed."""
+    if branch == 'light':
+        if mode == 'empty':
+            return torch.zeros_like(radar)
+        modified = radar.clone()
+        numeric_columns = (5, 8, 9, 18)
+        if mode == 'geometry_only':
+            modified[..., list(numeric_columns)] = 0
+        elif mode == 'permuted_measurements':
+            mask = radar[..., :3].abs().sum(dim=-1).gt(0)
+            for column in numeric_columns:
+                values = radar[0, mask[0], column]
+                modified[0, mask[0], column] = values.flip(0)
+        else:
+            raise ValueError(mode)
+        return modified
+    features, coords, counts = radar
+    if mode == 'empty':
+        return (torch.zeros_like(features), torch.zeros_like(coords),
+                torch.zeros_like(counts))
+    modified = features.clone()
+    if mode == 'geometry_only':
+        modified[..., 3:6] = 0
+    elif mode == 'permuted_measurements':
+        valid = features[..., 6].gt(0)
+        metadata = modified[..., 3:6]
+        metadata[valid] = metadata[valid].flip(0)
+    else:
+        raise ValueError(mode)
+    return modified, coords, counts
 
 
 def cached_target(path, batch, device):
@@ -128,7 +163,8 @@ def radar_inputs(batch, device):
 
 
 def run_branch(name, inputs, targets, confidences, steps, learning_rate,
-               device, official_class, heldout=None, seed=125):
+               device, official_class, heldout=None, seed=125,
+               diagnose_radar=False):
     torch.manual_seed(seed)
     model = RadarStudent(name, official_class).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate,
@@ -186,6 +222,14 @@ def run_branch(name, inputs, targets, confidences, steps, learning_rate,
         shift = len(val_branch_inputs) // 2
         shifted_inputs = val_branch_inputs[shift:] + val_branch_inputs[:shift]
         val_shifted = evaluate(shifted_inputs, val_targets, val_confidences)
+        if diagnose_radar:
+            ablations = {}
+            for mode in ('empty', 'geometry_only', 'permuted_measurements'):
+                changed = [ablate_radar(radar, name, mode)
+                           for radar in val_branch_inputs]
+                ablations[mode] = evaluate(
+                    changed, val_targets, val_confidences
+                )
     torch.cuda.synchronize(device)
     elapsed = time.monotonic() - started
     result = {
@@ -202,6 +246,8 @@ def run_branch(name, inputs, targets, confidences, steps, learning_rate,
         result['heldout_before_losses'] = val_initial
         result['heldout_after_losses'] = val_final
         result['heldout_shifted_radar_losses'] = val_shifted
+        if diagnose_radar:
+            result['radar_ablation_losses'] = ablations
     return result
 
 
@@ -377,12 +423,64 @@ def plot_heldout(report, path):
     image.save(path)
 
 
+def plot_diagnostic(report, path):
+    """Compact meeting figure: lower cosine loss is better in every cell."""
+    image = Image.new('RGB', (1120, 625), '#f6f8fb')
+    draw = ImageDraw.Draw(image)
+    base = '/usr/share/fonts/truetype/dejavu/'
+    body = ImageFont.truetype(base + 'DejaVuSans.ttf', 17)
+    bold = ImageFont.truetype(base + 'DejaVuSans-Bold.ttf', 24)
+    small = ImageFont.truetype(base + 'DejaVuSans.ttf', 14)
+    draw.text((30, 25), 'Does the trained radar model use the right radar?',
+              font=bold, fill='#1c2736')
+    draw.text((30, 66), '12 unseen frames / 2 scenes / 3 seeds; same weights and DINOv2 targets in every column',
+              font=body, fill='#455468')
+    names = (
+        ('aligned', 'Correct radar'),
+        ('cross_scene', 'Other scene'),
+        ('geometry_only', 'Positions only'),
+        ('permuted_measurements', 'Mixed values'),
+        ('empty', 'No radar'),
+    )
+    column_x = (225, 400, 575, 750, 925)
+    draw.rectangle((30, 130, 1090, 455), fill='white', outline='#b8c1ce', width=2)
+    for (_, label), x in zip(names, column_x):
+        draw.text((x, 155), label, font=small, fill='#455468')
+    for row, branch in enumerate(('light', 'bevcar')):
+        y = 235 + row * 125
+        draw.text((55, y + 18), branch, font=body,
+                  fill='#3678cc' if branch == 'light' else '#d06431')
+        runs = [report['seed_results'][str(seed)][branch]
+                for seed in report['seeds']]
+        values = {
+            'aligned': [np.mean(r['heldout_after_losses']) for r in runs],
+            'cross_scene': [np.mean(r['heldout_shifted_radar_losses']) for r in runs],
+        }
+        for key in ('geometry_only', 'permuted_measurements', 'empty'):
+            values[key] = [np.mean(r['radar_ablation_losses'][key]) for r in runs]
+        for (key, _), x in zip(names, column_x):
+            mean = np.mean(values[key])
+            draw.text((x, y), f'{mean:.3f}', font=bold, fill='#1c2736')
+            draw.text((x, y + 37),
+                      f'{min(values[key]):.3f}-{max(values[key]):.3f}',
+                      font=small, fill='#68778a')
+    draw.text((40, 480), 'Large loss changes after removing an input indicate dependence on it.',
+              font=body, fill='#1c2736')
+    draw.text((40, 516), 'Small differences can arise from noise; these are test-time interventions, not retraining.',
+              font=body, fill='#1c2736')
+    draw.text((40, 574), 'Frozen-teacher cosine loss is not segmentation or detection accuracy.',
+              font=small, fill='#a14929')
+    image.save(path)
+
+
 def main():
     args = arguments()
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is required for this small comparison')
     if not 1 <= args.samples <= 4 or args.steps < 1 or args.heldout_samples < 0:
         raise ValueError('use 1-4 cached samples, >=1 update, >=0 held-out samples')
+    if args.diagnose_radar and args.heldout_samples < 2:
+        raise ValueError('radar diagnosis requires at least two held-out frames')
     seeds = [int(part.strip()) for part in args.seed_list.split(',')]
     if not seeds or len(set(seeds)) != len(seeds):
         raise ValueError('seed-list must have distinct integer seeds')
@@ -429,6 +527,7 @@ def main():
                 branch, inputs, targets, confidences, args.steps,
                 args.learning_rate, device, official_class,
                 heldout=heldout, seed=seed,
+                diagnose_radar=args.diagnose_radar,
             )
             torch.cuda.empty_cache()
     results = seed_results[str(seeds[0])]
@@ -444,17 +543,21 @@ def main():
         'train_scenes': sorted(train_scenes),
         'heldout_samples': args.heldout_samples,
         'heldout_frames': heldout_details,
+        'diagnose_radar': args.diagnose_radar,
         'seeds': seeds,
         'seed_results': seed_results,
         'branches': results,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    stem = ('radar_dino_heldout_comparison' if heldout is not None
-            else 'radar_dino_tiny_comparison')
+    stem = ('radar_dino_ablation' if args.diagnose_radar else
+            'radar_dino_heldout_comparison' if heldout is not None else
+            'radar_dino_tiny_comparison')
     path = args.output_dir / f'{stem}.json'
     path.write_text(json.dumps(report, indent=2) + '\n')
     figure = args.output_dir / f'{stem}.png'
-    if heldout is None:
+    if args.diagnose_radar:
+        plot_diagnostic(report, figure)
+    elif heldout is None:
         plot_report(report, figure)
     else:
         plot_heldout(report, figure)
@@ -472,6 +575,11 @@ def main():
                       f'->{np.mean(result["heldout_after_losses"]):.6f} '
                       f'shifted_radar='
                       f'{np.mean(result["heldout_shifted_radar_losses"]):.6f}')
+                if args.diagnose_radar:
+                    print('  ablations: ' + ' '.join(
+                        f'{mode}={np.mean(values):.6f}'
+                        for mode, values in result['radar_ablation_losses'].items()
+                    ))
     print('RADAR_DINO_TINY_COMPARISON_OK')
 
 

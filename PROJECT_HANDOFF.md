@@ -17,7 +17,10 @@ BEVCar encoder passed a one-frame CUDA smoke test. Both radar encoders have
 now been optimized **standalone** on the same four cached frozen-DINOv2
 targets. A standalone 12-frame, two-scene validation check with three seeds
 reduced target loss, but a cross-scene radar-swap control found little or no
-radar-alignment effect. The encoders have not been compared in camera fusion.
+radar-alignment effect. Further no-radar and measurement ablations found that
+the target loss does not require radar measurements in either branch and does
+not require radar at all for the BEVCar branch. The encoders have not been
+compared in camera fusion.
 No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
@@ -73,6 +76,7 @@ legacy-radar Simple-BEV student ----------------> cosine feature loss
 | Official BEVCar radar encoder | `bash scripts/run_bevcar_encoder_smoke.sh --device cuda` with external BEVCar checkout | 403 returns -> 251 in range -> 243 voxels -> `(1,128,200,200)`; finite nonzero gradients; peak allocated CUDA 0.729 GiB | Isolated random-weight encoder only; no camera fusion, training, accuracy, or checkpoint compatibility claim |
 | Radar-only frozen-DINOv2 comparison | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60` with cached targets and external BEVCar | Same-frame cosine loss: light 0.986 -> 0.890, BEVCar 1.002 -> 0.376; finite encoder gradients | Four training frames only; different capacity/filtering; not held-out accuracy or camera-radar fusion |
 | Radar-only mini validation | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 --heldout-samples 12 --seed-list 125,126,127` | 12 unseen frames, 2 scenes, 3 seeds: loss light 0.979 -> 0.903, BEVCar 0.995 -> 0.493; all 36 seed-frame losses fell | Cross-scene radar swap: light 0.909, BEVCar 0.490, versus aligned 0.903/0.493; no robust BEVCar radar-alignment evidence |
+| Fixed-model radar ablation | Add `--diagnose-radar` to the validation command | Correct/no-radar loss light 0.903/0.911; BEVCar 0.493/0.489; zeroing or mixing radar numeric values barely changes either | Current DINO target loss does not prove use of radar measurements; BEVCar needs no radar to retain its low loss |
 
 Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
 each plot and its caveats. The official legacy radar checkpoint still loads
@@ -123,11 +127,12 @@ unrelated local work.
 
 ## Next bounded task
 
-Keep the lightweight encoder unchanged. Investigate the weak/absent radar
-alignment effect with stronger ablations or a downstream objective before
-claiming semantic radar learning. Then compare both branches inside
-camera-radar fusion with fixed data/update budgets. Resolve capacity,
-feature/filter, frame, and memory differences before interpreting losses.
+Keep the lightweight encoder unchanged. Investigate why the current DINOv2
+target loss is insensitive to radar removal/measurements. Check prediction
+sensitivity and add an objective or control in which matched radar must beat
+empty and mismatched radar before claiming semantic radar learning. Only then
+compare both branches inside camera-radar fusion with fixed data/update
+budgets. Resolve capacity, feature/filter, frame, and memory differences.
 Do not use BEVCar's supervised checkpoint for a label-free claim, and do not
 add a motion head yet.
 
@@ -138,6 +143,37 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Fixed-model radar-input ablation
+
+- Change: extended `scripts/compare_radar_dino_tiny.py` with optional
+  `--diagnose-radar` evaluation for empty radar, positions only, permuted
+  numeric measurements, and the existing cross-scene swap. Added
+  `artifacts/radar_dino_ablation.json` and `.png`; updated `.gitignore`,
+  `README.md`, `RADAR_ENCODER_NOTES.md`, and this handoff. Training models,
+  teacher targets, and official Simple-BEV paths were not altered.
+- Verification: `BEVCAR_SOURCE_DIR=<official-checkout> bash
+  scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 --heldout-samples 12
+  --seed-list 125,126,127 --diagnose-radar` passed. Across 36 seed-frame
+  evaluations, mean correct/no-radar loss was light `0.903/0.911` and BEVCar
+  `0.493/0.489`; positions-only `0.903/0.495`; permuted-measurements
+  `0.903/0.493`. The preliminary two-frame smoke test also passed.
+- Additional checks: synthetic CPU inputs confirmed positions/masks remain
+  unchanged in the intended ablations, numeric values are permuted rather
+  than dropped, and empty BEVCar input has zero occupied voxels. Python
+  compile and `git diff --check` passed.
+- Interpretation: the lightweight branch has a small radar-geometry effect,
+  but numeric measurements barely affect this target loss. BEVCar's low
+  target loss does not require any radar under these interventions. This is
+  evidence about the objective/metric, not proof that the architecture is
+  incapable of radar perception or that its outputs are literally identical.
+- Limitation: two mini validation scenes and three seeds, with unequal model
+  capacity/filtering. Frozen-DINOv2 cosine loss is not detection accuracy;
+  output-map sensitivity and a radar-dependent objective remain untested.
+- Next: inspect output-map changes and test an objective/control requiring
+  correctly paired radar to outperform empty/mismatched radar. Continue
+  review in [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1);
+  do not merge `main` based on loss reduction alone.
 
 ### 2026-09-18 — Two-scene, three-seed held-out radar diagnostic
 

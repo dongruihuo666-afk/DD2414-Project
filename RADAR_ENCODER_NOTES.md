@@ -339,3 +339,46 @@ Do not present the lower BEVCar loss as proof of superior radar perception.
 The next investigation should use stronger radar-dependence controls or
 different downstream tasks before integrating the larger encoder into the
 camera-fusion model.
+
+## Test-time radar ablations: what does the target loss depend on?
+
+The preceding models were trained again under the **same** four-frame,
+60-update, three-seed protocol. On the same 12 unseen frames, the trained
+weights, DINOv2 targets, and confidence masks were held fixed while only the
+radar input was changed:
+
+- `Correct radar`: unmodified input from the matching validation frame.
+- `Other scene`: the complete radar input from a frame in the other validation
+  scene, preserving the original target.
+- `Positions only`: keep point positions and validity/quality masks, zero
+  RCS/velocity/time numeric measurements.
+- `Mixed values`: keep positions and point masks but reverse the order of
+  numeric radar measurements among valid returns within each frame.
+- `No radar`: pass zero points (or zero BEVCar voxel features/coordinates and
+  zero occupied count). The model's own biases and normalization remain.
+
+```bash
+BEVCAR_SOURCE_DIR=/path/to/BEVCar \
+  bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60 \
+  --heldout-samples 12 --seed-list 125,126,127 --diagnose-radar
+```
+
+Mean held-out cosine loss over all 36 seed-frame cases (lower is better):
+
+| Branch | Correct | Other scene | Positions only | Mixed values | No radar |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Lightweight | 0.903 | 0.909 | 0.903 | 0.903 | 0.911 |
+| BEVCar | 0.493 | 0.490 | 0.495 | 0.493 | 0.489 |
+
+![Fixed-model radar-input ablation](artifacts/radar_dino_ablation.png)
+
+The lightweight branch shows a small benefit from having radar geometry, but
+its measured numeric values make almost no difference under this loss.
+BEVCar's target loss does not increase when radar is removed, so this
+experiment gives **no evidence that its low target loss requires radar**.
+This is a test of the current objective/metric, not proof that the architecture
+can never use radar: distinct predictions could have similar cosine loss.
+The result is consistent with a statistical or spatial shortcut. Before
+expanding the encoder, test prediction sensitivity directly and redesign the
+objective/control so that matched radar must outperform empty or mismatched
+radar. Do not claim radar-image semantic alignment from these losses alone.

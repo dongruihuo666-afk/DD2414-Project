@@ -22,6 +22,8 @@ artifacts/*
 !artifacts/radar_dino_tiny_comparison.json
 !artifacts/radar_dino_heldout_comparison.png
 !artifacts/radar_dino_heldout_comparison.json
+!artifacts/radar_dino_ablation.png
+!artifacts/radar_dino_ablation.json
 checkpoints/
 logs_*/
 .env
