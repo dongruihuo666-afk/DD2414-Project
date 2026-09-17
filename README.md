@@ -28,6 +28,9 @@ from the upstream code.
 - Audited all 19 nuScenes radar fields, corrected velocity coordinate rotation,
   and connected a seven-field point/voxel radar encoder producing
   `(B,64,200,200)` features to the camera BEV path.
+- Added an independent BEVCar-shaped voxel-input adapter and verified its
+  coordinates on one real nuScenes mini frame. This is preprocessing only;
+  BEVCar's encoder has not been connected or trained.
 
 ![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
 
@@ -40,10 +43,12 @@ from the upstream code.
 - [Label-free extension plan](SELF_SUPERVISED_EXTENSION_PLAN.md)
 - [Radar field audit and encoder notes](RADAR_ENCODER_NOTES.md)
 
-The standalone radar encoder is now connected to the camera BEV feature and
-passes shape, forward, gradient, empty-radar, checkpoint, and 8 GiB memory
-checks. The next bounded step is label-free DINO training of the fused
-representation before adding a motion objective.
+The standalone lightweight radar encoder is connected to the camera BEV
+feature and passes shape, forward, gradient, empty-radar, checkpoint, and
+8 GiB memory checks. A separate BEVCar-shaped input adapter has passed a
+one-frame CPU geometry audit. The bounded follow-up is to test BEVCar's
+random-weight radar encoder in isolation, then compare both radar paths under
+the same label-free DINO target before adding a motion objective.
 
 ## Quick reproduction
 
@@ -59,6 +64,7 @@ The scripts default to a `simplebev` Conda environment and nuScenes under
 ./scripts/run_dinov2_mini4.sh
 ./scripts/run_radar_point_encoder_test.sh
 ./scripts/run_radar_fusion_test.sh
+bash scripts/run_bevcar_voxel_adapter_test.sh
 ```
 
 Checkpoints, datasets, cached teacher features, logs, and generated model files

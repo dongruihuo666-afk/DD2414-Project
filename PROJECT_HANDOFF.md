@@ -12,7 +12,9 @@ nuScenes v1.0-mini. A separate, opt-in radar point encoder has been integrated
 with the camera BEV feature. Frozen DINOv2 targets have driven a four-sample
 label-free student experiment using the **legacy radar path**. The new radar
 encoder has passed integration tests but has **not** been trained against the
-DINO target. No motion head or full-dataset self-supervised evaluation exists.
+DINO target. A separate BEVCar-shaped voxel-input adapter has passed a CPU-only
+one-frame geometry audit; the BEVCar encoder itself has **not** been imported,
+run, or trained. No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
 project-scoped change is pushed there so teammates can follow the work. Check
@@ -63,6 +65,7 @@ legacy-radar Simple-BEV student ----------------> cosine feature loss
 | Label-free student | `./scripts/run_dinov2_mini4.sh` | Four-sample mean DINO cosine loss 1.023 -> 0.196 over 60 updates | Trains the legacy-radar student, **not** the new radar encoder; memorization only |
 | New radar encoder | `./scripts/run_radar_point_encoder_test.sh` | 403 returns -> 125 quality/ROI points -> `(1,64,200,200)` | Point transform, pooling, empty input, order invariance, and gradient checks pass |
 | New fusion integration | `./scripts/run_radar_fusion_test.sh` | Fused `(1,128,200,200)`; gradient norm 0.031452; empty radar and checkpoint reload pass; peak 3.440 GiB | Random-weight engineering check; no accuracy claim |
+| BEVCar-shaped voxel input | `bash scripts/run_bevcar_voxel_adapter_test.sh` | 403 returns -> 251 in range -> 125 quality-filtered -> 123 voxels; zero BEV-cell mismatches | CPU geometry audit only; seventh feature/pretrained-checkpoint compatibility not established |
 
 Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
 each plot and its caveats. The official legacy radar checkpoint still loads
@@ -113,12 +116,13 @@ unrelated local work.
 
 ## Next bounded task
 
-Train the *new* radar-encoder-plus-camera BEV path against the already
-implemented frozen-DINOv2 target on a fixed tiny subset. Compare with the
-legacy radar student using the same examples, target cache, update budget,
-and initialisation policy. Record DINO loss, nonzero radar-encoder gradients,
-parameter change, memory, empty-radar behavior, and a held-out-sample check.
-Do not add a motion head until this experiment is stable.
+Keep the lightweight encoder unchanged. First, compare BEVCar's released
+preprocessing/feature order with the prototype adapter, then run an isolated
+random-weight BEVCar VoxelNet forward/backward and GPU-memory check on the
+same mini frame. Do not use its supervised checkpoint for a label-free claim.
+Only after that, compare the radar paths under the already implemented frozen-
+DINOv2 target using the same examples and update budget. Do not add a motion
+head until this experiment is stable.
 
 ## Work log and update template
 
@@ -127,6 +131,33 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — BEVCar-shaped voxel input geometry audit
+
+- Change: added `nets/bevcar_voxel_adapter.py`,
+  `scripts/test_bevcar_voxel_adapter.py`,
+  `scripts/run_bevcar_voxel_adapter_test.sh`, and
+  `artifacts/bevcar_voxel_adapter_audit.png`; updated `.gitignore`, `README.md`,
+  `RADAR_ENCODER_NOTES.md`, and this handoff. The existing lightweight radar
+  encoder and model paths were not changed.
+- Reason: establish a shared camera-reference BEV coordinate grid and the
+  BEVCar VoxelNet input tensor shapes before considering network transplant.
+- Verification: `bash scripts/run_bevcar_voxel_adapter_test.sh` passed on the
+  first fixed mini training frame (token `cd9964f8c3d34383b16e9c2997de1ed0`):
+  403 returns, 251 in-range, 125 quality-filtered, 123 3D voxels, no point
+  truncation, zero BEV-cell mismatches; synthetic collision, empty/batched,
+  overflow, and axis checks passed. `git diff --check` passed.
+- Limitation: this is CPU input/coordinate validation, not BEVCar encoder
+  inference, backward, GPU memory, training, or proof of pretrained-checkpoint
+  compatibility. Its explicit seventh feature and deterministic overflow
+  policy need upstream preprocessing comparison. The current environment
+  denied NVIDIA access, so the GPU-only `VizData` loader was bypassed using
+  the same first nuScenes key frame and direct calibrated-sensor transforms.
+- Next: confirm upstream feature order and point sampling, then add a separate
+  random-weight BEVCar encoder smoke test without replacing the light baseline.
+- Collaboration: pushed through the `dd2414-mini-baseline` feature branch and
+  tracked in [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1);
+  this entry does not imply a merge into `main`.
 
 ### 2026-09-18 — Push-on-feature-branch workflow
 

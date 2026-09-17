@@ -199,3 +199,56 @@ This is an engineering integration check, not an accuracy claim. The network
 is randomly initialized in this test, so its prediction and IoU are not
 meaningful yet. The next experiment should decide how the fused feature is
 trained without box-derived labels.
+
+## BEVCar-shaped voxel input: one-frame geometry audit
+
+To evaluate a possible [BEVCar](https://github.com/robot-learning-freiburg/BEVCar)
+radar-encoder transplant without changing the working lightweight encoder,
+`nets/bevcar_voxel_adapter.py` now prepares the three tensors expected by the
+released [VoxelNet forward
+interface](https://github.com/robot-learning-freiburg/BEVCar/blob/main/nets/voxelnet.py):
+
+```text
+reference-camera radar points (B,R,19)
+  -> Simple-BEV Ref2Mem coordinates on the same (Z,Y,X)=(200,8,200) grid
+  -> quality/ROI filter -> group by 3D voxel
+  -> point features (B,K,16,7), coordinates (B,K,3) in (z,y,x) order,
+     occupied-voxel count (B,)
+```
+
+The seven prototype channels are `[x,y,z,raw_vx,raw_vz,RCS,time_lag]` in the
+reference-camera frame. The [BEVCar paper](https://arxiv.org/html/2403.11761)
+explicitly describes position, *uncompensated* planar velocity and RCS, while
+the released VoxelNet declares seven input channels. We use time lag as an
+explicit seventh channel for this geometry-stage prototype; **we have not
+confirmed that its feature semantics match BEVCar's released preprocessor or
+pretrained checkpoint**. The current quality filter matches our lightweight
+encoder, not necessarily BEVCar's published training setup. If a voxel has
+more than 16 points, this audit keeps the first 16 and reports the overflow;
+the paper describes random sampling instead. Exceeding `max_voxels` raises an
+error rather than silently discarding spatial evidence.
+
+Run the CPU-only check:
+
+```bash
+bash scripts/run_bevcar_voxel_adapter_test.sh
+```
+
+It reads the first fixed mini training key frame directly from nuScenes files,
+so it also runs in an environment where the existing `VizData` constructor's
+unconditional `.cuda()` is unavailable. The frame token is
+`cd9964f8c3d34383b16e9c2997de1ed0`, matching the 403-return frame used
+in the lightweight-encoder audit. Results: 403 input returns, 251 inside the
+BEV ROI, 125 after the same quality filter, 123 occupied 3D voxels, zero
+truncated points and zero BEV-cell mismatches against the point-coordinate
+map. The synthetic checks cover collision grouping, empty/batched samples,
+voxel limits and `(z,y,x)` axis direction.
+
+![BEVCar-shaped voxel input geometry audit](artifacts/bevcar_voxel_adapter_audit.png)
+
+This is **input preparation and coordinate validation only**: no BEVCar
+weights, network forward/backward, GPU-memory measurement, or accuracy result.
+Before attempting any pretrained BEVCar checkpoint, its exact preprocessing
+and field order must be established. The next bounded step is an isolated
+random-weight VoxelNet smoke test with output shape, gradient and memory
+checks; preserve the lightweight path as a separate comparison baseline.
