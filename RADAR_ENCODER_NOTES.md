@@ -268,6 +268,37 @@ run allocated a peak of 0.729 GiB of PyTorch tensor memory; this does not
 include camera fusion, an optimizer, a pretrained checkpoint, or full-system
 GPU usage. No segmentation accuracy or self-supervised training is claimed.
 
-The next comparison is to train the lightweight and BEVCar radar branches
-under the same frozen-DINOv2 target and data/update budget. Keep the official
-Simple-BEV and existing lightweight paths intact.
+## Radar-only frozen-DINOv2 target comparison
+
+`scripts/compare_radar_dino_tiny.py` is a separate radar-only diagnostic; it
+does not replace either `Segnet` branch. It loads four cached targets made by
+the frozen pretrained `dinov2_vits14` teacher, verifies camera calibration
+against four freshly loaded mini frames, and applies identical targets,
+confidence masks, cosine loss, learning rate, and 60 updates to two randomly
+initialized students. No teacher fine-tuning, supervised BEV checkpoint,
+segmentation/box loss, or motion objective is used.
+
+```bash
+# Generate the target cache first if absent (also runs a one-step legacy test):
+bash scripts/run_dinov2_mini4.sh --steps 1
+# Requires an external BEVCar checkout as described above:
+bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60
+```
+
+On the four mini training frames, same-frame evaluation cosine loss was
+`0.986 -> 0.890` for the lightweight encoder and `1.002 -> 0.376` for BEVCar.
+Both received finite nonzero encoder gradients. The light student had 35,712
+trainable parameters and peak PyTorch CUDA allocation of 1.070 GiB; BEVCar
+had 495,328 parameters and 1.009 GiB. These are isolated radar-only memory
+figures, not camera-fusion estimates. BEVCar used all in-range returns;
+the light branch used its existing quality mask. Each branch has its own
+randomly initialized projection head.
+
+![Four-frame radar-only DINOv2 target optimization](artifacts/radar_dino_tiny_comparison.png)
+
+Both branches can optimize this label-free target on the same four frames.
+BEVCar's larger training decrease is **not** evidence of better generalization
+or a controlled architecture win: it has about 14 times more trainable
+parameters, different features/filtering, and no held-out evaluation here.
+This is not a trained camera-radar Simple-BEV model. Next: test a held-out
+mini frame, then compare both branches in camera-radar fusion.

@@ -11,10 +11,11 @@ The official Simple-BEV camera-only and camera-plus-radar pipelines run on
 nuScenes v1.0-mini. A separate, opt-in radar point encoder has been integrated
 with the camera BEV feature. Frozen DINOv2 targets have driven a four-sample
 label-free student experiment using the **legacy radar path**. The new radar
-encoder has passed integration tests but has **not** been trained against the
-DINO target. A separate adapter and the official, randomly initialized BEVCar
-radar encoder have passed a one-frame input/forward/backward CUDA smoke test;
-that encoder has **not** been fused with cameras or trained. No motion head or
+encoder has passed camera-fusion integration tests but has **not** been trained
+against the DINO target in that fused model. A separate adapter and official
+BEVCar encoder passed a one-frame CUDA smoke test. Both radar encoders have
+now been optimized **standalone** on the same four cached frozen-DINOv2
+targets, without camera fusion or held-out evaluation. No motion head or
 full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
@@ -68,6 +69,7 @@ legacy-radar Simple-BEV student ----------------> cosine feature loss
 | New fusion integration | `./scripts/run_radar_fusion_test.sh` | Fused `(1,128,200,200)`; gradient norm 0.031452; empty radar and checkpoint reload pass; peak 3.440 GiB | Random-weight engineering check; no accuracy claim |
 | BEVCar voxel input | `bash scripts/run_bevcar_voxel_adapter_test.sh` | 403 returns -> 251 in range -> 243 voxels; optional quality filter gives 125 points/123 voxels; zero BEV-cell mismatches | Upstream seventh feature verified as valid-point mask; pretrained-checkpoint compatibility not established |
 | Official BEVCar radar encoder | `bash scripts/run_bevcar_encoder_smoke.sh --device cuda` with external BEVCar checkout | 403 returns -> 251 in range -> 243 voxels -> `(1,128,200,200)`; finite nonzero gradients; peak allocated CUDA 0.729 GiB | Isolated random-weight encoder only; no camera fusion, training, accuracy, or checkpoint compatibility claim |
+| Radar-only frozen-DINOv2 comparison | `bash scripts/run_radar_dino_tiny.sh --samples 4 --steps 60` with cached targets and external BEVCar | Same-frame cosine loss: light 0.986 -> 0.890, BEVCar 1.002 -> 0.376; finite encoder gradients | Four training frames only; different capacity/filtering; not held-out accuracy or camera-radar fusion |
 
 Selected visual results are under `artifacts/`. `PROJECT_PROGRESS.md` explains
 each plot and its caveats. The official legacy radar checkpoint still loads
@@ -118,11 +120,11 @@ unrelated local work.
 
 ## Next bounded task
 
-Keep the lightweight encoder unchanged. Compare the lightweight and BEVCar
-radar paths under the already implemented frozen-DINOv2 target using the same
-examples and update budget. Resolve their feature/frame and memory differences
-before interpreting losses. Do not use BEVCar's supervised checkpoint for a
-label-free claim, and do not add a motion head until this experiment is stable.
+Keep the lightweight encoder unchanged. Check held-out mini-frame behavior,
+then compare both radar branches inside camera-radar fusion with fixed data
+and update budgets. Resolve their capacity, feature/filter, frame, and memory
+differences before interpreting losses. Do not use BEVCar's supervised
+checkpoint for a label-free claim, and do not add a motion head yet.
 
 ## Work log and update template
 
@@ -131,6 +133,28 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-18 — Four-frame radar-only DINOv2 target comparison
+
+- Change: added `scripts/compare_radar_dino_tiny.py` and its shell entry,
+  `artifacts/radar_dino_tiny_comparison.json` and `.png`; updated `.gitignore`,
+  `README.md`, `RADAR_ENCODER_NOTES.md`, and this handoff. Existing model paths
+  remain untouched.
+- Reason: test whether the lightweight and official BEVCar radar encoders can
+  each optimize the same cached frozen-DINOv2 BEV targets on four mini frames,
+  using 60 updates per branch and no human box-derived loss.
+- Verification: `BEVCAR_SOURCE_DIR=<official-checkout> bash
+  scripts/run_radar_dino_tiny.sh --samples 4 --steps 60` passed. Same-frame
+  mean cosine loss was light `0.985960 -> 0.889696` and BEVCar
+  `1.001846 -> 0.375588`; encoder gradients were finite/nonzero. Peak allocated
+  CUDA was 1.070/1.009 GiB respectively. Calibration matched the target cache.
+- Limitations: radar-only and all four frames were training samples. BEVCar
+  has 495,328 trainable parameters versus 35,712 in the light student, and
+  they differ in filtering/features; the loss is not held-out accuracy.
+  No camera fusion, supervised checkpoint, or motion model was involved.
+- Next: held-out mini data, then camera-radar integration under a fixed
+  protocol. Continue review in [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1);
+  do not merge `main` merely because this optimization check passed.
 
 ### 2026-09-18 — Official BEVCar radar encoder isolated smoke test
 
