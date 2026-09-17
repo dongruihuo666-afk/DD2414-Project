@@ -3,6 +3,7 @@ __pycache__
 *.py[cod]
 .DS_Store
 .cache/
+/external/BEVCar/
 artifacts/*
 !artifacts/meeting_demo_comparison.png
 !artifacts/mini_subset_comparison.png

@@ -88,7 +88,7 @@ def synthetic_checks(vox_util):
     radar[0, :4, 10] = 1.0
     radar[0, :4, 11] = 3.0
     features, coords, counts, info = prepare_bevcar_voxels(
-        radar, vox_util, max_points_per_voxel=2,
+        radar, vox_util, max_points_per_voxel=2, quality_filter=True,
     )
     assert features.shape == (1, 2, 2, 7)
     assert coords.shape == (1, 2, 3)
@@ -96,6 +96,7 @@ def synthetic_checks(vox_util):
     assert info['retained_points'].tolist() == [3]
     assert info['truncated_points'].tolist() == [0]
     assert torch.count_nonzero(features[0, 1, 1]).item() == 0
+    assert torch.all(features[0, :, :, 6][features[0, :, :, 6] > 0] == 1)
 
     _, _, _, clipped = prepare_bevcar_voxels(
         radar, vox_util, max_points_per_voxel=1,
@@ -104,7 +105,7 @@ def synthetic_checks(vox_util):
     empty_features, empty_coords, empty_counts, empty_info = prepare_bevcar_voxels(
         torch.zeros_like(radar), vox_util,
     )
-    assert empty_features.shape == (1, 1, 16, 7)
+    assert empty_features.shape == (1, 1, 10, 7)
     assert torch.count_nonzero(empty_features).item() == 0
     assert torch.count_nonzero(empty_coords).item() == 0
     assert empty_counts.tolist() == [0]
@@ -113,7 +114,7 @@ def synthetic_checks(vox_util):
     batched_features, batched_coords, batched_counts, _ = prepare_bevcar_voxels(
         torch.cat((radar, torch.zeros_like(radar)), dim=0), vox_util,
     )
-    assert batched_features.shape == (2, 2, 16, 7)
+    assert batched_features.shape == (2, 2, 10, 7)
     assert batched_coords.shape == (2, 2, 3)
     assert batched_counts.tolist() == [2, 0]
     assert torch.count_nonzero(batched_features[1]).item() == 0
@@ -155,7 +156,7 @@ def panel(array, color):
     return Image.fromarray(rgb).resize((360, 360), Image.Resampling.NEAREST)
 
 
-def render(raw_map, expected_map, adapter_map, values, output_path):
+def render(raw_map, adapter_map, quality_map, values, quality_count, output_path):
     canvas = Image.new('RGB', (1170, 555), (245, 247, 250))
     draw = ImageDraw.Draw(canvas)
     draw.text((24, 16), 'BEVCar-shaped voxel adapter: one nuScenes mini frame',
@@ -165,8 +166,8 @@ def render(raw_map, expected_map, adapter_map, values, output_path):
               font=font(15), fill=(60, 65, 75))
     panels = (
         ('1. All in-range radar points', raw_map, (95, 145, 255)),
-        ('2. Quality-filtered point cells', expected_map, (255, 175, 75)),
-        ('3. Adapter voxel cells', adapter_map, (75, 220, 160)),
+        ('2. BEVCar-input voxel cells', adapter_map, (75, 220, 160)),
+        ('3. Light encoder quality cells', quality_map, (255, 175, 75)),
     )
     for index, (title, data, color) in enumerate(panels):
         left = 24 + 382 * index
@@ -176,11 +177,11 @@ def render(raw_map, expected_map, adapter_map, values, output_path):
         draw.text((left + 8, 445), '+Z / front', font=font(12), fill=(225, 230, 235))
     draw.text((24, 488),
               f"{values['input_points']} returns; {values['in_range_points']} in ROI; "
-              f"{values['retained_points']} kept in {values['occupied_voxels']} voxels; "
-              f"{values['truncated_points']} truncated",
+              f"{values['occupied_voxels']} BEVCar voxels; "
+              f"{quality_count} light-filtered points; {values['truncated_points']} truncated",
               font=font(16, True), fill=(25, 30, 40))
     draw.text((24, 518),
-              'Geometry check: point-cell and adapter-voxel maps agree exactly',
+              'Geometry check: in-range point cells and BEVCar-input voxel cells agree',
               font=font(16), fill=(28, 115, 75))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(output_path)
@@ -196,10 +197,19 @@ def main():
         radar_camera, vox_util,
     )
 
-    assert features.shape == (1, int(counts[0]), 16, 7)
+    assert features.shape == (1, int(counts[0]), 10, 7)
     assert coords.shape == (1, int(counts[0]), 3)
     assert torch.isfinite(features).all()
     assert info['truncated_points'].item() == 0
+    active_features = features[0, :int(counts[0])]
+    point_slots = active_features[..., 6].gt(0)
+    assert point_slots.sum().item() == info['retained_points'].item()
+    assert torch.all(active_features[..., 6][point_slots] == 1)
+    expected_point_coords = active_features[..., :3][point_slots].round().long()
+    actual_point_coords = coords[0, :int(counts[0]), None, :].expand_as(
+        active_features[..., :3]
+    )[point_slots]
+    torch.testing.assert_close(expected_point_coords, actual_point_coords)
 
     light = RadarPointEncoder(
         Z=Z, Y=Y, X=X, bounds=bounds,
@@ -213,11 +223,8 @@ def main():
     selected = light._valid_mask(radar_camera, memory)
     rounded = memory.round().long()
     xyz = rounded[0, selected[0]]
-    expected = count_map(torch.stack((xyz[:, 2], xyz[:, 0]), dim=-1).tolist())
+    quality_map = count_map(torch.stack((xyz[:, 2], xyz[:, 0]), dim=-1).tolist())
     voxel_map = count_map(coords[0, :int(counts[0])][:, [0, 2]].tolist())
-    assert np.array_equal(expected > 0, voxel_map > 0)
-    assert int(selected.sum()) == int(info['retained_points'][0])
-    assert int(voxel_map.sum()) == int(counts[0])
 
     raw_mask = (
         torch.isfinite(radar_camera).all(dim=-1)
@@ -227,10 +234,22 @@ def main():
     )
     raw_xyz = rounded[0, raw_mask[0]]
     raw_map = count_map(torch.stack((raw_xyz[:, 2], raw_xyz[:, 0]), dim=-1).tolist())
+    assert np.array_equal(raw_map > 0, voxel_map > 0)
+    assert int(raw_mask.sum()) == int(info['retained_points'][0])
+    assert int(voxel_map.sum()) == int(counts[0])
+    _, quality_coords, quality_counts, quality_info = prepare_bevcar_voxels(
+        radar_camera, vox_util, quality_filter=True,
+    )
+    quality_voxel_map = count_map(
+        quality_coords[0, :int(quality_counts[0])][:, [0, 2]].tolist()
+    )
+    assert np.array_equal(quality_map > 0, quality_voxel_map > 0)
+    assert int(selected.sum()) == int(quality_info['retained_points'][0])
 
     values = {key: int(value[0]) for key, value in info.items()}
     image_path = args.output_dir / 'bevcar_voxel_adapter_audit.png'
-    render(raw_map, expected, voxel_map, values, image_path)
+    render(raw_map, voxel_map, quality_map, values,
+           int(quality_info['retained_points'][0]), image_path)
     print('device: cpu')
     print(f'sample_token: {sample_token}')
     print(f'feature_names: {FEATURE_NAMES}')
@@ -238,7 +257,9 @@ def main():
     print(f'coords_shape: {tuple(coords.shape)} (z, y, x)')
     for key, value in values.items():
         print(f'{key}: {value}')
-    print(f'BEV_cell_mismatch: {int(np.count_nonzero((expected > 0) != (voxel_map > 0)))}')
+    print(f'light_quality_points: {int(quality_info["retained_points"][0])}')
+    print(f'light_quality_voxels: {int(quality_counts[0])}')
+    print(f'BEV_cell_mismatch: {int(np.count_nonzero((raw_map > 0) != (voxel_map > 0)))}')
     print('synthetic_collision_empty_and_axis_checks: OK')
     print(f'image: {image_path}')
 

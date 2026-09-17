@@ -211,24 +211,26 @@ interface](https://github.com/robot-learning-freiburg/BEVCar/blob/main/nets/voxe
 ```text
 reference-camera radar points (B,R,19)
   -> Simple-BEV Ref2Mem coordinates on the same (Z,Y,X)=(200,8,200) grid
-  -> quality/ROI filter -> group by 3D voxel
-  -> point features (B,K,16,7), coordinates (B,K,3) in (z,y,x) order,
+  -> optional quality filter, ROI filter -> group by 3D voxel
+  -> point features (B,K,10,7), coordinates (B,K,3) in (z,y,x) order,
      occupied-voxel count (B,)
 ```
 
-The seven prototype channels are `[x,y,z,raw_vx,raw_vz,RCS,time_lag]` in the
-reference-camera frame. The [BEVCar paper](https://arxiv.org/html/2403.11761)
-explicitly describes position, *uncompensated* planar velocity and RCS, while
-the released VoxelNet declares seven input channels. We use time lag as an
-explicit seventh channel for this geometry-stage prototype; **we have not
-confirmed that its feature semantics match BEVCar's released preprocessor or
-pretrained checkpoint**. The current quality filter matches our lightweight
-encoder, not necessarily BEVCar's published training setup. If a voxel has
-more than 16 points, this audit keeps the first 16 and reports the overflow;
-the paper describes random sampling instead. Exceeding `max_voxels` raises an
-error rather than silently discarding spatial evidence.
+Inspection of the official BEVCar source at commit
+`29cacda3bc5416d47428c1d0f017527acad34f90` resolved the seven input
+channels: `[z_mem,y_mem,x_mem,RCS,raw_vx,raw_vy,valid_mask]`. Its source
+preprocessor uses memory-grid coordinates, raw (uncompensated) velocity, and
+a validity marker; it does **not** use time lag here. Our adapter expresses
+velocity in reference-camera axes as `(raw_vx,raw_vz)` because it also places
+positions in that frame. This is a documented frame correction, not byte-for-
+byte reproduction of BEVCar's original preprocessing, so pretrained-checkpoint
+compatibility is **not established**. The default leaves quality filtering off,
+matching the released training config. A voxel keeps the first 10 points and
+the adapter allows a variable number of occupied voxels up to 3500; upstream
+randomizes point order and pads to 3500 voxels. These differences do not alter
+the encoder's BEV output shape but matter for numerical comparison.
 
-Run the CPU-only check:
+Run the input geometry check:
 
 ```bash
 bash scripts/run_bevcar_voxel_adapter_test.sh
@@ -239,16 +241,33 @@ so it also runs in an environment where the existing `VizData` constructor's
 unconditional `.cuda()` is unavailable. The frame token is
 `cd9964f8c3d34383b16e9c2997de1ed0`, matching the 403-return frame used
 in the lightweight-encoder audit. Results: 403 input returns, 251 inside the
-BEV ROI, 125 after the same quality filter, 123 occupied 3D voxels, zero
-truncated points and zero BEV-cell mismatches against the point-coordinate
-map. The synthetic checks cover collision grouping, empty/batched samples,
-voxel limits and `(z,y,x)` axis direction.
+BEV ROI, 243 occupied 3D voxels, zero truncated points and zero BEV-cell
+mismatches against the point-coordinate map. With the optional lightweight
+quality filter, there are 125 points and 123 voxels instead. Synthetic checks
+cover collision grouping, empty/batched samples, voxel limits and `(z,y,x)`
+axis direction.
 
 ![BEVCar-shaped voxel input geometry audit](artifacts/bevcar_voxel_adapter_audit.png)
 
-This is **input preparation and coordinate validation only**: no BEVCar
-weights, network forward/backward, GPU-memory measurement, or accuracy result.
-Before attempting any pretrained BEVCar checkpoint, its exact preprocessing
-and field order must be established. The next bounded step is an isolated
-random-weight VoxelNet smoke test with output shape, gradient and memory
-checks; preserve the lightweight path as a separate comparison baseline.
+## Isolated official BEVCar encoder smoke test
+
+The official `nets/voxelnet.py` is imported from a separate BEVCar checkout;
+its code is not vendored into this project. For a reproducible checkout:
+
+```bash
+git clone https://github.com/robot-learning-freiburg/BEVCar.git external/BEVCar
+git -C external/BEVCar checkout 29cacda3bc5416d47428c1d0f017527acad34f90
+bash scripts/run_bevcar_encoder_smoke.sh --device cuda
+```
+
+Alternatively, set `BEVCAR_SOURCE_DIR` to an existing checkout. The same
+mini frame provides `(1,243,10,7)` voxel features; the random-weight official
+VoxelNet outputs `(1,128,200,200)`. Both its point-feature and 3D-convolution
+layers received finite nonzero gradients on CPU and CUDA. The isolated CUDA
+run allocated a peak of 0.729 GiB of PyTorch tensor memory; this does not
+include camera fusion, an optimizer, a pretrained checkpoint, or full-system
+GPU usage. No segmentation accuracy or self-supervised training is claimed.
+
+The next comparison is to train the lightweight and BEVCar radar branches
+under the same frozen-DINOv2 target and data/update budget. Keep the official
+Simple-BEV and existing lightweight paths intact.

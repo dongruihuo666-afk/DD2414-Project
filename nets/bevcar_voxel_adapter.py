@@ -1,10 +1,11 @@
 """Prepare Simple-BEV radar points for a BEVCar-shaped VoxelNet input.
 
-This is an independent preprocessing prototype, not BEVCar's released data
+This is an independent preprocessing adapter, not BEVCar's released data
 pipeline or radar encoder. Geometry uses Simple-BEV's reference-camera grid.
 BEVCar's VoxelNet expects (point features, voxel coordinates, voxel counts),
-with voxel coordinates ordered (z, y, x). The exact seventh feature and
-training-time point sampling still need comparison with upstream preprocessing.
+with voxel coordinates ordered (z, y, x). The seven channels follow the
+released shallow-metadata path: memory-space (z, y, x), RCS, raw planar
+velocity in the reference-camera BEV axes, and a valid-point mask.
 """
 
 from typing import Dict, Tuple
@@ -12,21 +13,20 @@ from typing import Dict, Tuple
 import torch
 
 
-# BEVCar's paper names XYZ, uncompensated planar velocity and RCS. Its released
-# VoxelNet accepts seven input channels; this prototype uses time lag as the
-# explicit seventh channel. These values must not be called pretrained-
-# checkpoint-compatible until the upstream data preprocessing is matched.
-FEATURE_NAMES = ('x', 'y', 'z', 'raw_vx', 'raw_vz', 'rcs', 'time_lag')
-FEATURE_INDICES = (0, 1, 2, 6, 7, 5, 18)
+# Verified against BEVCar commit 29cacda, nuscenes_data.py:1061-1077 and
+# utils/vox.py:454-614. Its shallow metadata is radar rows 5:8; the voxel
+# preprocessor appends the valid-point mask and prepends ZYX memory coords.
+FEATURE_NAMES = ('z_mem', 'y_mem', 'x_mem', 'rcs', 'raw_vx', 'raw_vz', 'valid_mask')
+METADATA_INDICES = (5, 6, 7)
 
 
 def prepare_bevcar_voxels(
         radar_camera: torch.Tensor,
         vox_util,
         grid: Tuple[int, int, int] = (200, 8, 200),
-        max_points_per_voxel: int = 16,
-        max_voxels: int = 4096,
-        quality_filter: bool = True,
+        max_points_per_voxel: int = 10,
+        max_voxels: int = 3500,
+        quality_filter: bool = False,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Dict[str, torch.Tensor]]:
     """Group camera-frame radar returns into padded BEVCar-shaped tensors.
 
@@ -36,19 +36,21 @@ def prepare_bevcar_voxels(
         vox_util: The *same* Simple-BEV ``Vox_util`` used for camera BEV.
         grid: ``(Z,Y,X)`` resolution, matching the camera BEV grid.
         max_points_per_voxel: Retain the first P points in each occupied voxel.
-            This deterministic audit policy is not BEVCar's training-time
-            random sampling when a voxel is overfull.
+            The default P=10 matches BEVCar. This deterministic audit policy
+            is not BEVCar's training-time random sampling when overfull.
         max_voxels: Maximum occupied voxels per sample; overflow is rejected
             rather than silently changing the spatial evidence.
-        quality_filter: Match the current lightweight radar encoder's
-            conservative point filter. Turn off for an all-in-range audit.
+        quality_filter: Disabled by default, as in BEVCar's released
+            configuration. Turn on to match our lightweight encoder's
+            conservative point filter for a side-by-side geometry audit.
 
     Returns:
         ``features``: ``(B,K,P,7)``; padded point slots are exactly zero.
         ``coords``: ``(B,K,3)`` integer ``(z,y,x)`` voxel coordinates.
         ``counts``: ``(B,)`` actual occupied voxel counts, before K padding.
         ``diagnostics``: input, in-range, retained and overflow point counts.
-        K is at least one to keep the downstream tensor rank stable.
+        K is at least one to keep the downstream tensor rank stable. Unlike
+        BEVCar's fixed K=3500 buffer, K is dynamically padded within a batch.
     """
     if radar_camera.ndim != 3 or radar_camera.shape[-1] != 19:
         raise ValueError('radar_camera must have shape (B, R, 19)')
@@ -82,7 +84,14 @@ def prepare_bevcar_voxels(
         retained = spatial
 
     rounded = memory.round().long()
-    feature_rows = radar_camera[..., FEATURE_INDICES]
+    # BEVCar forms [z_mem, y_mem, x_mem, rcs, vx, vy, valid_mask]. The loader
+    # used for this adapter has already rotated raw velocity into camera X/Z,
+    # so its final velocity pair is named (raw_vx, raw_vz) here.
+    feature_rows = torch.cat((
+        memory[..., [2, 1, 0]],
+        radar_camera[..., METADATA_INDICES],
+        torch.ones_like(radar_camera[..., :1]),
+    ), dim=-1)
     sample_features = []
     sample_coords = []
     occupied_counts = []

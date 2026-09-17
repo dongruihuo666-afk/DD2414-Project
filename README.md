@@ -28,9 +28,9 @@ from the upstream code.
 - Audited all 19 nuScenes radar fields, corrected velocity coordinate rotation,
   and connected a seven-field point/voxel radar encoder producing
   `(B,64,200,200)` features to the camera BEV path.
-- Added an independent BEVCar-shaped voxel-input adapter and verified its
-  coordinates on one real nuScenes mini frame. This is preprocessing only;
-  BEVCar's encoder has not been connected or trained.
+- Added an independent BEVCar voxel adapter and ran the official random-weight
+  radar encoder in isolation on one mini frame, including forward, backward,
+  and CUDA-memory checks. It is not connected to camera fusion or trained.
 
 ![Fixed mini subset comparison](artifacts/mini_subset_comparison.png)
 
@@ -45,10 +45,9 @@ from the upstream code.
 
 The standalone lightweight radar encoder is connected to the camera BEV
 feature and passes shape, forward, gradient, empty-radar, checkpoint, and
-8 GiB memory checks. A separate BEVCar-shaped input adapter has passed a
-one-frame CPU geometry audit. The bounded follow-up is to test BEVCar's
-random-weight radar encoder in isolation, then compare both radar paths under
-the same label-free DINO target before adding a motion objective.
+8 GiB memory checks. The separate BEVCar adapter and official radar encoder
+pass a one-frame isolated smoke test. The bounded follow-up is to compare
+both radar paths under the same label-free DINO target before adding motion.
 
 ## Quick reproduction
 
@@ -65,6 +64,8 @@ The scripts default to a `simplebev` Conda environment and nuScenes under
 ./scripts/run_radar_point_encoder_test.sh
 ./scripts/run_radar_fusion_test.sh
 bash scripts/run_bevcar_voxel_adapter_test.sh
+# After checking out official BEVCar as explained in RADAR_ENCODER_NOTES.md:
+bash scripts/run_bevcar_encoder_smoke.sh --device cuda
 ```
 
 Checkpoints, datasets, cached teacher features, logs, and generated model files
