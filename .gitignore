@@ -28,6 +28,7 @@ artifacts/*
 !artifacts/radar_dino_ablation_nsweeps10.json
 !artifacts/radar_dino_ablation_nsweeps5.png
 !artifacts/radar_dino_ablation_nsweeps5.json
+!artifacts/dual_teacher_heldout.json
 !artifacts/bevcar_supervised_mini.png
 !artifacts/bevcar_supervised_mini.json
 !artifacts/bevcar_supervised_mini_seed126.json

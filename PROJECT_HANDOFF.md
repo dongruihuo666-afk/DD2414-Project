@@ -525,3 +525,44 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: attack the objective itself — loss balancing / cosine weighting and the
   dual-teacher (image DINO + radar BEV DINO) so matched radar must outperform
   empty radar, rather than only increasing radar input density.
+
+### 2026-09-29 — Dual-teacher 0.8/0.2 joint training (image DINO + radar BEV DINO)
+
+- Change: extended `scripts/eval_image_distill_heldout.py` to train a weighted
+  dual-teacher objective `L = fusion_weight * L_fusion + image_weight * L_image`
+  (camera DINOv2 on image features vs. radar-anchored BEV DINO on the fusion
+  BEV), swept four variants — fusion-only baseline, 1:1, 0.8-camera/0.2-radar,
+  and 0.2-camera/0.8-radar — and added a no-radar sensitivity probe to
+  `evaluate` (zero the radar voxel input, re-measure held-out fusion loss).
+  Emits `artifacts/dual_teacher_heldout.json` (committed) plus a metrics
+  `.npz` (git-ignored).
+- Reason: the advisor's recommendation #5 — the student team's own "two
+  teachers, one camera-side and one BEV/radar-side, ~0.8+0.2 weights" idea
+  that the advisor endorsed but had not been implemented. It is the last
+  input/weight-side lever untested after the strong-encoder and multi-sweep
+  experiments.
+- Verification: `python3 -m py_compile` passed. 4 train + 4 held-out mini
+  samples, 60 steps, seed 125, trainable res101 encoder. Held-out fusion loss
+  and no-radar penalty (no-radar minus correct; positive = radar-dependent):
+
+  | Variant | fusion_w | image_w | Held-out fusion | No-radar fusion | Radar penalty | Held-out image |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+  | baseline (fusion only) | 1.0 | — | 0.556 | 0.561 | +0.0053 | — |
+  | image_distill (1:1) | 1.0 | 1.0 | 0.534 | 0.538 | +0.0040 | 0.575 |
+  | dual 0.8 camera / 0.2 radar | 0.2 | 0.8 | 0.556 | 0.565 | +0.0089 | 0.577 |
+  | dual 0.2 camera / 0.8 radar | 0.8 | 0.2 | 0.584 | 0.590 | +0.0059 | 0.593 |
+
+  The radar penalty stays tiny (~0.004–0.009, <2% relative) under every
+  weighting, so zeroing the radar input barely moves held-out fusion loss. Both
+  heads train and generalize (image loss ~0.57–0.59); the 1:1 image term
+  actually lowers held-out fusion loss to 0.534, the best of the sweep.
+- Limitation: the dual-teacher does not make the model depend on radar
+  measurements. This closes out the advisor's input/weight-side
+  recommendations: the radar-anchored teacher uses only radar *position* as
+  depth anchors and never radar's measurement values (RCS / velocity /
+  Doppler), so no encoder strength, input density, or loss weighting can force
+  the student to require radar. The bottleneck is the target itself.
+- Next: replace or extend the radar-anchored target with one that requires the
+  radar measurement signal — the radar Doppler/motion-preservation target
+  (SELF_SUPERVISED_EXTENSION_PLAN.md section 4) — and re-run the sensitivity
+  protocol on the full fusion model.
