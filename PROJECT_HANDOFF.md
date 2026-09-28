@@ -566,3 +566,48 @@ chat transcripts, secrets, or unreviewed generated data.
   radar measurement signal — the radar Doppler/motion-preservation target
   (SELF_SUPERVISED_EXTENSION_PLAN.md section 4) — and re-run the sensitivity
   protocol on the full fusion model.
+
+### 2026-09-29 — Radar velocity/motion target (Doppler preservation) diagnostic
+
+- Change: added `scripts/compare_radar_velocity_tiny.py` and
+  `scripts/run_radar_velocity_tiny.sh` — a training-sample overfit diagnostic
+  that attaches a 2-channel velocity head to the light and BEVCar radar
+  encoders and trains it to predict the ego-motion-compensated velocity
+  (vx_comp, vy_comp) of moving radar returns splatted into BEV cells, then
+  measures the loss change when the velocity columns are ablated
+  (`geometry_only` zeros them, `permuted_measurements` shuffles them, `empty`
+  zeroes all radar). Emits `artifacts/radar_velocity_tiny.json` (committed).
+- Reason: SELF_SUPERVISED_EXTENSION_PLAN.md section 4 — the one lever that
+  forces radar-*measurement* dependence, since every prior target used only
+  radar position (depth anchors) and never RCS / velocity / Doppler. Directly
+  tests whether a target that requires velocity makes the encoder require
+  velocity.
+- Verification: `python3 -m py_compile` passed. 4 mini samples, 100 steps, 3
+  seeds. The target is restricted to moving points (speed > 1 m/s) because a
+  naive all-point mean-L1 velocity target is dominated by near-zero static
+  velocity (first attempt: correct ≈ before ≈ 0.22, geometry_only penalty
+  ≈ +0.001). Moving returns are sparse — ~10–14 of ~400+ points per sample
+  (~3%) — so 12 steps under-trains; 100 steps converges. Mean Huber loss on
+  moving cells, and the no-velocity penalty (geometry_only minus correct):
+
+  | Branch | Correct | Positions-only (zero velocity) | Penalty | Mixed values | No radar |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | BEVCar | 0.059 | 0.400 | **+0.341 (6.8×)** | 0.548 | 2.666 |
+  | Lightweight | 1.429 | 1.647 | +0.218 (15%) | 1.637 | 2.649 |
+
+  The BEVCar encoder reads velocity to near-zero loss (0.059) and zeroing the
+  velocity columns raises the loss 6.8× — the first large radar-measurement
+  penalty in the whole project, confirming the target is what forces
+  measurement dependence. The lightweight point-encoder only partially recovers
+  velocity (1.43 vs the 2.65 "predict zero" floor), because its mean/max voxel
+  pooling dilutes the sparse per-point velocity.
+- Limitation: training-sample overfit diagnostic, not a generalization result;
+  it shows only that the encoder *can* read velocity and that ablation moves
+  the loss in the favorable setting. The moving-restricted target needs ~100
+  steps (vs ~12 for the dense semantic target) because motion is sparse and the
+  gradient is weak.
+- Next: integrate the motion target into the joint objective
+  `L = λ_sem·L_DINO_BEV + λ_motion·L_Doppler` (using BEVCar or a
+  velocity-preserving lightweight encoder) and re-run the full fusion
+  sensitivity protocol to confirm the full model now depends on radar
+  measurements.
