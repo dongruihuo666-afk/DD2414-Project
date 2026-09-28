@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument('--data-root', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--num-samples', type=int, default=4)
+    parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--steps', type=int, default=60)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
     parser.add_argument('--model-name', default='dinov2_vits14')
@@ -221,7 +222,7 @@ def main():
     device = torch.device('cuda:0')
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats(device)
-    loader = build_loader(args.data_root, num_workers=0, nsweeps=1)
+    loader = build_loader(args.data_root, num_workers=0, nsweeps=args.nsweeps)
     iterator = iter(loader)
     batches = [next(iterator) for _ in range(args.num_samples)]
 
@@ -229,7 +230,7 @@ def main():
     for parameter in teacher.parameters():
         if parameter.requires_grad:
             raise RuntimeError('DINOv2 teacher must remain frozen')
-    cache_dir = args.output_dir / 'dinov2_mini4_targets'
+    cache_dir = args.output_dir / f'dinov2_mini4_targets_nsweeps{args.nsweeps}'
     targets, confidences, target_seconds = create_targets(
         batches, teacher, device, cache_dir, args.model_name
     )

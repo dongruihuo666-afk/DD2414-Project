@@ -44,6 +44,7 @@ def arguments():
     parser.add_argument('--bevcar-source', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'artifacts')
     parser.add_argument('--samples', type=int, default=4)
+    parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--steps', type=int, default=8)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
     parser.add_argument('--heldout-samples', type=int, default=0,
@@ -251,8 +252,9 @@ def run_branch(name, inputs, targets, confidences, steps, learning_rate,
     return result
 
 
-def validation_examples(data_root, device, count, train_records, train_scenes):
-    loader = build_loader(data_root, num_workers=0, nsweeps=1,
+def validation_examples(data_root, device, count, train_records, train_scenes,
+                        nsweeps=1):
+    loader = build_loader(data_root, num_workers=0, nsweeps=nsweeps,
                           rotate_radar_velocity=True, split='val')
     dataset = loader.dataset
     if count > len(dataset):
@@ -486,7 +488,7 @@ def main():
         raise ValueError('seed-list must have distinct integer seeds')
     torch.set_num_threads(2)
     device = torch.device('cuda')
-    loader = build_loader(args.data_root, num_workers=0, nsweeps=1,
+    loader = build_loader(args.data_root, num_workers=0, nsweeps=args.nsweeps,
                           rotate_radar_velocity=True)
     batches = [next(iter(loader))] if args.samples == 1 else []
     if args.samples > 1:
@@ -516,7 +518,7 @@ def main():
     if args.heldout_samples:
         heldout, heldout_details = validation_examples(
             args.data_root, device, args.heldout_samples,
-            train_records, train_scenes,
+            train_records, train_scenes, nsweeps=args.nsweeps,
         )
     official_class = official_voxelnet(args.bevcar_source)
     seed_results = {}
@@ -534,6 +536,7 @@ def main():
     report = {
         'scope': 'radar-only, same frozen-DINOv2 cached targets, random weights',
         'samples': args.samples, 'steps_per_branch': args.steps,
+        'nsweeps': args.nsweeps,
         'learning_rate': args.learning_rate,
         'target_model': 'dinov2_vits14 pretrained frozen teacher',
         'supervised_bev_checkpoint_loaded': False,
@@ -549,9 +552,10 @@ def main():
         'branches': results,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    stem = ('radar_dino_ablation' if args.diagnose_radar else
-            'radar_dino_heldout_comparison' if heldout is not None else
-            'radar_dino_tiny_comparison')
+    sweep_suffix = '' if args.nsweeps == 1 else f'_nsweeps{args.nsweeps}'
+    stem = (('radar_dino_ablation' if args.diagnose_radar else
+             'radar_dino_heldout_comparison' if heldout is not None else
+             'radar_dino_tiny_comparison') + sweep_suffix)
     path = args.output_dir / f'{stem}.json'
     path.write_text(json.dumps(report, indent=2) + '\n')
     figure = args.output_dir / f'{stem}.png'

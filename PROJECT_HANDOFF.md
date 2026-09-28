@@ -485,3 +485,40 @@ chat transcripts, secrets, or unreviewed generated data.
   advisor's primary open problem — making matched radar explicitly beat empty
   or mismatched radar — via a stronger radar encoder, multi-sweep input, and
   balanced loss weights.
+
+### 2026-09-29 — Multi-sweep radar ablation (10 sweeps)
+
+- Change: threaded an `--nsweeps` option through `scripts/dinov2_mini4_experiment.py`
+  (target generation) and `scripts/compare_radar_dino_tiny.py` (comparison and
+  radar ablation), with nsweeps-specific target-cache directories and output
+  filenames; `run_dinov2_mini4.sh` and `run_radar_dino_tiny.sh` forward it via
+  the `NSWEEPS` environment variable. Re-cloned the pinned BEVCar source
+  (`https://github.com/robot-learning-freiburg/BEVCar.git` at `29cacda3`) under
+  the git-ignored `external/` directory for the `bevcar` branch.
+- Reason: the advisor's recommendation #2 was multi-sweep radar (10-12 sweeps);
+  every prior experiment used one sweep, so this is the first direct test of
+  whether denser radar input makes the self-supervised objective depend on
+  radar.
+- Verification: at 10 sweeps, 3 of 4 training frames grew from ~400 to
+  ~3300-4300 radar points (the first scene frame has no history and stays at
+  403). Mean held-out cosine loss across 12 frames / 3 seeds:
+
+  | Branch | Correct | Other scene | Positions only | Mixed values | No radar |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | Lightweight | 0.879 | 0.900 | 0.879 | 0.879 | 0.909 |
+  | BEVCar | 0.486 | 0.483 | 0.491 | 0.486 | 0.480 |
+
+  For the lightweight encoder the "No radar" penalty grew from +0.008 (1 sweep)
+  to +0.030 (10 sweeps), and correct now beats other-scene by 0.021. For BEVCar
+  the "No radar" penalty is still ~0 (slightly negative, -0.006), unchanged from
+  one sweep.
+- Limitation: multi-sweep strengthens the small radar-dependence of the
+  lightweight encoder but does not repair the strong BEVCar encoder, whose low
+  loss remains consistent with a statistical/spatial shortcut. This confirms
+  that the objective (not input density) is the bottleneck for label-free radar
+  dependence. The 10-sweep result is one point on the sweep-size curve; 5 sweeps
+  was not yet run.
+- Next: add the 5-sweep point for the trend, then attack the objective itself —
+  loss balancing / cosine weighting and the dual-teacher (image DINO + radar BEV
+  DINO) so matched radar must outperform empty radar, rather than only
+  increasing radar input density.

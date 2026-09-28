@@ -19,5 +19,6 @@ python scripts/dinov2_mini4_experiment.py \
     --data-root "${NUSCENES_ROOT}" \
     --output-dir "${OUTPUT_DIR}" \
     --num-samples 4 \
+    --nsweeps "${NSWEEPS:-1}" \
     --steps "${STEPS:-60}" \
     "$@"

@@ -16,7 +16,8 @@ cd "${REPO_ROOT}"
 
 python scripts/compare_radar_dino_tiny.py \
     --data-root "${NUSCENES_ROOT}" \
-    --target-cache "${OUTPUT_DIR}/dinov2_mini4_targets" \
+    --target-cache "${OUTPUT_DIR}/dinov2_mini4_targets_nsweeps${NSWEEPS:-1}" \
     --bevcar-source "${BEVCAR_SOURCE_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
+    --nsweeps "${NSWEEPS:-1}" \
     "$@"
