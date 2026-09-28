@@ -24,7 +24,12 @@ budget; the larger BEVCar encoder shows a clearer radar-dependence gap
 (see the 2026-09-28 work log entry). A separate **supervised**
 Simple-BEV + BEVCar mini demo now shows a modest radar-dependent IoU gain on
 adaptation-held-out frames using box-derived labels; it does not solve the
-self-supervised objective.
+self-supervised objective. A switchable **camera-side dense semantic
+distillation** (`--camera-distill` in `semantic_distill_smoke.py`) now distills
+the camera-only BEV against the dense camera-visibility DINO target alongside
+the existing radar-guided fusion term; on a single-sample smoke it reaches the
+representation only with an unfrozen encoder and does not yet beat the
+fusion-only baseline (see the 2026-09-28 work log entry).
 No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
@@ -384,3 +389,37 @@ chat transcripts, secrets, or unreviewed generated data.
   safely auto-push arbitrary local changes; read-only chats should not mutate
   the repository.
 - Next: run the new radar+DINO tiny-subset experiment after team review.
+
+### 2026-09-28 — Camera-side dense semantic distillation switch (opt-in ablation)
+
+- Change: added a switchable camera-side DINOv2 semantic distillation term so the
+  dual-level distillation from the meeting can be compared against the existing
+  fusion-only term. `nets/segnet.py` now returns the pure camera BEV
+  (`camera_bev`, B, feat2d_dim*Y, Z, X) alongside the fused `feat_bev` when
+  `return_shared_bev=True`; `scripts/dinov2_bev_demo.py` additionally caches
+  `dense_semantic_target` (the naive-rays `teacher_bev`) and `camera_coverage`
+  (camera visibility) alongside the existing radar-anchored `soft_targets`;
+  `scripts/semantic_distill_smoke.py` gains `--camera-distill`,
+  `--camera-weight`, and a decoupled `--train-encoder` flag plus a small
+  `camera_head` that maps the camera BEV to the DINOv2 feature space.
+- Reason: the supervisor's dual-level distillation keeps DINOv2 semantics from
+  being washed out by radar-guided sparsity. The camera-side term distills the
+  DENSE (un-radar-guided) DINO features into the camera BEV before fusion,
+  while the existing fusion term keeps the radar-anchored (sparse) targets.
+  The only differences between the two terms are the student representation
+  (camera-only vs fused) and the target mask (camera visibility vs radar soft
+  region).
+- Verification: `python3 -m py_compile` on the three changed files and
+  `git diff --check` passed. Four 20-step single-sample smoke configs
+  (cosine-to-DINO loss, NOT a validation result) gave fusion losses:
+  baseline (frozen, camera off) 0.2039; +camera-distill (frozen) 0.2039;
+  +train-encoder only (trainable, camera off) 0.1730; +train-encoder
+  +camera-distill (trainable) 0.1767. Peak CUDA ~4.2 GiB.
+- Limitation: the camera term reaches the representation only when the encoder
+  is unfrozen, and the fusion-loss gain is driven by encoder trainability
+  (0.1730) rather than the dense camera term (0.1767, slightly worse) —
+  consistent with the naive-rays depth ambiguity of `teacher_bev`. Single mini
+  sample, 20 updates; these are training losses, not held-out results.
+- Next: replace the dense target with a depth-disambiguated one (e.g. lift the
+  camera BEV to the radar-anchored depth) or evaluate on a held-out split
+  before concluding on the camera term.

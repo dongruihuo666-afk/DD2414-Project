@@ -493,6 +493,8 @@ def main():
         semantic_target=soft_targets.half().cpu().numpy(),
         confidence=soft_weight.half().cpu().numpy(),
         radar_view_count=radar_view_count.byte().cpu().numpy(),
+        dense_semantic_target=teacher_bev.half().cpu().numpy(),
+        camera_coverage=coverage.half().cpu().numpy(),
         model_name=np.asarray(args.model_name),
     )
 

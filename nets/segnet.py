@@ -500,6 +500,11 @@ class Segnet(nn.Module):
                 rad_occ_mem0[self.bev_flip1_index] = torch.flip(rad_occ_mem0[self.bev_flip1_index], [-1])
                 rad_occ_mem0[self.bev_flip2_index] = torch.flip(rad_occ_mem0[self.bev_flip2_index], [-3])
 
+        # camera-only BEV, before any radar/lidar concatenation
+        camera_bev = feat_mem.permute(0, 1, 3, 2, 4).reshape(
+            B, self.feat2d_dim * Y, Z, X
+        )
+
         # bev compressing
         if self.use_radar_encoder:
             if radar_points is None:
@@ -514,34 +519,27 @@ class Segnet(nn.Module):
                 radar_bev[self.bev_flip2_index] = torch.flip(
                     radar_bev[self.bev_flip2_index], [-2]
                 )
-            feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(
-                B, self.feat2d_dim * Y, Z, X
-            )
             feat_bev = self.bev_compressor(
-                torch.cat((feat_bev_, radar_bev), dim=1)
+                torch.cat((camera_bev, radar_bev), dim=1)
             )
         elif self.use_radar:
             assert(rad_occ_mem0 is not None)
             if not self.use_metaradar:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
                 rad_bev = torch.sum(rad_occ_mem0, 3).clamp(0,1) # squish the vertical dim
-                feat_bev_ = torch.cat([feat_bev_, rad_bev], dim=1)
+                feat_bev_ = torch.cat([camera_bev, rad_bev], dim=1)
                 feat_bev = self.bev_compressor(feat_bev_)
             else:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
                 rad_bev_ = rad_occ_mem0.permute(0, 1, 3, 2, 4).reshape(B, 16*Y, Z, X)
-                feat_bev_ = torch.cat([feat_bev_, rad_bev_], dim=1)
+                feat_bev_ = torch.cat([camera_bev, rad_bev_], dim=1)
                 feat_bev = self.bev_compressor(feat_bev_)
         elif self.use_lidar:
             assert(rad_occ_mem0 is not None)
-            feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
             rad_bev_ = rad_occ_mem0.permute(0, 1, 3, 2, 4).reshape(B, Y, Z, X)
-            feat_bev_ = torch.cat([feat_bev_, rad_bev_], dim=1)
+            feat_bev_ = torch.cat([camera_bev, rad_bev_], dim=1)
             feat_bev = self.bev_compressor(feat_bev_)
         else: # rgb only
             if self.do_rgbcompress:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
-                feat_bev = self.bev_compressor(feat_bev_)
+                feat_bev = self.bev_compressor(camera_bev)
             else:
                 feat_bev = torch.sum(feat_mem, dim=3)
 
@@ -553,9 +551,10 @@ class Segnet(nn.Module):
                     {'radar_features_bev': tuple(radar_bev.shape)}
                     if self.use_radar_encoder else {}
                 ),
+                'camera_bev_features': tuple(camera_bev.shape),
                 'fused_bev_features': tuple(feat_bev.shape),
             }
-            return feat_bev
+            return feat_bev, camera_bev
 
         # bev decoder
         out_dict = self.decoder(feat_bev, (self.bev_flip1_index, self.bev_flip2_index) if self.rand_flip else None)

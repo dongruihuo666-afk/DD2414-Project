@@ -30,19 +30,30 @@ TEXT = (25, 30, 40)
 
 
 class SemanticDistillationModel(nn.Module):
-    def __init__(self, student, teacher_dim=384):
+    def __init__(self, student, teacher_dim=384, camera_distill=False):
         super().__init__()
         self.student = student
+        self.camera_distill = camera_distill
         self.semantic_head = nn.Sequential(
             nn.Conv2d(student.latent_dim, student.latent_dim, 3, padding=1, bias=False),
             nn.InstanceNorm2d(student.latent_dim),
             nn.GELU(),
             nn.Conv2d(student.latent_dim, teacher_dim, 1),
         )
+        if camera_distill:
+            self.camera_head = nn.Sequential(
+                nn.Conv2d(student.feat2d_dim * student.Y, student.feat2d_dim,
+                          3, padding=1, bias=False),
+                nn.InstanceNorm2d(student.feat2d_dim),
+                nn.GELU(),
+                nn.Conv2d(student.feat2d_dim, teacher_dim, 1),
+            )
+        else:
+            self.camera_head = None
 
     def forward(self, rgb, pixel_from_cameras, camera0_from_cameras,
                 vox_util, radar_voxels):
-        shared_bev = self.student(
+        shared_bev, camera_bev = self.student(
             rgb_camXs=rgb,
             pix_T_cams=pixel_from_cameras,
             cam0_T_camXs=camera0_from_cameras,
@@ -50,7 +61,11 @@ class SemanticDistillationModel(nn.Module):
             rad_occ_mem0=radar_voxels,
             return_shared_bev=True,
         )
-        return self.semantic_head(shared_bev), shared_bev
+        fusion_prediction = self.semantic_head(shared_bev)
+        camera_prediction = (
+            self.camera_head(camera_bev) if self.camera_head is not None else None
+        )
+        return fusion_prediction, camera_prediction, shared_bev, camera_bev
 
 
 def font(size, bold=False):
@@ -68,6 +83,12 @@ def parse_args():
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--steps', type=int, default=20)
     parser.add_argument('--learning-rate', type=float, default=1e-3)
+    parser.add_argument('--camera-distill', action='store_true',
+                        help='add a dense, camera-visibility DINOv2 term on the camera BEV')
+    parser.add_argument('--camera-weight', type=float, default=1.0,
+                        help='weight of the camera-side dense term relative to the fusion term')
+    parser.add_argument('--train-encoder', action='store_true',
+                        help='unfreeze the camera encoder so the camera-side term can shape it')
     return parser.parse_args()
 
 
@@ -255,6 +276,17 @@ def main():
     cached = np.load(args.target_cache)
     target = torch.from_numpy(cached['semantic_target'].astype(np.float32))[None].to(device)
     confidence = torch.from_numpy(cached['confidence'].astype(np.float32))[None].to(device)
+    if args.camera_distill:
+        if 'dense_semantic_target' not in cached or 'camera_coverage' not in cached:
+            raise RuntimeError(
+                'target cache lacks dense camera keys; re-run run_dinov2_bev_demo.sh'
+            )
+        dense_target = torch.from_numpy(
+            cached['dense_semantic_target'].astype(np.float32)
+        )[None].to(device)
+        dense_confidence = torch.from_numpy(
+            cached['camera_coverage'].astype(np.float32)
+        )[None].gt(0).float().to(device)
     inputs = prepare_inputs(batch, device)
     student = Segnet(
         Z, Y, X, vox_util=inputs[3], use_radar=True, use_metaradar=True,
@@ -262,7 +294,9 @@ def main():
         pretrained_backbone=False,
     ).to(device)
     saverloader.load(str(args.checkpoint), student)
-    model = SemanticDistillationModel(student).to(device)
+    model = SemanticDistillationModel(
+        student, camera_distill=args.camera_distill
+    ).to(device)
 
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -270,22 +304,37 @@ def main():
         parameter.requires_grad_(True)
     for parameter in model.semantic_head.parameters():
         parameter.requires_grad_(True)
+    if args.camera_distill:
+        for parameter in model.camera_head.parameters():
+            parameter.requires_grad_(True)
+    if args.train_encoder:
+        for parameter in model.student.encoder.parameters():
+            parameter.requires_grad_(True)
     trainable = [parameter for parameter in model.parameters() if parameter.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr=args.learning_rate, weight_decay=1e-5)
     scaler = torch.amp.GradScaler('cuda')
 
     losses = []
+    camera_losses = []
     gradient_norms = []
     initial_similarity = None
     start = time.perf_counter()
     model.train()
-    model.student.encoder.eval()
+    if args.train_encoder:
+        model.student.encoder.train()
+    else:
+        model.student.encoder.eval()
     model.student.decoder.eval()
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast(device_type='cuda', dtype=torch.float16):
-            prediction, _ = model(*inputs)
+            prediction, camera_prediction, _, _ = model(*inputs)
             loss, similarity = semantic_loss(prediction, target, confidence)
+            if args.camera_distill:
+                camera_loss, _ = semantic_loss(
+                    camera_prediction, dense_target, dense_confidence
+                )
+                loss = loss + args.camera_weight * camera_loss
         if initial_similarity is None:
             initial_similarity = similarity.detach().float().cpu().numpy()[0]
         scaler.scale(loss).backward()
@@ -294,13 +343,22 @@ def main():
         scaler.step(optimizer)
         scaler.update()
         losses.append(float(loss.detach()))
+        if args.camera_distill:
+            camera_losses.append(float(camera_loss.detach()))
         gradient_norms.append(float(grad_norm))
-        print(f'step {step + 1:02d}/{args.steps}: loss={losses[-1]:.6f} grad_norm={gradient_norms[-1]:.4f}')
+        suffix = f' camera_loss={camera_losses[-1]:.6f}' if args.camera_distill else ''
+        print(f'step {step + 1:02d}/{args.steps}: loss={losses[-1]:.6f}{suffix} grad_norm={gradient_norms[-1]:.4f}')
 
     model.eval()
     with torch.inference_mode(), torch.autocast(device_type='cuda', dtype=torch.float16):
-        final_prediction, shared_bev = model(*inputs)
+        final_prediction, final_camera_prediction, shared_bev, camera_bev = model(*inputs)
         final_loss, final_similarity = semantic_loss(final_prediction, target, confidence)
+        final_total_loss = final_loss
+        if args.camera_distill:
+            final_camera_loss, _ = semantic_loss(
+                final_camera_prediction, dense_target, dense_confidence
+            )
+            final_total_loss = final_loss + args.camera_weight * final_camera_loss
     torch.cuda.synchronize()
     elapsed = time.perf_counter() - start
     final_similarity = final_similarity.float().cpu().numpy()[0]
@@ -327,8 +385,10 @@ def main():
     np.savez_compressed(
         args.output_dir / 'semantic_distillation_overfit_metrics.npz',
         losses=np.asarray(losses, dtype=np.float32),
+        camera_losses=np.asarray(camera_losses, dtype=np.float32),
         gradient_norms=np.asarray(gradient_norms, dtype=np.float32),
         final_loss=np.asarray(float(final_loss), dtype=np.float32),
+        final_total_loss=np.asarray(float(final_total_loss), dtype=np.float32),
         peak_cuda_memory_gib=np.asarray(peak_gib, dtype=np.float32),
         elapsed_seconds=np.asarray(elapsed, dtype=np.float32),
     )
@@ -340,8 +400,12 @@ def main():
     print(f'initial_loss: {losses[0]:.6f}')
     print(f'last_train_loss: {losses[-1]:.6f}')
     print(f'final_eval_loss: {float(final_loss):.6f}')
-    print(f'loss_reduction_percent: {(1 - float(final_loss) / losses[0]) * 100:.2f}')
+    if args.camera_distill:
+        print(f'final_camera_loss: {float(final_camera_loss):.6f}')
+    print(f'final_total_loss: {float(final_total_loss):.6f}')
+    print(f'loss_reduction_percent: {(1 - float(final_total_loss) / losses[0]) * 100:.2f}')
     print(f'shared_bev_shape: {tuple(shared_bev.shape)}')
+    print(f'camera_bev_shape: {tuple(camera_bev.shape)}')
     print(f'prediction_shape: {tuple(final_prediction.shape)}')
     print(f'compressor_has_finite_gradient: {compressor_grad}')
     print(f'peak_cuda_memory_gib: {peak_gib:.3f}')
