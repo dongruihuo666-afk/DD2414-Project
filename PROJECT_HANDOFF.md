@@ -456,3 +456,32 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: judge the image term on its own objective (image-feature similarity to
   DINO on held-out frames, or a frozen-feature probe) rather than on fusion
   loss, and run a larger multi-sample comparison before claiming any benefit.
+
+### 2026-09-28 — Held-out probe of the image-level distillation term
+
+- Change: added `scripts/eval_image_distill_heldout.py` and its
+  `scripts/run_image_distill_heldout.sh` runner, which train two
+  trainable-encoder variants (baseline vs image-distilled) on a few training
+  samples and measure (a) held-out fusion loss and (b) held-out image-feature
+  similarity on scene-disjoint validation samples. `scripts/dinov2_mini4_experiment.py`
+  was fixed to unpack the now four-valued `SemanticDistillationModel.forward`
+  with `prediction, *_ = model(...)`.
+- Reason: the previous smoke could only read the image term indirectly through
+  fusion loss. This probe measures the image term on its own objective — how
+  well held-out image features retain frozen-DINOv2 semantics — which is the
+  term's actual claim.
+- Verification: `python3 -m py_compile` and `git diff --check` passed. Three
+  seeds (125/42/7) with 4 train + 4 held-out mini samples and 60 steps each
+  gave held-out fusion-loss deltas that flip sign across seeds (image_distill
+  minus baseline: -0.077, +0.040, -0.020), i.e. no reliable effect on held-out
+  fusion loss. The held-out image loss was stable at ~0.57 across seeds
+  (random/collapsed cosine is ~1.0), so the image features do retain DINOv2
+  semantics on held-out frames even though this does not move fusion loss.
+- Limitation: 4 train + 4 held-out mini samples, 60 updates, three seeds. The
+  fusion-loss delta is noise-level and the image-retention result is a
+  small-sample probe, not a downstream benchmark.
+- Next: keep the image term as the camera-side half of the advisor-endorsed
+  dual-teacher (image DINO + radar-anchored BEV DINO), and turn to the
+  advisor's primary open problem — making matched radar explicitly beat empty
+  or mismatched radar — via a stronger radar encoder, multi-sweep input, and
+  balanced loss weights.

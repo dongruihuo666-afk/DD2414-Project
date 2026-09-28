@@ -110,7 +110,7 @@ def evaluate(model, inputs, targets, confidences):
             # A completely random ResNet can overflow fp16 in eval mode before
             # BatchNorm running statistics have ever been calibrated. Use
             # float32 for the small before/after comparison; training stays AMP.
-            prediction, _ = model(*model_input)
+            prediction, *_ = model(*model_input)
             loss, similarity = semantic_loss(
                 prediction, target[None], confidence[None]
             )
@@ -270,7 +270,7 @@ def main():
         index = step % args.num_samples
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast(device_type='cuda', dtype=torch.float16):
-            prediction, _ = model(*model_inputs[index])
+            prediction, *_ = model(*model_inputs[index])
             loss, _ = semantic_loss(
                 prediction, targets[index][None], confidences[index][None]
             )
