@@ -34,7 +34,8 @@ def arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-root', type=Path, required=True)
     parser.add_argument('--camera-checkpoint', type=Path, required=True)
-    parser.add_argument('--bevcar-source', type=Path, required=True)
+    parser.add_argument('--bevcar-source', type=Path, default=None)
+    parser.add_argument('--encoder', choices=('bevcar', 'light'), default='bevcar')
     parser.add_argument('--output-dir', type=Path, default=ROOT / 'artifacts')
     parser.add_argument('--train-samples', type=int, default=4)
     parser.add_argument('--val-samples', type=int, default=12)
@@ -69,7 +70,7 @@ def checkpoint_state(checkpoint_dir):
     return torch.load(paths[-1], map_location='cpu', weights_only=True)['model_state_dict']
 
 
-def build_models(vox_util, source_dir, camera_state, device):
+def build_models(vox_util, source_dir, camera_state, device, encoder='bevcar'):
     camera = Segnet(
         Z, Y, X, vox_util=vox_util, use_radar=False, do_rgbcompress=True,
         encoder_type='res101', rand_flip=False, pretrained_backbone=False,
@@ -82,7 +83,10 @@ def build_models(vox_util, source_dir, camera_state, device):
         radar_encoder_channels=64, do_rgbcompress=True,
         encoder_type='res101', rand_flip=False, pretrained_backbone=False,
     ).to(device)
-    fused.radar_encoder = BEVCarRadarBridge(vox_util, source_dir, 64).to(device)
+    if encoder == 'bevcar':
+        if source_dir is None:
+            raise ValueError('--bevcar-source is required with --encoder bevcar')
+        fused.radar_encoder = BEVCarRadarBridge(vox_util, source_dir, 64).to(device)
     own = fused.state_dict()
     copied = {
         key: value for key, value in camera_state.items()
@@ -184,13 +188,13 @@ def summary(results):
     } for name in ('camera', 'correct', 'empty', 'wrong')}
 
 
-def visual(results, before, losses, path):
+def visual(results, before, losses, path, encoder='bevcar'):
     canvas = Image.new('RGB', (1510, 845), '#f7f9fc')
     draw = ImageDraw.Draw(canvas)
     base = '/usr/share/fonts/truetype/dejavu/'
     title = ImageFont.truetype(base + 'DejaVuSans-Bold.ttf', 24)
     body = ImageFont.truetype(base + 'DejaVuSans.ttf', 15)
-    draw.text((25, 18), 'Simple-BEV + BEVCar radar encoder: supervised mini diagnostic',
+    draw.text((25, 18), f'Simple-BEV + {encoder} radar encoder: supervised mini diagnostic',
               font=title, fill='#1c2736')
     draw.text((25, 56),
               'Human box-derived BEV labels | frozen camera/decoder checkpoint | new trainable radar + fusion',
@@ -265,9 +269,11 @@ def main():
         Z, Y, X, scene_centroid=scene_centroid.to(device),
         bounds=bounds, assert_cube=False,
     )
+    if args.encoder == 'bevcar' and args.bevcar_source is None:
+        raise ValueError('--bevcar-source is required when --encoder bevcar')
     camera_state = checkpoint_state(args.camera_checkpoint)
     camera, fused, copied = build_models(
-        vox_util, args.bevcar_source, camera_state, device
+        vox_util, args.bevcar_source, camera_state, device, args.encoder
     )
     del camera_state
     loss_fn = SimpleLoss(2.13).to(device)
@@ -310,23 +316,26 @@ def main():
     radar_gradient = [p.grad for p in fused.radar_encoder.parameters()
                       if p.grad is not None]
     if not radar_gradient or not all(torch.isfinite(g).all() for g in radar_gradient):
-        raise RuntimeError('BEVCar radar branch did not receive valid gradients')
-    point_gradient = fused.radar_encoder.voxelnet.svfe.vfe_1.fcn.linear.weight.grad
-    volume_gradient = fused.radar_encoder.voxelnet.cml.conv3d_1.conv.weight.grad
-    if point_gradient is None or volume_gradient is None:
-        raise RuntimeError('BEVCar point and volume layers need gradients')
-    point_gradient_norm = float(point_gradient.float().norm())
-    volume_gradient_norm = float(volume_gradient.float().norm())
-    if not (np.isfinite(point_gradient_norm) and point_gradient_norm > 0
-            and np.isfinite(volume_gradient_norm) and volume_gradient_norm > 0):
-        raise RuntimeError('BEVCar point/volume gradient norm invalid')
+        raise RuntimeError(f'{args.encoder} radar branch did not receive valid gradients')
+    point_gradient_norm = volume_gradient_norm = None
+    if args.encoder == 'bevcar':
+        point_gradient = fused.radar_encoder.voxelnet.svfe.vfe_1.fcn.linear.weight.grad
+        volume_gradient = fused.radar_encoder.voxelnet.cml.conv3d_1.conv.weight.grad
+        if point_gradient is None or volume_gradient is None:
+            raise RuntimeError('BEVCar point and volume layers need gradients')
+        point_gradient_norm = float(point_gradient.float().norm())
+        volume_gradient_norm = float(volume_gradient.float().norm())
+        if not (np.isfinite(point_gradient_norm) and point_gradient_norm > 0
+                and np.isfinite(volume_gradient_norm) and volume_gradient_norm > 0):
+            raise RuntimeError('BEVCar point/volume gradient norm invalid')
     after = assess(camera, fused, loss_fn, val_batches, metadata, device)
     before_summary, after_summary = summary(before), summary(after)
     report = {
         'scope': '4-frame supervised mini adaptation; 12-frame scene-disjoint validation',
         'train_scenes': train_scenes, 'val_metadata': metadata,
         'camera_checkpoint': str(args.camera_checkpoint),
-        'bevcar_source': str(args.bevcar_source),
+        'bevcar_source': str(args.bevcar_source) if args.bevcar_source else None,
+        'radar_encoder': args.encoder,
         'copied_camera_decoder_checkpoint_tensors': copied,
         'training_samples': args.train_samples, 'steps': args.steps,
         'seed': args.seed,
@@ -350,23 +359,24 @@ def main():
         } for i, item in enumerate(after)],
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    stem = ('bevcar_supervised_mini' if args.seed == 125
-            else f'bevcar_supervised_mini_seed{args.seed}')
+    stem = (f'{args.encoder}_supervised_mini' if args.seed == 125
+            else f'{args.encoder}_supervised_mini_seed{args.seed}')
     json_path = args.output_dir / f'{stem}.json'
     figure_path = args.output_dir / f'{stem}.png'
     json_path.write_text(json.dumps(report, indent=2) + '\n')
-    visual(after, before, losses, figure_path)
+    visual(after, before, losses, figure_path, args.encoder)
     print(f'camera validation IoU: {after_summary["camera"]["mean_iou"]:.6f}')
     for condition in ('correct', 'empty', 'wrong'):
         print(f'{condition} validation IoU: '
               f'{after_summary[condition]["mean_iou"]:.6f}')
     print(f'train_seconds: {train_seconds:.2f}')
     print(f'peak_allocated_cuda_gib: {peak_gib:.3f}')
-    print(f'BEVCar_SVFE_gradient_norm: {point_gradient_norm:.6g}')
-    print(f'BEVCar_CML_gradient_norm: {volume_gradient_norm:.6g}')
+    if args.encoder == 'bevcar':
+        print(f'BEVCar_SVFE_gradient_norm: {point_gradient_norm:.6g}')
+        print(f'BEVCar_CML_gradient_norm: {volume_gradient_norm:.6g}')
     print(f'report: {json_path}')
     print(f'figure: {figure_path}')
-    print('BEVCAR_SUPERVISED_MINI_OK')
+    print(f'{args.encoder}_supervised_mini_ok')
 
 
 if __name__ == '__main__':

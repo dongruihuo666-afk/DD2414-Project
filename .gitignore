@@ -30,6 +30,11 @@ artifacts/*
 !artifacts/bevcar_supervised_mini_seed127.json
 !artifacts/bevcar_supervised_summary.png
 !artifacts/bevcar_supervised_summary.json
+!artifacts/light_supervised_mini.png
+!artifacts/light_supervised_mini.json
+!artifacts/light_supervised_mini_seed126.json
+!artifacts/light_supervised_mini_seed127.json
+!artifacts/light_supervised_summary.json
 checkpoints/
 logs_*/
 .env

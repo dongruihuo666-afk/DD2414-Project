@@ -443,3 +443,38 @@ and some individual frames get worse. BEVCar's released preprocessing and
 our camera-frame adapter differ, and this run uses one radar sweep. A fair
 architecture benchmark needs matched training/data/compute and a larger
 genuinely unseen split.
+
+
+## Matched lightweight-vs-BEVCar supervised comparison
+
+The supervised meeting demo above used only the official BEVCar VoxelNet. To
+answer the supervisor's encoder question directly, the launcher and script
+were extended with an opt-in `--encoder {bevcar,light}` flag so the
+lightweight 7-field point encoder runs under the **identical** 4-frame
+adaptation, 12-frame two-scene validation, three-seed, 80-update protocol.
+The camera-only context and all three radar conditions are reported per branch.
+
+```bash
+bash scripts/run_bevcar_supervised_mini.sh --encoder light --steps 80 --seed 125
+bash scripts/run_bevcar_supervised_mini.sh --encoder light --steps 80 --seed 126
+bash scripts/run_bevcar_supervised_mini.sh --encoder light --steps 80 --seed 127
+```
+
+Mean validation IoU over three seeds (the camera-only context is identical):
+
+| Radar encoder | Camera only | Correct radar | No radar | Wrong scene | Correct - no radar | Correct beats empty |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Lightweight (35,712 params) | 0.121 | 0.188 | 0.188 | 0.188 | 0.0004 | 19/36 |
+| BEVCar VoxelNet (495,328 params) | 0.121 | 0.180 | 0.166 | 0.171 | 0.0137 | 29/36 |
+
+The stronger BEVCar encoder produces a much larger supervised radar-dependence
+gap (`correct - no radar ~= 0.014`) than the lightweight encoder (`~= 0.0004`),
+whose correct, empty and wrong predictions are nearly identical. In that narrow
+sense the larger encoder makes radar matter more under box-derived labels.
+However its absolute correct IoU is slightly **lower** (0.180 vs 0.188), so
+this is not evidence that BEVCar yields a better fused model in this tiny
+budget. The comparison is confounded: the two branches use different input
+features and filtering, so a stronger encoder is not isolated from different
+preprocessing. This supervised result does not change the earlier
+self-supervised finding that the DINO objective, not the encoder, is the
+bottleneck for label-free radar dependence.

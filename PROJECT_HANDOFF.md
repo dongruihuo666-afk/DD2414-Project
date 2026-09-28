@@ -19,8 +19,9 @@ targets. A standalone 12-frame, two-scene validation check with three seeds
 reduced target loss, but a cross-scene radar-swap control found little or no
 radar-alignment effect. Further no-radar and measurement ablations found that
 the target loss does not require radar measurements in either branch and does
-not require radar at all for the BEVCar branch. The encoders have not been
-compared under a matched camera-fusion training budget. A separate **supervised**
+not require radar at all for the BEVCar branch. The encoders are now compared under a matched supervised camera-fusion
+budget; the larger BEVCar encoder shows a clearer radar-dependence gap
+(see the 2026-09-28 work log entry). A separate **supervised**
 Simple-BEV + BEVCar mini demo now shows a modest radar-dependent IoU gain on
 adaptation-held-out frames using box-derived labels; it does not solve the
 self-supervised objective.
@@ -148,6 +149,41 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
+
+- Change: extended `scripts/bevcar_supervised_mini.py` with an opt-in
+  `--encoder {bevcar,light}` flag so the lightweight 7-field point encoder
+  runs under the same supervised mini protocol as the BEVCar meeting demo.
+  The BEVCar-only gradient checks and the success sentinel are now conditional
+  on that flag. Whitelisted `artifacts/light_supervised_*.json` and `.png` in
+  `.gitignore`. Updated `RADAR_ENCODER_NOTES.md` and this handoff. Official
+  Simple-BEV and lightweight encoder paths are unchanged.
+- Reason: the supervisor asked whether a stronger encoder makes radar matter
+  more. The existing meeting demo ran only BEVCar and was explicitly not a
+  matched-budget comparison; this adds the lightweight branch under an
+  identical 4-frame adaptation / 12-frame two-scene validation / three-seed /
+  80-update protocol.
+- Verification: `bash scripts/run_bevcar_supervised_mini.sh --encoder light
+  --steps 80 --seed <125|126|127>` passed for all three seeds, writing
+  `artifacts/light_supervised_mini*.json`. Mean 12-frame validation IoU was
+  correct radar 0.188, empty radar 0.188, wrong-scene radar 0.188 (light),
+  versus the committed BEVCar 0.180 / 0.166 / 0.171. Correct radar beat empty
+  in 19/36 light cases (29/36 for BEVCar) and wrong radar in 22/36 (30/36).
+  Mean correct-empty probability difference was 0.000054 (light) versus
+  0.003379 (BEVCar). Peak allocated CUDA memory 3.618 GiB; about 9.3 s per
+  seed. `python -m py_compile` and `git diff --check` passed.
+- Limitations: the two branches use different radar input features and
+  filtering (lightweight keeps a quality mask and seven numeric fields; the
+  BEVCar adapter keeps all in-range returns with seven channels), so encoder
+  size is confounded with preprocessing. BEVCar's larger radar-dependence gap
+  coexists with a slightly lower absolute correct IoU (0.180 vs 0.188) in this
+  4-frame budget. Two mini scenes, three seeds, one radar sweep, box-derived
+  labels; no self-supervised or motion objective.
+- Next: use this supervised gap as the encoder-change answer and keep the
+  self-supervised objective/control redesign as the separate open task.
+  Continue review in
+  [PR #1](https://github.com/dongruihuo666-afk/DD2414-Project/pull/1).
 
 ### 2026-09-18 — Supervised Simple-BEV + BEVCar meeting demo
 
