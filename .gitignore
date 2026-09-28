@@ -30,6 +30,7 @@ artifacts/*
 !artifacts/radar_dino_ablation_nsweeps5.json
 !artifacts/dual_teacher_heldout.json
 !artifacts/radar_velocity_tiny.json
+!artifacts/motion_target_tiny.json
 !artifacts/bevcar_supervised_mini.png
 !artifacts/bevcar_supervised_mini.json
 !artifacts/bevcar_supervised_mini_seed126.json

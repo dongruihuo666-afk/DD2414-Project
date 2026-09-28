@@ -611,3 +611,42 @@ chat transcripts, secrets, or unreviewed generated data.
   velocity-preserving lightweight encoder) and re-run the full fusion
   sensitivity protocol to confirm the full model now depends on radar
   measurements.
+
+### 2026-09-29 — Motion target on the full fusion model (metaradar) — insufficient alone
+
+- Change: added `scripts/compare_motion_target_tiny.py` and
+  `scripts/run_motion_target_tiny.sh` — attaches a 2-channel motion head to the
+  full image+radar fusion model's shared BEV (`MotionDistillationModel`
+  subclasses `SemanticDistillationModel`), trains it on the moving-return
+  compensated velocity target with the camera encoder frozen (so velocity can
+  only reach the head through the radar branch), and ablates the radar input:
+  `zero_velocity` (metaradar channels 3:7 = vx, vy, vx_comp, vy_comp) and
+  `no_radar`. Emits `artifacts/motion_target_tiny.json` (committed).
+- Reason: the plan's Doppler/motion target applied to the real fusion model
+  (not just the isolated radar encoders), to test whether the target alone
+  makes the full model depend on radar velocity.
+- Verification: `python3 -m py_compile` passed. 4 samples, 100 steps, 3 seeds,
+  frozen res101 camera encoder, trainable bev_compressor + heads. Mean loss and
+  the no-velocity penalty (zero_velocity minus correct):
+
+  | Variant | Loss | Correct | Zero velocity | Penalty | No radar |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | semantic_only | semantic | 0.313 | 0.314 | +0.001 | 0.323 |
+  | motion_only | motion | 0.564 | 0.612 | +0.048 (9%) | 1.175 |
+  | joint (1.0 sem / 0.5 mot) | semantic | 0.268 | 0.269 | +0.001 | 0.280 |
+  | joint (1.0 sem / 0.5 mot) | motion | 0.589 | 0.642 | +0.053 | 1.225 |
+
+  The motion head learns the sparse target (motion loss 2.85 → 0.56) but the
+  no-velocity penalty stays small (+0.05, ~9% relative) while no-radar is large
+  (+0.61). So the full model predicts the motion map mainly from radar
+  *position* and barely reads velocity — because the metaradar input's
+  `voxelize_xyz_and_feats` "last-write-wins" voxelization overwrites the sparse
+  per-voxel velocity with a random point (unlike BEVCar's learned voxel encoder,
+  which kept the 6.8× velocity penalty in the radar-encoder diagnostic).
+- Limitation: training-sample overfit diagnostic, not generalization. It shows
+  the motion target alone is insufficient on the current fusion model, not that
+  a motion target can never work.
+- Next: replace the fusion model's metaradar branch with a velocity-preserving
+  encoder (BEVCar VoxelNet) and re-run the motion-target sensitivity probe; the
+  velocity penalty should then be large, confirming the recipe is a
+  motion/Doppler target *plus* a velocity-preserving radar encoder.
