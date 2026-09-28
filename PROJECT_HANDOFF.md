@@ -24,12 +24,12 @@ budget; the larger BEVCar encoder shows a clearer radar-dependence gap
 (see the 2026-09-28 work log entry). A separate **supervised**
 Simple-BEV + BEVCar mini demo now shows a modest radar-dependent IoU gain on
 adaptation-held-out frames using box-derived labels; it does not solve the
-self-supervised objective. A switchable **camera-side dense semantic
-distillation** (`--camera-distill` in `semantic_distill_smoke.py`) now distills
-the camera-only BEV against the dense camera-visibility DINO target alongside
-the existing radar-guided fusion term; on a single-sample smoke it reaches the
-representation only with an unfrozen encoder and does not yet beat the
-fusion-only baseline (see the 2026-09-28 work log entry).
+self-supervised objective. A switchable **image-level dense semantic
+distillation** (`--image-distill` in `semantic_distill_smoke.py`) now distills
+the pre-projection image features against the frozen DINOv2 patch features
+alongside the existing radar-guided fusion term; on a single-sample smoke the
+image term converges cleanly and no longer drags the fusion loss (see the
+2026-09-28 work log entry).
 No motion head or full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
@@ -423,3 +423,36 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: replace the dense target with a depth-disambiguated one (e.g. lift the
   camera BEV to the radar-anchored depth) or evaluate on a held-out split
   before concluding on the camera term.
+
+### 2026-09-28 — Image-level dense DINOv2 distillation (replaces the camera-BEV term)
+
+- Change: moved the second distillation term from the camera BEV to the
+  pre-projection image features, where DINOv2 supervision needs no depth and no
+  radar. `nets/segnet.py` now also returns `feat_camXs_` (B*S, feat2d_dim,
+  Hf, Wf) from `return_shared_bev=True`; `scripts/semantic_distill_smoke.py`
+  drops `--camera-distill`/`--camera-weight` and adds `--image-distill` /
+  `--image-weight`, with an `image_head` (feat2d_dim -> 384) that maps the image
+  features to the frozen DINOv2 patch features already cached as `features` in
+  `dinov2_teacher_features.npz`. No demo change was needed and no interpolation
+  is required: the res101 image features (112x192 input, stride 8) and the
+  DINOv2 vits14 patch grid (196x336 input, patch 14) are both 14x24.
+- Reason: distilling on the BEV is a dead end because "dense + depth-correct +
+  radar-free" cannot all hold there — a depth-correct dense BEV target needs
+  radar (making it radar-guided again and near-identical to the fused term) or
+  is a naive-rays blur. Distilling the image features directly keeps the term
+  dense, radar-free, and disjoint from the fusion term (it shapes the encoder
+  output before projection/fusion), matching "keep DINO semantics from being
+  diluted".
+- Verification: `python3 -m py_compile` and `git diff --check` passed. Four
+  20-step single-sample smokes (fusion loss, cosine-to-DINO): baseline 0.2039;
+  +image-distill (frozen) 0.2039 with image loss 0.430; +train-encoder only
+  0.1730; +train-encoder +image-distill 0.1726 with image loss 0.405.
+- Limitation: the image term now converges cleanly (image loss ~1.0 -> ~0.41)
+  and no longer drags the fusion loss (0.1726 vs 0.1730), but the fusion-loss
+  improvement is still driven by encoder trainability, and the ~0.0004 image
+  delta is within single-sample smoke noise. Single mini sample, 20 updates,
+  training losses only. The image term's real target is semantic retention in
+  the image features, which a fusion-loss readout only sees indirectly.
+- Next: judge the image term on its own objective (image-feature similarity to
+  DINO on held-out frames, or a frozen-feature probe) rather than on fusion
+  loss, and run a larger multi-sample comparison before claiming any benefit.

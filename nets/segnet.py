@@ -554,7 +554,7 @@ class Segnet(nn.Module):
                 'camera_bev_features': tuple(camera_bev.shape),
                 'fused_bev_features': tuple(feat_bev.shape),
             }
-            return feat_bev, camera_bev
+            return feat_bev, camera_bev, feat_camXs_
 
         # bev decoder
         out_dict = self.decoder(feat_bev, (self.bev_flip1_index, self.bev_flip2_index) if self.rand_flip else None)

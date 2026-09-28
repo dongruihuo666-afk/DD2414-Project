@@ -30,30 +30,30 @@ TEXT = (25, 30, 40)
 
 
 class SemanticDistillationModel(nn.Module):
-    def __init__(self, student, teacher_dim=384, camera_distill=False):
+    def __init__(self, student, teacher_dim=384, image_distill=False):
         super().__init__()
         self.student = student
-        self.camera_distill = camera_distill
+        self.image_distill = image_distill
         self.semantic_head = nn.Sequential(
             nn.Conv2d(student.latent_dim, student.latent_dim, 3, padding=1, bias=False),
             nn.InstanceNorm2d(student.latent_dim),
             nn.GELU(),
             nn.Conv2d(student.latent_dim, teacher_dim, 1),
         )
-        if camera_distill:
-            self.camera_head = nn.Sequential(
-                nn.Conv2d(student.feat2d_dim * student.Y, student.feat2d_dim,
+        if image_distill:
+            self.image_head = nn.Sequential(
+                nn.Conv2d(student.feat2d_dim, student.feat2d_dim,
                           3, padding=1, bias=False),
                 nn.InstanceNorm2d(student.feat2d_dim),
                 nn.GELU(),
                 nn.Conv2d(student.feat2d_dim, teacher_dim, 1),
             )
         else:
-            self.camera_head = None
+            self.image_head = None
 
     def forward(self, rgb, pixel_from_cameras, camera0_from_cameras,
                 vox_util, radar_voxels):
-        shared_bev, camera_bev = self.student(
+        shared_bev, _, image_features = self.student(
             rgb_camXs=rgb,
             pix_T_cams=pixel_from_cameras,
             cam0_T_camXs=camera0_from_cameras,
@@ -62,10 +62,10 @@ class SemanticDistillationModel(nn.Module):
             return_shared_bev=True,
         )
         fusion_prediction = self.semantic_head(shared_bev)
-        camera_prediction = (
-            self.camera_head(camera_bev) if self.camera_head is not None else None
+        image_prediction = (
+            self.image_head(image_features) if self.image_head is not None else None
         )
-        return fusion_prediction, camera_prediction, shared_bev, camera_bev
+        return fusion_prediction, image_prediction, shared_bev, image_features
 
 
 def font(size, bold=False):
@@ -83,10 +83,10 @@ def parse_args():
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--steps', type=int, default=20)
     parser.add_argument('--learning-rate', type=float, default=1e-3)
-    parser.add_argument('--camera-distill', action='store_true',
-                        help='add a dense, camera-visibility DINOv2 term on the camera BEV')
-    parser.add_argument('--camera-weight', type=float, default=1.0,
-                        help='weight of the camera-side dense term relative to the fusion term')
+    parser.add_argument('--image-distill', action='store_true',
+                        help='add a dense DINOv2 term on the image features before BEV projection')
+    parser.add_argument('--image-weight', type=float, default=1.0,
+                        help='weight of the image-level dense term relative to the fusion term')
     parser.add_argument('--train-encoder', action='store_true',
                         help='unfreeze the camera encoder so the camera-side term can shape it')
     return parser.parse_args()
@@ -276,17 +276,18 @@ def main():
     cached = np.load(args.target_cache)
     target = torch.from_numpy(cached['semantic_target'].astype(np.float32))[None].to(device)
     confidence = torch.from_numpy(cached['confidence'].astype(np.float32))[None].to(device)
-    if args.camera_distill:
-        if 'dense_semantic_target' not in cached or 'camera_coverage' not in cached:
+    if args.image_distill:
+        if 'features' not in teacher_metadata:
             raise RuntimeError(
-                'target cache lacks dense camera keys; re-run run_dinov2_bev_demo.sh'
+                'teacher cache lacks image patch features; re-run run_dinov2_bev_demo.sh'
             )
-        dense_target = torch.from_numpy(
-            cached['dense_semantic_target'].astype(np.float32)
-        )[None].to(device)
-        dense_confidence = torch.from_numpy(
-            cached['camera_coverage'].astype(np.float32)
-        )[None].gt(0).float().to(device)
+        image_target = torch.from_numpy(
+            teacher_metadata['features'].astype(np.float32)
+        ).to(device)
+        image_confidence = torch.ones(
+            image_target.shape[0], image_target.shape[-2], image_target.shape[-1],
+            device=device,
+        )
     inputs = prepare_inputs(batch, device)
     student = Segnet(
         Z, Y, X, vox_util=inputs[3], use_radar=True, use_metaradar=True,
@@ -295,7 +296,7 @@ def main():
     ).to(device)
     saverloader.load(str(args.checkpoint), student)
     model = SemanticDistillationModel(
-        student, camera_distill=args.camera_distill
+        student, image_distill=args.image_distill
     ).to(device)
 
     for parameter in model.parameters():
@@ -304,8 +305,8 @@ def main():
         parameter.requires_grad_(True)
     for parameter in model.semantic_head.parameters():
         parameter.requires_grad_(True)
-    if args.camera_distill:
-        for parameter in model.camera_head.parameters():
+    if args.image_distill:
+        for parameter in model.image_head.parameters():
             parameter.requires_grad_(True)
     if args.train_encoder:
         for parameter in model.student.encoder.parameters():
@@ -315,7 +316,7 @@ def main():
     scaler = torch.amp.GradScaler('cuda')
 
     losses = []
-    camera_losses = []
+    image_losses = []
     gradient_norms = []
     initial_similarity = None
     start = time.perf_counter()
@@ -328,13 +329,17 @@ def main():
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast(device_type='cuda', dtype=torch.float16):
-            prediction, camera_prediction, _, _ = model(*inputs)
+            prediction, image_prediction, _, _ = model(*inputs)
             loss, similarity = semantic_loss(prediction, target, confidence)
-            if args.camera_distill:
-                camera_loss, _ = semantic_loss(
-                    camera_prediction, dense_target, dense_confidence
+            if args.image_distill:
+                image_prediction = F.interpolate(
+                    image_prediction, size=image_target.shape[-2:],
+                    mode='bilinear', align_corners=False,
                 )
-                loss = loss + args.camera_weight * camera_loss
+                image_loss, _ = semantic_loss(
+                    image_prediction, image_target, image_confidence
+                )
+                loss = loss + args.image_weight * image_loss
         if initial_similarity is None:
             initial_similarity = similarity.detach().float().cpu().numpy()[0]
         scaler.scale(loss).backward()
@@ -343,22 +348,26 @@ def main():
         scaler.step(optimizer)
         scaler.update()
         losses.append(float(loss.detach()))
-        if args.camera_distill:
-            camera_losses.append(float(camera_loss.detach()))
+        if args.image_distill:
+            image_losses.append(float(image_loss.detach()))
         gradient_norms.append(float(grad_norm))
-        suffix = f' camera_loss={camera_losses[-1]:.6f}' if args.camera_distill else ''
+        suffix = f' image_loss={image_losses[-1]:.6f}' if args.image_distill else ''
         print(f'step {step + 1:02d}/{args.steps}: loss={losses[-1]:.6f}{suffix} grad_norm={gradient_norms[-1]:.4f}')
 
     model.eval()
     with torch.inference_mode(), torch.autocast(device_type='cuda', dtype=torch.float16):
-        final_prediction, final_camera_prediction, shared_bev, camera_bev = model(*inputs)
+        final_prediction, final_image_prediction, shared_bev, image_features = model(*inputs)
         final_loss, final_similarity = semantic_loss(final_prediction, target, confidence)
         final_total_loss = final_loss
-        if args.camera_distill:
-            final_camera_loss, _ = semantic_loss(
-                final_camera_prediction, dense_target, dense_confidence
+        if args.image_distill:
+            final_image_prediction = F.interpolate(
+                final_image_prediction, size=image_target.shape[-2:],
+                mode='bilinear', align_corners=False,
             )
-            final_total_loss = final_loss + args.camera_weight * final_camera_loss
+            final_image_loss, _ = semantic_loss(
+                final_image_prediction, image_target, image_confidence
+            )
+            final_total_loss = final_loss + args.image_weight * final_image_loss
     torch.cuda.synchronize()
     elapsed = time.perf_counter() - start
     final_similarity = final_similarity.float().cpu().numpy()[0]
@@ -385,7 +394,7 @@ def main():
     np.savez_compressed(
         args.output_dir / 'semantic_distillation_overfit_metrics.npz',
         losses=np.asarray(losses, dtype=np.float32),
-        camera_losses=np.asarray(camera_losses, dtype=np.float32),
+        image_losses=np.asarray(image_losses, dtype=np.float32),
         gradient_norms=np.asarray(gradient_norms, dtype=np.float32),
         final_loss=np.asarray(float(final_loss), dtype=np.float32),
         final_total_loss=np.asarray(float(final_total_loss), dtype=np.float32),
@@ -400,12 +409,12 @@ def main():
     print(f'initial_loss: {losses[0]:.6f}')
     print(f'last_train_loss: {losses[-1]:.6f}')
     print(f'final_eval_loss: {float(final_loss):.6f}')
-    if args.camera_distill:
-        print(f'final_camera_loss: {float(final_camera_loss):.6f}')
+    if args.image_distill:
+        print(f'final_image_loss: {float(final_image_loss):.6f}')
     print(f'final_total_loss: {float(final_total_loss):.6f}')
     print(f'loss_reduction_percent: {(1 - float(final_total_loss) / losses[0]) * 100:.2f}')
     print(f'shared_bev_shape: {tuple(shared_bev.shape)}')
-    print(f'camera_bev_shape: {tuple(camera_bev.shape)}')
+    print(f'image_features_shape: {tuple(image_features.shape)}')
     print(f'prediction_shape: {tuple(final_prediction.shape)}')
     print(f'compressor_has_finite_gradient: {compressor_grad}')
     print(f'peak_cuda_memory_gib: {peak_gib:.3f}')

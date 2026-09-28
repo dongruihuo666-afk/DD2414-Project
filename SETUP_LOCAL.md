@@ -185,8 +185,10 @@ stride-16 alignment.
    model/optimizer state dictionaries.
 7. `vis_nuscenes.py`: map lookup uses the loader's actual resolved data root.
 8. `nets/segnet.py`: an optional `return_shared_bev=True` path exposes the
-   `(B,128,200,200)` fused feature before the supervised decoder. The default
-   five-output forward path is unchanged and passed a checkpoint regression.
+   `(B,128,200,200)` fused feature before the supervised decoder plus the
+   pre-projection `(B*S,128,Hf,Wf)` image features for image-level distillation.
+   The default five-output forward path is unchanged and passed a checkpoint
+   regression.
 9. `scripts/dinov2_bev_demo.py`: creates and caches label-free frozen-teacher
    features plus radar-anchored soft-region semantic targets.
 10. `scripts/semantic_distill_smoke.py`: adds a training-only semantic head and
