@@ -746,3 +746,36 @@ chat transcripts, secrets, or unreviewed generated data.
   velocity penalty turns positive before committing to the full supercomputer run,
   or go straight to the full nuScenes run with the motion loss re-weighted to the
   sparse moving-point coverage.
+
+### 2026-09-29 — Held-out probe scaled to 64 samples — velocity penalty turns positive
+
+- Change: added a `--tag` argument to
+  `scripts/compare_motion_target_bevcar_heldout.py` (suffixes the output filename)
+  and a matching `TAG` env passthrough in `scripts/run_motion_target_bevcar_heldout.sh`
+  so scale runs write separate JSONs instead of overwriting the 4-sample one.
+  `.gitignore` now un-ignores `artifacts/motion_target_bevcar_heldout_*.json`. Ran
+  the same held-out probe with 64 train / 16 val samples and 512 steps (8 epochs).
+  Emits `artifacts/motion_target_bevcar_heldout_train64.json` (committed).
+- Reason: option b1 — test whether the velocity penalty turns positive as the
+  training set grows, before committing to the full supercomputer run.
+- Verification: mean held-out velocity penalty (zero_velocity − correct) vs training
+  samples:
+
+  | Train samples | motion_only penalty | joint penalty |
+  | ---: | ---: | ---: |
+  | 4 | −0.012 | −0.004 |
+  | 64 | +0.009 | +0.022 |
+
+  Held-out motion `correct` also falls as data grows (motion_only 2.19→1.88; joint
+  2.41→1.64), so the model starts predicting velocity rather than sitting at the
+  predict-zero floor (~2.70). The penalty turns positive but remains small: velocity
+  dependence is emerging but weak at 64 samples. The trend confirms the
+  data-scarcity reading — more samples → more radar-velocity dependence, which is
+  what the full nuScenes run should deliver.
+- Limitation: the val split contains many stationary scenes with zero moving points
+  (`motion_loss` returns 0 there, diluting the mean), so the reported penalty is a
+  mean over all val samples and the per-moving-sample penalty is larger than shown.
+  Still small in absolute terms at 64 samples.
+- Next: re-run at 128 samples to confirm the monotonic trend, then decide whether to
+  proceed to the full nuScenes run (with the motion loss re-weighted to the sparse
+  moving-point coverage).

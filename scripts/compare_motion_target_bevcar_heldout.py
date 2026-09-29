@@ -58,6 +58,8 @@ def parse_args():
     parser.add_argument('--model-name', default='dinov2_vits14')
     parser.add_argument('--variants', default='semantic_only,motion_only,joint',
                         help='comma-separated subset of the three variants')
+    parser.add_argument('--tag', default='',
+                        help='optional suffix for the output filename (e.g. train64)')
     return parser.parse_args()
 
 
@@ -178,7 +180,8 @@ def main():
         'seed_results': seed_results,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    path = args.output_dir / 'motion_target_bevcar_heldout.json'
+    suffix = f'_{args.tag}' if args.tag else ''
+    path = args.output_dir / f'motion_target_bevcar_heldout{suffix}.json'
     path.write_text(json.dumps(report, indent=2) + '\n')
 
     print('--- motion-target (BEVCar) held-out summary (mean over seeds) ---')

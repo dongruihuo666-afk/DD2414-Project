@@ -34,6 +34,7 @@ artifacts/*
 !artifacts/motion_target_bevcar_tiny.json
 !artifacts/motion_target_bevcar_tiny_zerocam.json
 !artifacts/motion_target_bevcar_heldout.json
+!artifacts/motion_target_bevcar_heldout_*.json
 !artifacts/bevcar_supervised_mini.png
 !artifacts/bevcar_supervised_mini.json
 !artifacts/bevcar_supervised_mini_seed126.json

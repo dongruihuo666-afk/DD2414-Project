@@ -23,4 +23,5 @@ python scripts/compare_motion_target_bevcar_heldout.py \
     --train-samples "${TRAIN_SAMPLES:-4}" \
     --val-samples "${VAL_SAMPLES:-4}" \
     --steps "${STEPS:-100}" \
+    --tag "${TAG:-}" \
     "$@"
