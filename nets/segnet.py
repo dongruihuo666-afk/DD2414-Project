@@ -302,7 +302,11 @@ class Segnet(nn.Module):
                  encoder_type="res101",
                  pretrained_backbone=True,
                  use_radar_encoder=False,
-                 radar_encoder_channels=64):
+                 radar_encoder_channels=64,
+                 use_bevcar_encoder=False,
+                 bevcar_encoder=None,
+                 bevcar_encoder_channels=128,
+                 zero_camera_bev=False):
         super(Segnet, self).__init__()
         assert (encoder_type in ["res101", "res50", "effb0", "effb4"])
 
@@ -311,7 +315,9 @@ class Segnet(nn.Module):
         self.use_lidar = use_lidar
         self.use_metaradar = use_metaradar
         self.use_radar_encoder = use_radar_encoder
-        self.do_rgbcompress = do_rgbcompress   
+        self.use_bevcar_encoder = use_bevcar_encoder
+        self.zero_camera_bev = zero_camera_bev
+        self.do_rgbcompress = do_rgbcompress
         self.rand_flip = rand_flip
         self.latent_dim = latent_dim
         self.encoder_type = encoder_type
@@ -324,6 +330,17 @@ class Segnet(nn.Module):
         if self.use_radar_encoder and self.use_metaradar:
             raise ValueError(
                 'use_metaradar belongs to the legacy radar path'
+            )
+        if self.use_bevcar_encoder and (
+                self.use_radar or self.use_lidar or self.use_metaradar
+                or self.use_radar_encoder):
+            raise ValueError(
+                'use_bevcar_encoder is a separate radar path and cannot be '
+                'combined with the other radar/lidar paths'
+            )
+        if self.use_bevcar_encoder and bevcar_encoder is None:
+            raise ValueError(
+                'bevcar_encoder must be provided when use_bevcar_encoder=True'
             )
 
         self.register_buffer(
@@ -354,7 +371,18 @@ class Segnet(nn.Module):
             )
 
         # BEV compressor
-        if self.use_radar_encoder:
+        if self.use_bevcar_encoder:
+            self.bevcar_encoder = bevcar_encoder
+            self.bev_compressor = nn.Sequential(
+                nn.Conv2d(
+                    feat2d_dim * Y + bevcar_encoder_channels,
+                    feat2d_dim, kernel_size=3, padding=1, stride=1,
+                    bias=False,
+                ),
+                nn.InstanceNorm2d(latent_dim),
+                nn.GELU(),
+            )
+        elif self.use_radar_encoder:
             if vox_util is None:
                 # Default Simple-BEV bounds after its (0, 1, 0) centroid.
                 radar_bounds = (-50.0, 50.0, -4.0, 6.0, -50.0, 50.0)
@@ -431,7 +459,7 @@ class Segnet(nn.Module):
             self.xyz_camA = None
         
     def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util,
-                rad_occ_mem0=None, radar_points=None,
+                rad_occ_mem0=None, radar_points=None, bevcar_voxels=None,
                 return_shared_bev=False):
         '''
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
@@ -505,8 +533,30 @@ class Segnet(nn.Module):
             B, self.feat2d_dim * Y, Z, X
         )
 
+        if self.zero_camera_bev:
+            # Diagnostic ablation: cut the camera shortcut so the fusion can only
+            # reach a downstream head through the radar branch.
+            camera_bev = torch.zeros_like(camera_bev)
+
         # bev compressing
-        if self.use_radar_encoder:
+        if self.use_bevcar_encoder:
+            if bevcar_voxels is None:
+                raise ValueError(
+                    'bevcar_voxels is required when use_bevcar_encoder=True'
+                )
+            radar_bev = self.bevcar_encoder(*bevcar_voxels)
+            radar_bev = radar_bev.to(camera_bev.dtype)
+            if self.rand_flip:
+                radar_bev[self.bev_flip1_index] = torch.flip(
+                    radar_bev[self.bev_flip1_index], [-1]
+                )
+                radar_bev[self.bev_flip2_index] = torch.flip(
+                    radar_bev[self.bev_flip2_index], [-2]
+                )
+            feat_bev = self.bev_compressor(
+                torch.cat((camera_bev, radar_bev), dim=1)
+            )
+        elif self.use_radar_encoder:
             if radar_points is None:
                 raise ValueError(
                     'radar_points is required when use_radar_encoder=True'

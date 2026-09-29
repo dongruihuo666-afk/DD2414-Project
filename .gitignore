@@ -31,6 +31,8 @@ artifacts/*
 !artifacts/dual_teacher_heldout.json
 !artifacts/radar_velocity_tiny.json
 !artifacts/motion_target_tiny.json
+!artifacts/motion_target_bevcar_tiny.json
+!artifacts/motion_target_bevcar_tiny_zerocam.json
 !artifacts/bevcar_supervised_mini.png
 !artifacts/bevcar_supervised_mini.json
 !artifacts/bevcar_supervised_mini_seed126.json

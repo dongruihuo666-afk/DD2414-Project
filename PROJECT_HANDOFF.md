@@ -650,3 +650,59 @@ chat transcripts, secrets, or unreviewed generated data.
   encoder (BEVCar VoxelNet) and re-run the motion-target sensitivity probe; the
   velocity penalty should then be large, confirming the recipe is a
   motion/Doppler target *plus* a velocity-preserving radar encoder.
+
+### 2026-09-29 — Motion target + BEVCar branch in the full fusion — camera shortcut defeats it
+
+- Change: added an opt-in `use_bevcar_encoder` / `bevcar_encoder` /
+  `bevcar_encoder_channels` path plus a `zero_camera_bev` diagnostic flag to
+  `nets/segnet.py` (the BEVCar VoxelNet `(B,128,Z,X)` output is concat'd with
+  `camera_bev` before `bev_compressor`, mirroring `use_radar_encoder`; all other
+  radar/lidar paths unchanged). Added `scripts/compare_motion_target_bevcar_tiny.py`
+  and `scripts/run_motion_target_bevcar_tiny.sh`: the same frozen-camera
+  motion-target probe as the metaradar experiment, but with the fusion's radar
+  branch replaced by BEVCar VoxelNet. Ablations zero the BEVCar velocity channels
+  (`features[..., 4:6]` = raw_vx/raw_vz) or all radar. `--zero-camera` zeros the
+  camera BEV to cut the camera shortcut. Emits
+  `artifacts/motion_target_bevcar_tiny.json` and
+  `..._zerocam.json` (both committed).
+- Reason: finish the recipe — a velocity-preserving radar encoder (BEVCar) in the
+  real fusion model, expected to restore the large velocity penalty that metaradar
+  lost.
+- Verification: `python3 -m py_compile` passed. 4 samples, 100 steps, 3 seeds,
+  frozen res101 camera encoder. Mean loss and velocity penalty (zero_velocity
+  minus correct):
+
+  Camera ON (normal fusion):
+  | Variant | Loss | Correct | Zero velocity | Penalty | No radar |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | motion_only | motion | 0.444 | 0.425 | −0.019 | 1.532 |
+  | joint (1.0/0.5) | motion | 0.433 | 0.435 | +0.002 | 1.501 |
+
+  Camera ZEROED (control):
+  | Variant | Loss | Correct | Zero velocity | Penalty | No radar |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | motion_only | motion | 0.052 | 0.116 | **+0.064 (2.2×)** | 2.697 |
+  | joint (1.0/0.5) | motion | 0.024 | 0.080 | +0.056 (2.3×) | 2.723 |
+
+  With the camera on, the velocity penalty is still ~0 — no better than metaradar.
+  The tell is `no_radar = 1.53`, *below* the predict-zero floor (~2.70, the mean
+  |velocity| of moving points): the model predicts velocity better than chance even
+  with radar fully zeroed, because the frozen camera BEV is a per-sample
+  memorization key (4 fixed samples), so the trainable bev_compressor/head look up
+  the velocity field without reading radar velocity. Zeroing the camera removes the
+  shortcut: correct drops to 0.052 (matching the standalone BEVCar diagnostic's
+  0.059), the velocity penalty becomes +0.064 (2.2×, clearly positive vs metaradar's
+  +0.05 and the camera-on ~0), and no_radar returns to the 2.70 floor. So the
+  VoxelNet → bev_compressor path *does* preserve velocity through the fusion; the
+  camera shortcut was the only blocker.
+- Limitation: small-sample overfit, not generalization; the camera memorization is
+  an artifact of 4 fixed samples (a frozen random camera encoder is still
+  sample-identifiable). Freezing the encoder is therefore not enough to isolate
+  radar velocity in a 4-sample diagnostic. The penalty is 2.2× here vs 6.8× in the
+  standalone radar encoder, because the bev_compressor mixes in position features
+  that soften the loss when velocity alone is removed.
+- Next: the recipe is now motion/Doppler target + velocity-preserving radar encoder
+  + cutting the camera shortcut. To prove the full model needs radar velocity
+  end-to-end, either (a) run the motion probe on a held-out split (camera cannot
+  memorize unseen samples), or (b) route the motion head off a radar-only branch so
+  the camera can never supply velocity, and re-measure the penalty at scale.
