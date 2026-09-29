@@ -779,3 +779,22 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: re-run at 128 samples to confirm the monotonic trend, then decide whether to
   proceed to the full nuScenes run (with the motion loss re-weighted to the sparse
   moving-point coverage).
+
+### 2026-09-30 — 128-sample probe: fixed motion_loss crash, deferred to 20 GB GPU
+
+- Change: fixed a crash in `motion_loss` (`scripts/compare_motion_target_bevcar_tiny.py`):
+  when a sample has no moving points it returned a detached `torch.zeros(())`, so in the
+  `motion_only` variant `loss` became a leaf with no grad and `.backward()` raised
+  "element 0 of tensors does not require grad and does not have a grad_fn". It now
+  returns `prediction.sum() * 0.0` (a true zero that keeps the graph connected). Also
+  added `flush=True` to the seed-result prints in
+  `scripts/compare_motion_target_bevcar_heldout.py` so long-run progress is visible.
+- Reason: the 128-sample run (128 train / 32 val, 1024 steps) crashed after the first
+  control variant. The 64-sample run only survived because its 64 train samples happened
+  to all contain moving points; the 128-sample set adds stationary samples.
+- Verification: script compiles and the fixed branch is exercised by the val set of the
+  completed 64-sample run. The 128-sample re-run was started and confirmed progressing,
+  but was stopped early: the laptop GPU (RTX 5060 Laptop) was clock-capped at 1065 MHz
+  (34% of its 3090 MHz max, 30 W against a 115 W limit) with VRAM 97% full, giving a
+  ~2.5–3 h ETA instead of ~25 min. No 128-sample result was produced.
+- Next: run the 128-sample (or larger) probe on the machine room's 20 GB GPU.

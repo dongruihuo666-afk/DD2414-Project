@@ -155,10 +155,12 @@ def main():
             mot_penalty = float(heldout_mot['zero_velocity'].mean() - heldout_mot['correct'].mean())
             print(f'seed {seed} {label}: heldout sem correct={heldout_sem["correct"].mean():.4f} '
                   f'zero_vel={heldout_sem["zero_velocity"].mean():.4f} '
-                  f'(penalty {sem_penalty:+.4f}) no_radar={heldout_sem["no_radar"].mean():.4f}')
+                  f'(penalty {sem_penalty:+.4f}) no_radar={heldout_sem["no_radar"].mean():.4f}',
+                  flush=True)
             print(f'seed {seed} {label}: heldout mot correct={heldout_mot["correct"].mean():.4f} '
                   f'zero_vel={heldout_mot["zero_velocity"].mean():.4f} '
-                  f'(penalty {mot_penalty:+.4f}) no_radar={heldout_mot["no_radar"].mean():.4f}')
+                  f'(penalty {mot_penalty:+.4f}) no_radar={heldout_mot["no_radar"].mean():.4f}',
+                  flush=True)
 
     report = {
         'scope': 'motion target on full fusion model with BEVCar radar branch, held-out (train on train split, eval on scene-disjoint val split)',

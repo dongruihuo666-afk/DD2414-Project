@@ -233,7 +233,10 @@ def motion_loss(prediction, target, coverage):
         prediction = prediction.squeeze(0)
     mask = coverage.gt(0)
     if not mask.any():
-        return torch.zeros((), device=prediction.device), 0
+        # Keep the graph connected with a true zero: a plain torch.zeros(()) is a leaf
+        # with no grad, which crashes .backward() when it is the only loss term
+        # (motion_only on a sample with no moving points).
+        return prediction.sum() * 0.0, 0
     loss = F.smooth_l1_loss(prediction[:, mask], target[:, mask], reduction='mean')
     return loss, int(mask.sum())
 
