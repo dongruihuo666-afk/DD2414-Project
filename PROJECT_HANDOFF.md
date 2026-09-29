@@ -706,3 +706,43 @@ chat transcripts, secrets, or unreviewed generated data.
   end-to-end, either (a) run the motion probe on a held-out split (camera cannot
   memorize unseen samples), or (b) route the motion head off a radar-only branch so
   the camera can never supply velocity, and re-measure the penalty at scale.
+
+### 2026-09-29 — Motion target + BEVCar held-out probe — velocity does not generalize at 4 samples
+
+- Change: added `scripts/compare_motion_target_bevcar_heldout.py` and
+  `scripts/run_motion_target_bevcar_heldout.sh`. Same BEVCar fusion + motion target
+  as the overfit probe, but training samples come from the `train` split and
+  evaluation from the scene-disjoint `val` split, with the camera encoder kept ON
+  and frozen (an unseen sample's camera BEV is a pattern the bev_compressor has
+  never seen and cannot memorize). The probe's helpers are reused by importing from
+  `compare_motion_target_bevcar_tiny` rather than duplicated. Emits
+  `artifacts/motion_target_bevcar_heldout.json` (committed).
+- Reason: option (a) from the previous entry — prove whether the full model needs
+  radar velocity end-to-end once the camera cannot memorize unseen samples.
+- Verification: 4 train / 4 val samples, 100 steps, 3 seeds. Held-out (val) motion
+  loss and velocity penalty (zero_velocity − correct):
+
+  | Variant | Loss | Correct | Zero velocity | Penalty | No radar |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | motion_only | motion | 2.193 | 2.181 | −0.012 | 2.585 |
+  | joint (1.0/0.5) | motion | 2.409 | 2.405 | −0.004 | 2.570 |
+
+  Held-out motion `correct ≈ 2.2–2.4` is essentially the predict-zero floor (~2.70)
+  and the velocity penalty is ≈0 (slightly negative = noise). So on unseen samples
+  the model does not use radar velocity for the motion target: the velocity-reading
+  ability does not generalize from 4 training samples. Radar *position* still helps
+  a little (no_radar 2.57–2.59 vs correct 2.19–2.41), but the velocity channels add
+  nothing. This is the decisive control — the earlier overfit "success"
+  (camera-zeroed correct=0.052, penalty 2.2×) was memorization of the 4 training
+  samples, not a learned velocity function.
+- Limitation / interpretation: not a recipe failure but the expected small-sample
+  result. The tiny probes establish the mechanism (BEVCar carries velocity through
+  the fusion) but cannot demonstrate generalization; whether the velocity penalty
+  turns positive on held-out data is exactly what needs many more samples (the full
+  nuScenes run). Also flags a real scaling risk: the motion target supervises only
+  ~3% of returns (~8–16 moving cells of 40 000), so the velocity signal is sparse
+  and may need re-weighting at scale.
+- Next: scale up the held-out probe (train ~24–64 samples) to see whether the
+  velocity penalty turns positive before committing to the full supercomputer run,
+  or go straight to the full nuScenes run with the motion loss re-weighted to the
+  sparse moving-point coverage.
