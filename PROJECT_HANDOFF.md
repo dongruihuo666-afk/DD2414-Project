@@ -801,22 +801,22 @@ chat transcripts, secrets, or unreviewed generated data.
 
 ### 2026-09-30 — Dual-teacher held-out probe: seed-list + tag
 
-- Change:  now accepts 
-  (comma-separated seeds, replacing the single ) and  (output
+- Change: `scripts/eval_image_distill_heldout.py` now accepts `--seed-list`
+  (comma-separated seeds, replacing the single `--seed`) and `--tag` (output
   filename suffix); per-variant metrics are aggregated across seeds before
-  writing . The previous fixed output
+  writing `artifacts/dual_teacher_heldout{_tag}.json`. The previous fixed output
   name made consecutive runs overwrite each other.
 - Reason: run the 64-sample dual-teacher + weight-sweep probe (baseline,
   image_distill, 0.8-camera/0.2-radar, 0.2-camera/0.8-radar x 3 seeds) without
   clobbering results, and let the 20 GB machine run the same probe in parallel.
-- Verification: script compiles; the  run is in flight on the laptop.
+- Verification: script compiles; the `--tag train64` run is in flight on the laptop.
 
 ### 2026-09-30 — Vectorized the radar-anchored soft-target splat
 
-- Change:   no longer
+- Change: `scripts/dinov2_bev_demo.py` `radar_anchored_soft_targets` no longer
   scatters each visible radar point in a Python loop (one GPU-to-CPU sync per
   point per field). The Gaussian scatter is now one vectorized pass (broadcast
-  grid + boolean window mask + ).
+  grid + boolean window mask + `einsum`).
 - Reason: the loop dominated target extraction, making 64-sample feature
   extraction take ~90 min on the throttled laptop instead of minutes.
 - Verification: a synthetic old-loop-vs-vectorized equivalence test matches to
