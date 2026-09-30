@@ -50,8 +50,11 @@ def parse_args():
     parser.add_argument('--val-samples', type=int, default=4)
     parser.add_argument('--steps', type=int, default=60)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
-    parser.add_argument('--seed', type=int, default=125)
+    parser.add_argument('--seed-list', default='125',
+                        help='comma-separated integer seeds')
     parser.add_argument('--model-name', default='dinov2_vits14')
+    parser.add_argument('--tag', default='',
+                        help='optional suffix for the output filenames (e.g. train64)')
     return parser.parse_args()
 
 
@@ -203,8 +206,10 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is unavailable')
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
+    seeds = [int(part.strip()) for part in args.seed_list.split(',')]
+    if not seeds or len(set(seeds)) != len(seeds):
+        raise ValueError('seed-list must have distinct integer seeds')
+
     torch.cuda.init()
     device = torch.device('cuda:0')
     torch.cuda.empty_cache()
@@ -235,46 +240,57 @@ def main():
         ('dual_08_camera_02_radar', True,  0.2, 0.8),
         ('dual_02_camera_08_radar', True,  0.8, 0.2),
     )
-    results = {}
-    for label, image_distill, fusion_weight, image_weight in variants:
-        model = build_model(device, image_distill, args.seed)
-        start = time.perf_counter()
-        train_losses = train_variant(
-            model, train_inputs, train_fusion, train_conf, train_image,
-            image_distill, args.steps, args.learning_rate, device,
-            fusion_weight=fusion_weight, image_weight=image_weight,
-        )
-        torch.cuda.synchronize()
-        train_seconds = time.perf_counter() - start
-        held_fusion, held_image, no_radar_fusion = evaluate(
-            model, val_inputs, val_fusion, val_conf, val_image, device
-        )
-        results[label] = {
-            'train_losses': train_losses,
-            'train_seconds': train_seconds,
-            'heldout_fusion_losses': held_fusion,
-            'heldout_image_losses': held_image,
-            'no_radar_fusion_losses': no_radar_fusion,
-        }
-        del model
-        torch.cuda.empty_cache()
-        radar_penalty = float(no_radar_fusion.mean() - held_fusion.mean())
-        print(f'[{label}] fusion_w={fusion_weight} image_w={image_weight} '
-              f'train last-cycle mean loss: {np.mean(train_losses[-args.train_samples:]):.6f}')
-        print(f'[{label}] heldout fusion loss: mean {held_fusion.mean():.6f} '
-              f'per-sample {np.round(held_fusion, 4).tolist()}')
-        print(f'[{label}] heldout no-radar fusion loss: mean {no_radar_fusion.mean():.6f} '
-              f'(radar penalty {radar_penalty:+.6f})')
-        if held_image is not None:
-            print(f'[{label}] heldout image loss: mean {held_image.mean():.6f} '
-                  f'per-sample {np.round(held_image, 4).tolist()}')
+    seed_results = {}
+    for seed in seeds:
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        seed_results[str(seed)] = {}
+        for label, image_distill, fusion_weight, image_weight in variants:
+            model = build_model(device, image_distill, seed)
+            start = time.perf_counter()
+            train_losses = train_variant(
+                model, train_inputs, train_fusion, train_conf, train_image,
+                image_distill, args.steps, args.learning_rate, device,
+                fusion_weight=fusion_weight, image_weight=image_weight,
+            )
+            torch.cuda.synchronize()
+            train_seconds = time.perf_counter() - start
+            held_fusion, held_image, no_radar_fusion = evaluate(
+                model, val_inputs, val_fusion, val_conf, val_image, device
+            )
+            seed_results[str(seed)][label] = {
+                'train_losses': train_losses,
+                'train_seconds': train_seconds,
+                'heldout_fusion_losses': held_fusion,
+                'heldout_image_losses': held_image,
+                'no_radar_fusion_losses': no_radar_fusion,
+            }
+            del model
+            torch.cuda.empty_cache()
+            radar_penalty = float(no_radar_fusion.mean() - held_fusion.mean())
+            print(f'[seed {seed} {label}] fusion_w={fusion_weight} image_w={image_weight} '
+                  f'train last-cycle mean loss: {np.mean(train_losses[-args.train_samples:]):.6f}')
+            print(f'[seed {seed} {label}] heldout fusion loss: mean {held_fusion.mean():.6f} '
+                  f'per-sample {np.round(held_fusion, 4).tolist()}')
+            print(f'[seed {seed} {label}] heldout no-radar fusion loss: mean {no_radar_fusion.mean():.6f} '
+                  f'(radar penalty {radar_penalty:+.6f})', flush=True)
+            if held_image is not None:
+                print(f'[seed {seed} {label}] heldout image loss: mean {held_image.mean():.6f} '
+                      f'per-sample {np.round(held_image, 4).tolist()}')
 
     summary = {}
     save_dict = {}
     for label, _, fusion_weight, image_weight in variants:
-        held_fusion = results[label]['heldout_fusion_losses']
-        no_radar = results[label]['no_radar_fusion_losses']
-        held_image = results[label]['heldout_image_losses']
+        held_fusion = np.concatenate(
+            [seed_results[str(s)][label]['heldout_fusion_losses'] for s in seeds])
+        no_radar = np.concatenate(
+            [seed_results[str(s)][label]['no_radar_fusion_losses'] for s in seeds])
+        held_images = [seed_results[str(s)][label]['heldout_image_losses'] for s in seeds]
+        held_image = np.concatenate(held_images) if all(i is not None for i in held_images) else None
+        last_cycle = np.mean([
+            np.mean(seed_results[str(s)][label]['train_losses'][-args.train_samples:])
+            for s in seeds
+        ])
         summary[label] = {
             'fusion_weight': fusion_weight,
             'image_weight': image_weight,
@@ -282,8 +298,8 @@ def main():
             'no_radar_fusion_mean': float(no_radar.mean()),
             'radar_penalty_mean': float(no_radar.mean() - held_fusion.mean()),
             'heldout_image_mean': float(held_image.mean()) if held_image is not None else None,
-            'train_last_cycle_mean': float(np.mean(results[label]['train_losses'][-args.train_samples:])),
-            'train_seconds': results[label]['train_seconds'],
+            'train_last_cycle_mean': float(last_cycle),
+            'train_seconds': float(np.mean([seed_results[str(s)][label]['train_seconds'] for s in seeds])),
         }
         save_dict[f'{label}_heldout_fusion'] = held_fusion
         save_dict[f'{label}_no_radar_fusion'] = no_radar
@@ -294,22 +310,23 @@ def main():
         'val_samples': args.val_samples,
         'steps': args.steps,
         'learning_rate': args.learning_rate,
-        'seed': args.seed,
+        'seeds': seeds,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(args.output_dir / 'dual_teacher_heldout_metrics.npz', **save_dict)
-    with open(args.output_dir / 'dual_teacher_heldout.json', 'w') as handle:
+    suffix = f'_{args.tag}' if args.tag else ''
+    np.savez_compressed(args.output_dir / f'dual_teacher_heldout_metrics{suffix}.npz', **save_dict)
+    with open(args.output_dir / f'dual_teacher_heldout{suffix}.json', 'w') as handle:
         json.dump(summary, handle, indent=2)
 
-    print('--- dual-teacher heldout summary ---')
+    print('--- dual-teacher heldout summary (mean over seeds) ---')
     for label, _, fusion_weight, image_weight in variants:
         row = summary[label]
         image_str = f"{row['heldout_image_mean']:.6f}" if row['heldout_image_mean'] is not None else 'n/a'
         print(f"{label:26s} fusion_w={fusion_weight} image_w={image_weight} | "
               f"fusion {row['heldout_fusion_mean']:.6f} | no_radar {row['no_radar_fusion_mean']:.6f} "
               f"(penalty {row['radar_penalty_mean']:+.6f}) | image {image_str}")
-    print(f'metrics: {args.output_dir / "dual_teacher_heldout_metrics.npz"}')
-    print(f'summary: {args.output_dir / "dual_teacher_heldout.json"}')
+    print(f'metrics: {args.output_dir / f"dual_teacher_heldout_metrics{suffix}.npz"}')
+    print(f'summary: {args.output_dir / f"dual_teacher_heldout{suffix}.json"}')
     print('DUAL_TEACHER_HELDOUT_OK')
 
 
