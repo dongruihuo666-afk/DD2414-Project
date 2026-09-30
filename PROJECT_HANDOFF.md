@@ -30,7 +30,7 @@ the pre-projection image features against the frozen DINOv2 patch features
 alongside the existing radar-guided fusion term; on a single-sample smoke the
 image term converges cleanly and no longer drags the fusion loss (see the
 2026-09-28 work log entry).
-No motion head or full-dataset self-supervised evaluation exists.
+An opt-in motion head now exists in the motion-target probe scripts (2026-09-29); no full-dataset self-supervised evaluation exists.
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
 project-scoped change is pushed there so teammates can follow the work. Check
@@ -144,8 +144,8 @@ measurements; test output-map sensitivity and add an objective/control in
 which matched radar beats empty and mismatched radar. Any architecture claim
 requires matched data/update budgets and a larger genuinely unseen split.
 Resolve capacity, feature/filter, frame, and memory differences.
-Do not use BEVCar's supervised checkpoint for a label-free claim, and do not
-add a motion head yet.
+Do not use BEVCar's supervised checkpoint for a label-free claim. The motion
+head now exists only in the opt-in motion-target probe scripts (2026-09-29).
 
 ## Work log and update template
 
@@ -798,3 +798,27 @@ chat transcripts, secrets, or unreviewed generated data.
   (34% of its 3090 MHz max, 30 W against a 115 W limit) with VRAM 97% full, giving a
   ~2.5–3 h ETA instead of ~25 min. No 128-sample result was produced.
 - Next: run the 128-sample (or larger) probe on the machine room's 20 GB GPU.
+
+### 2026-09-30 — Dual-teacher held-out probe: seed-list + tag
+
+- Change:  now accepts 
+  (comma-separated seeds, replacing the single ) and  (output
+  filename suffix); per-variant metrics are aggregated across seeds before
+  writing . The previous fixed output
+  name made consecutive runs overwrite each other.
+- Reason: run the 64-sample dual-teacher + weight-sweep probe (baseline,
+  image_distill, 0.8-camera/0.2-radar, 0.2-camera/0.8-radar x 3 seeds) without
+  clobbering results, and let the 20 GB machine run the same probe in parallel.
+- Verification: script compiles; the  run is in flight on the laptop.
+
+### 2026-09-30 — Vectorized the radar-anchored soft-target splat
+
+- Change:   no longer
+  scatters each visible radar point in a Python loop (one GPU-to-CPU sync per
+  point per field). The Gaussian scatter is now one vectorized pass (broadcast
+  grid + boolean window mask + ).
+- Reason: the loop dominated target extraction, making 64-sample feature
+  extraction take ~90 min on the throttled laptop instead of minutes.
+- Verification: a synthetic old-loop-vs-vectorized equivalence test matches to
+  float32 precision (max abs diff ~5e-7, identical nonzero cell counts); module
+  compiles.

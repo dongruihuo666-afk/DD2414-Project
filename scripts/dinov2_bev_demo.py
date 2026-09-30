@@ -241,32 +241,42 @@ def radar_anchored_soft_targets(features, pixel_from_camera,
     soft_weight = torch.zeros((Z, X), device=features.device)
     visible_points = point_view_count[:, 0].gt(0)
 
-    for point_index in torch.where(visible_points)[0].tolist():
-        mem_x = float(radar_mem[point_index, 0])
-        mem_z = float(radar_mem[point_index, 2])
-        if not (-0.5 < mem_x < X - 0.5 and -0.5 < mem_z < Z - 0.5):
-            continue
-        metric_range = float(torch.linalg.vector_norm(
-            radar_camera0[0, point_index, (0, 2)]
-        ))
-        # BEV cells are 0.5 m. The uncertainty region grows gently with range.
-        sigma = 2.0 + metric_range / 25.0
-        radius = int(np.ceil(2.5 * sigma))
-        center_x, center_z = int(round(mem_x)), int(round(mem_z))
-        x0, x1 = max(0, center_x - radius), min(X, center_x + radius + 1)
-        z0, z1 = max(0, center_z - radius), min(Z, center_z + radius + 1)
-        grid_z = torch.arange(z0, z1, device=features.device)[:, None]
-        grid_x = torch.arange(x0, x1, device=features.device)[None, :]
+    # Vectorized soft splat: one Gaussian per visible point scattered onto the
+    # BEV grid, avoiding the per-point GPU->CPU syncs of a Python loop.
+    mem_x = radar_mem[:, 0]
+    mem_z = radar_mem[:, 2]
+    metric_range = torch.linalg.vector_norm(radar_camera0[0, :, (0, 2)], dim=1)
+    sigma = 2.0 + metric_range / 25.0
+    view_confidence = point_view_count[:, 0].clamp(max=2.0) / 2.0
+    in_bounds = (
+        (mem_x > -0.5) & (mem_x < X - 0.5) & (mem_z > -0.5) & (mem_z < Z - 0.5)
+    )
+    keep = visible_points & in_bounds
+    if keep.any():
+        mem_x = mem_x[keep]
+        mem_z = mem_z[keep]
+        sigma = sigma[keep]
+        view_confidence = view_confidence[keep]
+        kept_features = point_features[keep]
+        grid_x = torch.arange(X, device=features.device, dtype=torch.float32)
+        grid_z = torch.arange(Z, device=features.device, dtype=torch.float32)
+        center_x = torch.round(mem_x)
+        center_z = torch.round(mem_z)
+        radius = torch.ceil(2.5 * sigma)
+        dx = grid_x[None, None, :] - mem_x[:, None, None]
+        dz = grid_z[None, :, None] - mem_z[:, None, None]
         gaussian = torch.exp(
-            -((grid_x - mem_x) ** 2 + (grid_z - mem_z) ** 2)
-            / (2.0 * sigma ** 2)
+            -(dx * dx + dz * dz) / (2.0 * sigma[:, None, None] ** 2)
         )
-        view_confidence = min(float(point_view_count[point_index, 0]), 2.0) / 2.0
-        gaussian *= view_confidence
-        soft_sum[:, z0:z1, x0:x1] += (
-            point_features[point_index, :, None, None] * gaussian
+        mask = (
+            (grid_x[None, None, :] >= center_x[:, None, None] - radius[:, None, None])
+            & (grid_x[None, None, :] <= center_x[:, None, None] + radius[:, None, None])
+            & (grid_z[None, :, None] >= center_z[:, None, None] - radius[:, None, None])
+            & (grid_z[None, :, None] <= center_z[:, None, None] + radius[:, None, None])
         )
-        soft_weight[z0:z1, x0:x1] += gaussian
+        gaussian = gaussian * mask * view_confidence[:, None, None]
+        soft_sum = torch.einsum("kc,kzx->czx", kept_features, gaussian)
+        soft_weight = gaussian.sum(dim=0)
 
     soft_targets = soft_sum / soft_weight.clamp_min(1e-6)[None]
     return soft_targets, soft_weight, point_view_count[:, 0]
