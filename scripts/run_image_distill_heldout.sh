@@ -17,8 +17,11 @@ cd "${REPO_ROOT}"
 
 python scripts/eval_image_distill_heldout.py \
     --data-root "${NUSCENES_ROOT}" \
+    --dset "${DSET:-mini}" \
+    --sample-selection "${SAMPLE_SELECTION:-head}" \
     --output-dir "${OUTPUT_DIR}" \
     --train-samples "${TRAIN_SAMPLES:-4}" \
     --val-samples "${VAL_SAMPLES:-4}" \
     --steps "${STEPS:-60}" \
+    --nsweeps "${NSWEEPS:-1}" \
     "$@"

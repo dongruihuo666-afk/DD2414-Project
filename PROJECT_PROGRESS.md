@@ -2,6 +2,14 @@
 
 ## Executive summary
 
+2026-10-05 trainval update: the project-pinned BEVCar `nets/voxelnet.py` was
+reproduced under the latest 64-train / 16-val / 512-step / three-seed motion
+protocol after replacing mini with full `v1.0-trainval`. The exact head-selected
+protocol produced motion-only/joint zero-velocity penalties of `+0.0768` and
+`+0.0804`; a separate uniform 64/16-scene control produced `+0.7980` and
+`+0.8602`. These are bounded held-out feature-loss probes, not all-frame
+pretraining or downstream segmentation accuracy. See `TRAINVAL_RUN_PLAN.md`.
+
 We reproduced the official Simple-BEV camera-only and camera-plus-radar paths
 on nuScenes mini, including data loading, inference, backward propagation,
 optimizer updates, checkpoint save/reload, and visualization. We then built a

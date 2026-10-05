@@ -18,6 +18,9 @@ cd "${REPO_ROOT}"
 
 python scripts/compare_motion_target_bevcar_heldout.py \
     --data-root "${NUSCENES_ROOT}" \
+    --dset "${DSET:-mini}" \
+    --sample-selection "${SAMPLE_SELECTION:-head}" \
+    --nsweeps "${NSWEEPS:-1}" \
     --bevcar-source "${BEVCAR_SOURCE_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
     --train-samples "${TRAIN_SAMPLES:-4}" \

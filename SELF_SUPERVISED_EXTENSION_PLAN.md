@@ -5,8 +5,12 @@ geometry reuse, radar-anchored feature sampling, soft-region target generation,
 feature caching, visualization, student semantic projection head, masked cosine
 loss, and one- and four-sample training/checkpoint smoke tests are implemented.
 The four-sample student is randomly initialized and does not load a supervised
-BEV checkpoint. The radar motion branch and dataset-scale pretraining are not
-implemented yet.
+BEV checkpoint.
+The radar motion branch and held-out probes are now implemented separately (see
+`PROJECT_HANDOFF.md`). Dataset-scale streaming self-supervised pretraining and
+the combined BEVCar + image/fusion/hybrid teacher trainer are not implemented.
+See `TRAINVAL_RUN_PLAN.md` for the current trainval preparation and execution
+order; the prototype roadmap below records the original design.
 
 ## 0. Implemented milestone: radar-anchored DINO target
 
@@ -173,7 +177,7 @@ one-step paths used about 3.42 GiB, while the full five-step camera training
 peaked at 3.58 GiB. Online DINOv2 may still dominate memory, which is why cached
 teacher maps are the safest first prototype.
 
-## 10. Next implementation order
+## 10. Original implementation order (historical)
 
 Steps 1-3 below are complete in `scripts/semantic_distill_smoke.py`: the shared
 `(B,128,200,200)` feature is exposed without invoking the supervised decoder, a

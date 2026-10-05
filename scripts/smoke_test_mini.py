@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One-batch nuScenes mini smoke test for Simple-BEV."""
+"""One-batch nuScenes smoke test; mini remains the historical default."""
 
 import argparse
 import os
@@ -107,6 +107,7 @@ def make_visualization(outputs, output_path, show_radar=False):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-root', type=Path, required=True)
+    parser.add_argument('--dset', choices=('mini', 'trainval'), default='mini')
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--checkpoint', type=Path)
     parser.add_argument('--visualization-name')
@@ -130,11 +131,11 @@ def parse_args():
 
 def main():
     args = parse_args()
-    required = ('samples', 'sweeps', 'maps', 'v1.0-mini')
+    required = ('samples', 'sweeps', 'maps', f'v1.0-{args.dset}')
     missing = [name for name in required if not (args.data_root / name).exists()]
     if missing:
         raise FileNotFoundError(
-            f'nuScenes mini is incomplete at {args.data_root}; missing: {missing}'
+            f'nuScenes {args.dset} is incomplete at {args.data_root}; missing: {missing}'
         )
     if args.use_metaradar and not args.use_radar:
         raise ValueError('--use-metaradar requires --use-radar')
@@ -166,7 +167,7 @@ def main():
     print(f'image_resolution: {final_dim}')
     load_start = time.perf_counter()
     train_loader, _ = nuscenesdataset.compile_data(
-        'mini', str(args.data_root), data_aug_conf=data_aug_conf,
+        args.dset, str(args.data_root), data_aug_conf=data_aug_conf,
         centroid=scene_centroid_py, bounds=bounds, res_3d=(Z, Y, X),
         bsz=1, nworkers=args.num_workers, nworkers_val=args.num_workers,
         shuffle=False, nsweeps=args.nsweeps, seqlen=1, refcam_id=1,

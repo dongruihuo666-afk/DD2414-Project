@@ -29,6 +29,9 @@ artifacts/*
 !artifacts/radar_dino_ablation_nsweeps5.png
 !artifacts/radar_dino_ablation_nsweeps5.json
 !artifacts/dual_teacher_heldout.json
+!artifacts/dual_teacher_heldout_train64.json
+!artifacts/dual_teacher_heldout_train64_nsweeps5.json
+!artifacts/dual_teacher_heldout_train64_nsweeps10.json
 !artifacts/radar_velocity_tiny.json
 !artifacts/motion_target_tiny.json
 !artifacts/motion_target_bevcar_tiny.json
@@ -52,3 +55,7 @@ logs_*/
 .env.*
 *.pem
 *.key
+!artifacts/trainval/
+artifacts/trainval/*
+!artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_head.json
+!artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_uniform.json

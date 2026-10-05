@@ -1,6 +1,24 @@
 # DD2414 Simple-BEV local setup
 
-## Verified host and repository
+## Current Ubuntu trainval host (2026-10-05)
+
+The current `/home/students2026/dd2414` checkout uses the `bev` environment in
+`${HOME}/miniconda3`: Python 3.10.14, torch 2.5.1, torchvision 0.20.1, CUDA 12.4,
+and one RTX 3090 Ti (24 GB). Full labeled `v1.0-trainval` is installed at
+`${HOME}/datasets/nuscenes` (700 train / 150 val scenes, 28,130 / 6,019 samples).
+Mini was removed on this host; the historical mini commands below need a
+separate mini installation. DINOv2 source/weights are cached. Official BEVCar
+source is installed at `external/BEVCar`, detached at commit
+`29cacda3bc5416d47428c1d0f017527acad34f90`; project experiments import only
+its `nets/voxelnet.py` and do not load a BEVCar checkpoint or full model.
+
+Use `configs/trainval.env` and `bash scripts/run_trainval.sh dual-teacher` to
+preview the full-data configuration without starting anything. The launcher
+activates Conda itself when explicitly executed. See [TRAINVAL_RUN_PLAN.md](TRAINVAL_RUN_PLAN.md)
+for the ordered smoke tests, bounded experiments, full supervised baseline and
+remaining streaming self-supervised work.
+
+## Historical mini host and repository
 
 - Host: Windows 11 + WSL2, Ubuntu 22.04.5 LTS, kernel `6.18.33.2-microsoft-standard-WSL2`.
 - GPU: NVIDIA GeForce RTX 5060 Laptop GPU, 8151 MiB VRAM, Windows driver 591.91.
@@ -42,9 +60,9 @@ dependencies use APIs that changed in NumPy 2.x. `nuscenes-devkit` was set to
 1.2.0 so it works with a modern wheel-based Matplotlib installation on Python
 3.10. `pip check` reports no broken requirements.
 
-## Dataset
+## Historical mini dataset
 
-Only the official nuScenes mini archive was downloaded:
+For the historical mini experiments, the official mini archive was downloaded:
 
 - URL: `https://www.nuscenes.org/data/v1.0-mini.tgz`
 - Size: 4,167,696,325 bytes (3.88 GiB)
@@ -65,7 +83,7 @@ ${NUSCENES_ROOT}/
 
 The devkit loads 10 scenes, 404 samples, and 31,206 sample-data records.
 
-## Reproducible commands
+## Historical mini reproduction commands
 
 Run from the repository root. Paths can be changed with `CONDA_ROOT`,
 `CONDA_ENV`, `NUSCENES_ROOT`, `OUTPUT_DIR`, `LOG_DIR`, and `CKPT_DIR`.

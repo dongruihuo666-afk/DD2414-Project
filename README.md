@@ -14,6 +14,15 @@ from the upstream code.
 
 ## Current milestone
 
+Full nuScenes trainval is installed on the Ubuntu training host; mini was
+removed there. Read [the trainval run plan](TRAINVAL_RUN_PLAN.md) for the current
+project review and launcher. The exact 64-train / 16-val BEVCar VoxelNet
+reproduction completed with motion-only/joint zero-velocity penalties of
+`+0.0768`/`+0.0804`. A uniform 64-scene / 16-scene control produced much larger
+`+0.7980`/`+0.8602` penalties, exposing scene coverage as a major factor. These
+are held-out motion-feature losses, not downstream segmentation accuracy.
+Historical mini commands require a separate mini dataset.
+
 - Reproduced camera-only and camera-plus-radar inference, training, checkpoint
   save/reload, and visualization on nuScenes mini.
 - Evaluated both official checkpoints on the same fixed 10-sample subset:
@@ -30,7 +39,8 @@ from the upstream code.
   `(B,64,200,200)` features to the camera BEV path.
 - Added an independent BEVCar voxel adapter and ran the official random-weight
   radar encoder in isolation on one mini frame, including forward, backward,
-  and CUDA-memory checks. It is not connected to camera fusion or trained.
+  and CUDA-memory checks. Later opt-in fusion and motion probes are recorded
+  in the handoff; these are still bounded experiments.
 - Ran a four-frame radar-only optimization check against identical cached
   frozen-DINOv2 targets for the lightweight and BEVCar encoders. Both reduced
   training-frame cosine loss; this is not held-out accuracy or camera fusion.
@@ -69,6 +79,15 @@ claiming self-supervised radar learning. A separate supervised BEVCar fusion
 demo now gives a small radar-dependent IoU gain on mini; motion remains open.
 
 ## Quick reproduction
+
+For this trainval host, start with a command preview (does not train):
+
+```bash
+bash scripts/run_trainval.sh dual-teacher
+```
+
+Review `TRAINVAL_RUN_PLAN.md` before explicitly adding `--execute`. The commands
+below describe the historical mini setup.
 
 The scripts default to a `simplebev` Conda environment and nuScenes under
 `${HOME}/datasets/nuscenes`. Override `CONDA_ROOT`, `CONDA_ENV`, or

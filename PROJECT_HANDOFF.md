@@ -7,6 +7,27 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-10-05 trainval status: the Ubuntu host has full labeled `v1.0-trainval`;
+mini has been removed. The official split is 700 train / 150 val scenes and
+28,130 / 6,019 samples; all 2,631,083 referenced sensor files were present and
+nonempty. Official BEVCar is pinned at commit `29cacda3` under `external/BEVCar`;
+project probes import only its random-initialized `nets/voxelnet.py`, not the
+full BEVCar model or checkpoint.
+
+The exact prior BEVCar held-out protocol was reproduced with trainval: head
+64-train / 16-val samples, 512 steps, three seeds and one sweep. Motion-only and
+joint zero-velocity penalties were `+0.0768` and `+0.0804`; the head subset
+covered only 2/1 train/val scenes and removing all radar improved motion loss,
+so it is weak generalization evidence. A separate uniform 64/16-scene control
+gave `+0.7980` and `+0.8602`, with correct radar outperforming no radar. See
+`TRAINVAL_RUN_PLAN.md` and the 2026-10-05 work-log entry. These are bounded
+held-out feature-loss probes, not all-frame training or downstream accuracy.
+All-frame streaming self-supervision and the combined hybrid model remain
+future implementation work.
+
+The results below this update are historical mini experiments unless an entry
+explicitly says trainval.
+
 The official Simple-BEV camera-only and camera-plus-radar pipelines run on
 nuScenes v1.0-mini. A separate, opt-in radar point encoder has been integrated
 with the camera BEV feature. Frozen DINOv2 targets have driven a four-sample
@@ -31,6 +52,15 @@ alongside the existing radar-guided fusion term; on a single-sample smoke the
 image term converges cleanly and no longer drags the fusion loss (see the
 2026-09-28 work log entry).
 An opt-in motion head now exists in the motion-target probe scripts (2026-09-29); no full-dataset self-supervised evaluation exists.
+The three-seed 64-train / 16-held-out dual-teacher probe now completes with the
+vectorized target builder. It improves held-out fusion loss over its 4-sample
+predecessor, but every no-radar fusion penalty remains small (0.0086--0.0172),
+so it still does not establish strong radar dependence (see the 2026-09-30 work
+log entry).
+The matched 1/5/10-sweep 64-sample comparison found the best held-out fusion
+loss at 10 sweeps with the radar-weighted dual teacher, but only a small
+no-radar penalty (+0.0196); multi-sweep is a useful input-density control, not
+proof of strong radar dependence (see the 2026-09-30 work log entry).
 
 The collaboration branch is `dd2414-mini-baseline`. Each completed,
 project-scoped change is pushed there so teammates can follow the work. Check
@@ -42,7 +72,8 @@ the PR; the routine per-task push does not merge anything.
 
 | Component | Exact choice and provenance | Local role |
 | --- | --- | --- |
-| nuScenes | Official `v1.0-mini` archive from [nuScenes](https://www.nuscenes.org/tutorials/nuscenes_tutorial.html), not a "mini-batch" | 10 scenes / 404 key samples; this loader exposes 323 train and 81 validation samples |
+| nuScenes (current host) | Official `v1.0-trainval` metadata and ten blob archives; standard layout under `${HOME}/datasets/nuscenes` | 850 scenes / 34,149 samples; 28,130 train and 6,019 val; file audit passed; bounded BEVCar VoxelNet trainval probes completed |
+| nuScenes (historical results) | Official `v1.0-mini` archive | 10 scenes / 404 samples; 323 train and 81 val; removed from this host after trainval replacement |
 | Simple-BEV | Official upstream [aharley/simple_bev](https://github.com/aharley/simple_bev) base commit `be46f0ef71960c233341852f3d9bc3677558ab6d` | Official camera and camera+radar checkpoints for baseline inference and supervised sanity checks |
 | DINOv2 teacher | Meta's pretrained [`dinov2_vits14`](https://github.com/facebookresearch/dinov2#pretrained-models) ViT-S/14 backbone, **without registers or a task head**; weight file [`dinov2_vits14_pretrain.pth`](https://dl.fbaipublicfiles.com/dinov2/dinov2_vits14/dinov2_vits14_pretrain.pth) | Extracts 384-channel patch features; `eval()` and `requires_grad_(False)` keep every teacher parameter frozen |
 | New radar point encoder | `nets/radar_encoder.py`, randomly initialized in the integration smoke test | Converts seven numeric radar fields to a `(B,64,200,200)` BEV feature |
@@ -94,6 +125,10 @@ after the new opt-in path was added.
 
 ## Reproduction notes
 
+On the current Ubuntu host use `TRAINVAL_RUN_PLAN.md` and
+`bash scripts/run_trainval.sh dual-teacher` (preview only). The following mini
+commands are historical and need a separate mini installation.
+
 1. Follow `SETUP_LOCAL.md` to install the `simplebev` environment, obtain
    nuScenes mini, and obtain the official Simple-BEV checkpoints. Shell scripts
    accept `CONDA_ROOT`, `CONDA_ENV`, `NUSCENES_ROOT`, and `OUTPUT_DIR` overrides.
@@ -136,6 +171,12 @@ workflow does not authorize automatic `main` merges, force-pushes, or uploading
 unrelated local work.
 
 ## Next bounded task
+
+Review `TRAINVAL_RUN_PLAN.md`, then execute its data/model smoke stage only when
+the user requests execution. Do not start the all-frame self-supervised run by
+increasing the cached probe sample count: implement streaming and checkpointing
+first. Commit publication is currently blocked by missing local Git author name
+and email; existing staged mini artifacts and local changes are preserved.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -822,3 +863,183 @@ chat transcripts, secrets, or unreviewed generated data.
 - Verification: a synthetic old-loop-vs-vectorized equivalence test matches to
   float32 precision (max abs diff ~5e-7, identical nonzero cell counts); module
   compiles.
+
+### 2026-09-30 — 64-sample, three-seed dual-teacher held-out probe
+
+- Change: ran the committed multi-seed/tagged dual-teacher held-out probe and
+  committed `artifacts/dual_teacher_heldout_train64.json`; whitelisted that
+  compact JSON result in `.gitignore`. No model, target, or official
+  Simple-BEV path changed. The downloaded nuScenes mini dataset and DINOv2
+  source/weights remain local dependencies and are not tracked.
+- Reason: scale the four-sample dual-teacher weight sweep to 64 training and 16
+  scene-disjoint held-out mini samples on the available 24 GB GPU, using the
+  newly vectorized target construction and three independent seeds.
+- Verification: `CONDA_ENV=bev NUSCENES_ROOT=/home/students2026/datasets/nuscenes
+  TORCH_HOME=/home/students2026/dd2414/.cache/torch TRAIN_SAMPLES=64
+  VAL_SAMPLES=16 STEPS=512 bash scripts/run_image_distill_heldout.sh
+  --seed-list 125,42,7 --tag train64` completed with
+  `DUAL_TEACHER_HELDOUT_OK`. Mean held-out fusion / no-radar fusion / penalty
+  (no-radar minus correct) across 48 seed-frame evaluations were: baseline
+  `0.5238 / 0.5410 / +0.0172`; image-distill `0.4910 / 0.4996 / +0.0086`;
+  0.8-camera/0.2-radar `0.4760 / 0.4897 / +0.0137`; and
+  0.2-camera/0.8-radar `0.4703 / 0.4847 / +0.0144`. Held-out image cosine
+  losses were `0.5274`, `0.5272`, and `0.5288` for the three image-supervised
+  variants, respectively. The official nuScenes devkit loaded 10 scenes, 404
+  samples, and 31,206 sample-data records; the repository data-only smoke and
+  Python compilation passed before the run.
+- Interpretation: increasing data and updates improves the held-out fusion
+  losses relative to the preceding 4-train-sample probe, with the
+  radar-weighted 0.2-camera/0.8-radar setting best on that loss. But all
+  no-radar penalties remain only about 2--3% of the correct loss, so this
+  semantic objective still provides weak evidence of radar use and no evidence
+  that it reads radar measurement values.
+- Limitations: this is a 64-sample mini probe, not a full-dataset benchmark.
+  It tests radar removal rather than matched-versus-mismatched radar or
+  velocity/Doppler ablations; the radar-anchored DINO target still uses radar
+  positions as depth anchors, not its measurement fields. The DINOv2 teacher
+  is frozen and no human-box supervision is used here.
+- Next: retain this result as the scaled dual-teacher baseline; prioritize the
+  motion-target held-out scale-up (128 samples or larger) and/or a control in
+  which matched radar must beat empty and mismatched radar before making a
+  radar-learning claim.
+
+### 2026-09-30 — Dual-teacher 64-sample multi-sweep comparison
+
+- Change: added `--nsweeps` to `scripts/eval_image_distill_heldout.py` and
+  forwarded `NSWEEPS` in `scripts/run_image_distill_heldout.sh`, so the same
+  dual-teacher held-out protocol can select the radar history merged by the
+  nuScenes loader. The value is stored in report metadata. Ran and committed
+  the compact 5- and 10-sweep JSON reports; the code preserves the previous
+  default of one sweep and all official Simple-BEV paths.
+- Reason: test the sparse-radar hypothesis before combining architectural
+  changes. Hold train/validation samples (64/16), updates (512), seeds
+  (125/42/7), frozen DINOv2 teacher, target construction, and four loss
+  configurations fixed; change only the merged radar sweeps (1, 5, or 10).
+- Verification: `CONDA_ENV=bev NUSCENES_ROOT=/home/students2026/datasets/nuscenes
+  TORCH_HOME=/home/students2026/dd2414/.cache/torch TRAIN_SAMPLES=64
+  VAL_SAMPLES=16 STEPS=512 NSWEEPS=<5|10> bash
+  scripts/run_image_distill_heldout.sh --seed-list 125,42,7
+  --tag train64_nsweeps<5|10>` completed for both sweep counts with
+  `DUAL_TEACHER_HELDOUT_OK`. A 4-train / 4-held-out / 1-step 5-sweep and
+  10-sweep smoke also passed. Mean held-out fusion / no-radar penalty across
+  48 seed-frame evaluations were:
+
+  | Sweeps | Variant | Fusion | Penalty |
+  | ---: | --- | ---: | ---: |
+  | 1 | baseline | 0.5238 | +0.0172 |
+  | 1 | image-distill | 0.4910 | +0.0086 |
+  | 1 | 0.8 camera / 0.2 radar | 0.4760 | +0.0137 |
+  | 1 | 0.2 camera / 0.8 radar | 0.4703 | +0.0144 |
+  | 5 | baseline | 0.4698 | +0.0147 |
+  | 5 | image-distill | 0.4613 | +0.0079 |
+  | 5 | 0.8 camera / 0.2 radar | 0.4556 | +0.0180 |
+  | 5 | 0.2 camera / 0.8 radar | 0.5143 | +0.0150 |
+  | 10 | baseline | 0.4612 | +0.0148 |
+  | 10 | image-distill | 0.5176 | +0.0052 |
+  | 10 | 0.8 camera / 0.2 radar | 0.4677 | +0.0133 |
+  | 10 | 0.2 camera / 0.8 radar | 0.4556 | +0.0196 |
+
+- Interpretation: the best loss is the 10-sweep, radar-weighted
+  0.2-camera/0.8-radar configuration (0.4556), marginally below the best
+  5-sweep result (0.4556 before rounding). Its no-radar penalty rises from
+  +0.0144 at one sweep to +0.0196 at ten sweeps, a modest favorable signal.
+  The curve is not monotonic across variants: at five sweeps the radar-heavy
+  configuration degrades to 0.5143, while the camera-heavy configuration is
+  best. Extra radar density therefore changes optimization, but it has not
+  established a universal weight preference or strong radar dependence.
+- Limitations: a +0.0196 penalty is only about 4.3% of the correct loss. This
+  target still uses radar positions as depth anchors and does not require RCS,
+  Doppler, or velocity; it evaluates empty radar but not matched-versus-wrong
+  radar. This remains a nuScenes-mini held-out feature-loss probe, not a
+  downstream detection/segmentation benchmark or a BEVCar fusion result.
+- Next: at 10 sweeps, sweep radar-majority dual-teacher weights (for example
+  0.6, 0.7, and 0.8 radar) under this same protocol. Then add the BEVCar
+  encoder, motion/soft-region controls, and hybrid-teacher components one at a
+  time with matched ablations rather than combining them before attribution.
+
+### 2026-10-05 — Trainval configuration and review, no experiment execution
+
+- Sync: `git fetch origin` succeeded. HEAD and the feature-branch remote both
+  resolved to `3745647` (0 ahead / 0 behind); no pull was needed. The earlier
+  staged mini 64-sample/multi-sweep changes were already present and preserved.
+- Changes: added `configs/trainval.env`, `scripts/run_trainval.sh`,
+  `scripts/heldout_data.py`, `scripts/test_trainval_configuration.py` and
+  `TRAINVAL_RUN_PLAN.md`. Updated `scripts/dinov2_bev_demo.py`, both held-out
+  Python probes and their shell launchers, `scripts/smoke_test_mini.py`, and
+  `train_nuscenes.py`. Refreshed `README.md`, `SETUP_LOCAL.md`,
+  `SELF_SUPERVISED_EXTENSION_PLAN.md` and this handoff.
+- Rationale: remove hard-coded mini selection from the active held-out paths,
+  expose motion-probe sweeps, keep both splits on one devkit instance, avoid
+  CUDA-in-forked-worker problems with worker counts of zero, spread trainval
+  probe frames across scenes, record exact sample manifests, and prevent
+  accidental dense all-dataset GPU caching. Historical defaults and official
+  model/checkpoint interfaces remain unchanged.
+- Prepared parameters: `bev`, `dset=trainval`, batch 1, workers 0, sweeps 5
+  (override 1/10); bounded probes use 64 train / 16 val, 512 updates and seeds
+  125/42/7. A separate supervised streaming profile uses 30,000 updates,
+  accumulation 1, 224x400 images, checkpoint interval 1,000, and full-split
+  validation through the separate eval mode. These are proposed budgets,
+  not measured trainval results.
+- Verification: `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/test_trainval_configuration.py` passed all four CPU-only mocked
+  tests (selection/bounds, cache-budget guards, manifest/disjointness, mini and
+  trainval loader routing). Python compilation and shell syntax checks passed.
+  `bash scripts/run_trainval.sh <data-check|smoke|dual-teacher|motion|supervised>`
+  and `INIT_DIR=/placeholder/checkpoint bash scripts/run_trainval.sh eval`
+  printed valid commands and returned without running a loader/model. Metadata
+  inspection counted 700/150 scenes and 28,130/6,019 samples; a complete
+  sample-data filename scan found 0 missing and 0 zero-byte files out of
+  2,631,083. `git diff --check` passed.
+- Limitations: no real loader batches, DINO extraction, model forward/backward,
+  training or evaluation were run for this change, as requested. Full-file
+  existence checks do not prove every sensor payload decodes correctly. BEVCar
+  external source is missing locally. Current GPU-cached distillation probes
+  remain bounded to 160 total frames and lack resume; a full-data streaming
+  self-supervised trainer and unified hybrid model still need implementation.
+- Publication blocker: `git var GIT_AUTHOR_IDENT` fails with "Author identity
+  unknown" because no Git name/email is configured. Do not invent a teammate's
+  identity. No new commit/push is claimed; previously staged work is retained.
+- Next: user review of the plan, then the explicitly requested smoke stage;
+  supply a Git author identity before publishing these changes.
+
+### 2026-10-05 — BEVCar VoxelNet 64/16 reproduction on trainval
+
+- Scope: cloned the official BEVCar repository at the project-pinned commit
+  `29cacda3bc5416d47428c1d0f017527acad34f90` (git-ignored external dependency).
+  The experiment dynamically imported only `nets/voxelnet.py`, initialized it
+  randomly, and used the existing Simple-BEV fusion/motion wrapper. No full
+  BEVCar architecture or BEVCar checkpoint was loaded.
+- Exact reproduction: after a successful one-batch data check and one-step
+  VoxelNet smoke, ran `TRAIN_SAMPLES=64 VAL_SAMPLES=16 STEPS=512
+  SEED_LIST=125,42,7 NSWEEPS=1 SAMPLE_SELECTION=head
+  TAG=trainval_train64_val16_nsweeps1_head bash scripts/run_trainval.sh motion
+  --execute`. This preserved the latest mini protocol and changed only the
+  dataset version. The selected trainval subset covered 2 train scenes and 1
+  val scene; 10/16 val frames had moving target cells.
+- Exact result (correct / zero-velocity / penalty / no-radar motion loss):
+  semantic-only `1.0922 / 1.0920 / -0.0002 / 1.0760`; motion-only
+  `1.0641 / 1.1409 / +0.0768 / 0.9097`; joint
+  `1.2210 / 1.3014 / +0.0804 / 0.9473`. Moving-frame-only penalties were
+  `+0.1228` and `+0.1286` for motion-only/joint.
+- Scene-coverage control: repeated the same budget with
+  `SAMPLE_SELECTION=uniform`, covering 64 distinct train and 16 distinct val
+  scenes; 15/16 val frames had moving cells. Motion-only was
+  `1.6998 / 2.4977 / +0.7980 / 2.6245`; joint was
+  `1.5796 / 2.4398 / +0.8602 / 2.6140`. Moving-frame-only penalties were
+  `+0.8512` and `+0.9176`.
+- Interpretation: semantic-only remains velocity-insensitive. The exact head
+  result has a positive but modest velocity effect and no-radar is better than
+  correct, so it does not establish reliable radar use. The broad-scene control
+  shows strong, seed-consistent VoxelNet velocity dependence and correct radar
+  beats removal, but it changes sample selection and remains a bounded probe.
+- Artifacts: committed candidates are
+  `artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_head.json`
+  and `..._uniform.json`; each records exact indices, tokens and scene tokens.
+- Verification/limitations: data check loaded 28,130/6,019 samples and 313
+  radar points in the first train frame; one-step smoke and both three-seed runs
+  ended with `MOTION_TARGET_BEVCAR_HELDOUT_OK`. No 5/10-sweep, all-frame
+  streaming pretraining, checkpoint/resume test or downstream IoU was run.
+- Publication blocker: no commit/push was created because repository Git author
+  name/email are unset. Existing staged mini work remains preserved.
+- Next: choose between a matched 1/5/10-sweep broad-scene comparison and the
+  streaming/checkpoint implementation required for all 28,130 train frames.

@@ -41,13 +41,16 @@ from compare_motion_target_bevcar_tiny import (  # noqa: E402
     prepare_bevcar_inputs,
     train,
 )
-from dinov2_bev_demo import build_loader, load_teacher  # noqa: E402
+from dinov2_bev_demo import load_teacher  # noqa: E402
 from eval_image_distill_heldout import build_targets  # noqa: E402
+from heldout_data import add_dataset_args, load_probe_batches, validate_probe_args  # noqa: E402
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-root', type=Path, required=True)
+    add_dataset_args(parser)
+    parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--bevcar-source', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--train-samples', type=int, default=4)
@@ -65,6 +68,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    validate_probe_args(args)
+    official_class = official_voxelnet(args.bevcar_source)
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is unavailable')
     seeds = [int(part.strip()) for part in args.seed_list.split(',')]
@@ -74,18 +79,9 @@ def main():
     device = torch.device('cuda:0')
     torch.cuda.empty_cache()
 
-    train_loader = build_loader(
-        args.data_root, num_workers=0, nsweeps=1,
-        rotate_radar_velocity=True, split='train',
+    train_batches, val_batches, sample_manifest = load_probe_batches(
+        args, rotate_radar_velocity=True,
     )
-    val_loader = build_loader(
-        args.data_root, num_workers=0, nsweeps=1,
-        rotate_radar_velocity=True, split='val',
-    )
-    train_iter = iter(train_loader)
-    val_iter = iter(val_loader)
-    train_batches = [next(train_iter) for _ in range(args.train_samples)]
-    val_batches = [next(val_iter) for _ in range(args.val_samples)]
 
     teacher = load_teacher(args.model_name, device)
     for parameter in teacher.parameters():
@@ -113,7 +109,6 @@ def main():
     train_motion, train_coverages, train_infos = build_motion(train_batches)
     val_motion, val_coverages, val_infos = build_motion(val_batches)
 
-    official_class = official_voxelnet(args.bevcar_source)
     all_variants = (
         ('semantic_only', 1.0, 0.0),
         ('motion_only', 0.0, 1.0),
@@ -163,6 +158,10 @@ def main():
                   flush=True)
 
     report = {
+        'dset': args.dset,
+        'nsweeps': args.nsweeps,
+        'sample_selection': args.sample_selection,
+        'sample_manifest': sample_manifest,
         'scope': 'motion target on full fusion model with BEVCar radar branch, held-out (train on train split, eval on scene-disjoint val split)',
         'train_samples': args.train_samples,
         'val_samples': args.val_samples,
@@ -182,7 +181,8 @@ def main():
         'seed_results': seed_results,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    suffix = f'_{args.tag}' if args.tag else ''
+    tag = args.tag or (f'trainval_nsweeps{args.nsweeps}' if args.dset == 'trainval' else '')
+    suffix = f'_{tag}' if tag else ''
     path = args.output_dir / f'motion_target_bevcar_heldout{suffix}.json'
     path.write_text(json.dumps(report, indent=2) + '\n')
 

@@ -26,13 +26,13 @@ sys.path.insert(0, str(REPO_ROOT))
 
 import utils.vox  # noqa: E402
 from dinov2_bev_demo import (  # noqa: E402
-    build_loader,
     camera_geometry,
     extract_teacher_features,
     load_teacher,
     make_radar_bev,
     radar_anchored_soft_targets,
 )
+from heldout_data import add_dataset_args, load_probe_batches, validate_probe_args  # noqa: E402
 from nets.segnet import Segnet  # noqa: E402
 from semantic_distill_smoke import (  # noqa: E402
     SemanticDistillationModel,
@@ -45,9 +45,12 @@ from train_nuscenes import Z, Y, X, bounds, scene_centroid  # noqa: E402
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-root', type=Path, required=True)
+    add_dataset_args(parser)
     parser.add_argument('--output-dir', type=Path, default=REPO_ROOT / 'artifacts')
     parser.add_argument('--train-samples', type=int, default=4)
     parser.add_argument('--val-samples', type=int, default=4)
+    parser.add_argument('--nsweeps', type=int, default=1,
+                        help='number of radar sweeps merged per sample')
     parser.add_argument('--steps', type=int, default=60)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
     parser.add_argument('--seed-list', default='125',
@@ -203,23 +206,21 @@ def evaluate(model, inputs, fusion_targets, confidences, image_targets, device):
 
 def main():
     args = parse_args()
+    validate_probe_args(args)
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is unavailable')
 
     seeds = [int(part.strip()) for part in args.seed_list.split(',')]
     if not seeds or len(set(seeds)) != len(seeds):
         raise ValueError('seed-list must have distinct integer seeds')
+    if args.nsweeps < 1:
+        raise ValueError('nsweeps must be positive')
 
     torch.cuda.init()
     device = torch.device('cuda:0')
     torch.cuda.empty_cache()
 
-    train_loader = build_loader(args.data_root, 0, 1, split='train')
-    val_loader = build_loader(args.data_root, 0, 1, split='val')
-    train_iter = iter(train_loader)
-    val_iter = iter(val_loader)
-    train_batches = [next(train_iter) for _ in range(args.train_samples)]
-    val_batches = [next(val_iter) for _ in range(args.val_samples)]
+    train_batches, val_batches, sample_manifest = load_probe_batches(args)
 
     teacher = load_teacher(args.model_name, device)
     for parameter in teacher.parameters():
@@ -306,14 +307,19 @@ def main():
         if held_image is not None:
             save_dict[f'{label}_heldout_image'] = held_image
     summary['meta'] = {
+        'dset': args.dset,
+        'sample_selection': args.sample_selection,
+        'sample_manifest': sample_manifest,
         'train_samples': args.train_samples,
         'val_samples': args.val_samples,
         'steps': args.steps,
+        'nsweeps': args.nsweeps,
         'learning_rate': args.learning_rate,
         'seeds': seeds,
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    suffix = f'_{args.tag}' if args.tag else ''
+    tag = args.tag or (f'trainval_nsweeps{args.nsweeps}' if args.dset == 'trainval' else '')
+    suffix = f'_{tag}' if tag else ''
     np.savez_compressed(args.output_dir / f'dual_teacher_heldout_metrics{suffix}.npz', **save_dict)
     with open(args.output_dir / f'dual_teacher_heldout{suffix}.json', 'w') as handle:
         json.dump(summary, handle, indent=2)

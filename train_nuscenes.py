@@ -302,6 +302,7 @@ def main(
         do_shuffle_cams=True,
         # cuda
         device_ids=[0,1,2,3],
+        nworkers_val=1,
     ):
 
     B = batch_size
@@ -368,6 +369,7 @@ def main(
         res_3d=(Z,Y,X),
         bsz=B,
         nworkers=nworkers,
+        nworkers_val=nworkers_val,
         shuffle=shuffle,
         use_radar_filters=use_radar_filters,
         seqlen=1, # we do not load a temporal sequence here, but that can work with this dataloader
