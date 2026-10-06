@@ -8,6 +8,7 @@ import os
 import random
 import sys
 import time
+from collections import defaultdict
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -79,6 +80,8 @@ def parse_args():
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--eval-amp', action=argparse.BooleanOptionalAction,
                         default=True)
+    parser.add_argument('--print-every', type=int, default=100)
+    parser.add_argument('--validation-print-every', type=int, default=500)
     return parser.parse_args()
 
 
@@ -141,8 +144,44 @@ def trainable_optimizer(model, learning_rate):
     return parameters, optimizer
 
 
+def _empty_metric_totals():
+    return {mode: {'semantic': 0.0, 'motion': 0.0,
+                   'moving_motion': 0.0, 'cell_motion': 0.0}
+            for mode in RADAR_MODES}
+
+
+def _metric_means(totals, count, moving_frames, covered_cells):
+    means = {}
+    for mode, values in totals.items():
+        means[mode] = {
+            'semantic_loss': values['semantic'] / count,
+            'motion_loss': values['motion'] / count,
+            'moving_frame_motion_loss': (
+                values['moving_motion'] / moving_frames if moving_frames else None
+            ),
+            'cell_weighted_motion_loss': (
+                values['cell_motion'] / covered_cells if covered_cells else None
+            ),
+        }
+    return means
+
+
+def _paired_penalties(means):
+    penalties = {}
+    for metric in ('semantic_loss', 'motion_loss',
+                   'moving_frame_motion_loss', 'cell_weighted_motion_loss'):
+        matched = means['matched'][metric]
+        penalties[metric] = {}
+        for mode in ('zero_velocity', 'empty', 'wrong_scene'):
+            value = means[mode][metric]
+            penalties[metric][mode] = (
+                value - matched if value is not None and matched is not None else None
+            )
+    return penalties
+
+
 def validation_summary(model, teacher, dataset, manifest, count, device, seed,
-                       output_path, use_amp):
+                       output_path, use_amp, print_every=500):
     val = manifest['val']
     if not 1 <= count <= val['count']:
         raise ValueError('val-samples must fit the full validation split')
@@ -153,9 +192,11 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
     targets = make_streaming_loader(dataset, target_indices, num_workers=0)
     sources = make_streaming_loader(dataset, source_indices, num_workers=0)
     scene_by_token = dict(zip(val['tokens'], val['scene_tokens']))
-    totals = {mode: {'semantic': 0.0, 'motion': 0.0,
-                     'moving_motion': 0.0, 'cell_motion': 0.0}
-              for mode in RADAR_MODES}
+    totals = _empty_metric_totals()
+    scene_totals = defaultdict(_empty_metric_totals)
+    scene_counts = defaultdict(int)
+    scene_moving_frames = defaultdict(int)
+    scene_covered_cells = defaultdict(int)
     moving_frames = 0
     covered_cells = 0
     model.eval()
@@ -201,29 +242,43 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
                     totals[mode]['cell_motion'] += mot_value * cells
             manifest_position = positions[offset]
             token = val['tokens'][manifest_position]
+            scene_token = val['scene_tokens'][manifest_position]
             wrong_token = wrong_map[token]
+            scene_counts[scene_token] += 1
+            scene_moving_frames[scene_token] += int(cells > 0)
+            scene_covered_cells[scene_token] += cells
+            for mode in RADAR_MODES:
+                scene_totals[scene_token][mode]['semantic'] += modes[mode]['semantic_loss']
+                scene_totals[scene_token][mode]['motion'] += modes[mode]['motion_loss']
+                if cells > 0:
+                    scene_totals[scene_token][mode]['moving_motion'] += modes[mode]['motion_loss']
+                    scene_totals[scene_token][mode]['cell_motion'] += modes[mode]['motion_loss'] * cells
             writer.write({
                 'token': token,
-                'scene_token': val['scene_tokens'][manifest_position],
+                'scene_token': scene_token,
                 'wrong_radar_token': wrong_token,
                 'wrong_radar_scene_token': scene_by_token[wrong_token],
                 'motion_covered_cells': cells,
                 'modes': modes,
             })
             del fusion_targets, confidences, inputs, wrong_inputs
+            if (offset + 1) % print_every == 0 or offset + 1 == count:
+                print(f'validation={offset + 1}/{count}', flush=True)
     torch.cuda.synchronize(device)
     elapsed = time.perf_counter() - start
-    means = {}
-    for mode, values in totals.items():
-        means[mode] = {
-            'semantic_loss': values['semantic'] / count,
-            'motion_loss': values['motion'] / count,
-            'moving_frame_motion_loss': (
-                values['moving_motion'] / moving_frames if moving_frames else None
-            ),
-            'cell_weighted_motion_loss': (
-                values['cell_motion'] / covered_cells if covered_cells else None
-            ),
+    means = _metric_means(totals, count, moving_frames, covered_cells)
+    per_scene = {}
+    for scene_token in sorted(scene_counts):
+        scene_means = _metric_means(
+            scene_totals[scene_token], scene_counts[scene_token],
+            scene_moving_frames[scene_token], scene_covered_cells[scene_token],
+        )
+        per_scene[scene_token] = {
+            'samples': scene_counts[scene_token],
+            'moving_frames': scene_moving_frames[scene_token],
+            'covered_cells': scene_covered_cells[scene_token],
+            'means': scene_means,
+            'penalties': _paired_penalties(scene_means),
         }
     return {
         'samples': count,
@@ -234,6 +289,8 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
         'frames_per_second': count / elapsed,
         'amp': use_amp,
         'means': means,
+        'penalties': _paired_penalties(means),
+        'per_scene': per_scene,
         'records': str(output_path),
     }
 
@@ -242,8 +299,9 @@ def main():
     args = parse_args()
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA is required')
-    if args.max_updates < 1 or args.checkpoint_every < 1:
-        raise ValueError('max-updates and checkpoint-every must be positive')
+    if (args.max_updates < 1 or args.checkpoint_every < 1
+            or args.print_every < 1 or args.validation_print_every < 1):
+        raise ValueError('update/checkpoint/print intervals must be positive')
     if args.nsweeps != 1:
         raise ValueError('the primary scaling protocol is locked to one sweep')
     if args.semantic_weight != 1.0 or args.motion_weight != 0.5:
@@ -309,6 +367,7 @@ def main():
         'covered_cells': 0,
         'train_seconds': 0.0,
         'peak_allocated_gib': 0.0,
+        'amp_overflow_retries': 0,
     }
     if args.resume:
         if not args.checkpoint.is_file():
@@ -317,6 +376,7 @@ def main():
             args.checkpoint, model=model, optimizer=optimizer, scaler=scaler,
             sampler=sampler, expected_run_config=run_config, map_location=device,
         )
+        progress.setdefault('amp_overflow_retries', 0)
         prepare_train_log(args.train_log, resume_update=progress['update'])
         print(f'resumed update={progress["update"]} epoch={progress["epoch"]} '
               f'position={sampler.position}', flush=True)
@@ -347,25 +407,45 @@ def main():
             fusion_targets, confidences, _ = build_targets([batch], teacher, device)
             inputs = prepare_bevcar_inputs(batch, device)
             motion_field, motion_coverage, motion_info = motion_target(batch, device)
-            optimizer.zero_grad(set_to_none=True)
-            with torch.autocast(device_type='cuda', dtype=torch.float16):
-                semantic_prediction, motion_prediction = model(*inputs)
-                sem, _ = semantic_loss(
-                    semantic_prediction, fusion_targets[0][None], confidences[0][None],
+            overflow_retries = 0
+            while True:
+                optimizer.zero_grad(set_to_none=True)
+                with torch.autocast(device_type='cuda', dtype=torch.float16):
+                    semantic_prediction, motion_prediction = model(*inputs)
+                    sem, _ = semantic_loss(
+                        semantic_prediction, fusion_targets[0][None], confidences[0][None],
+                    )
+                    mot, _ = motion_loss(
+                        motion_prediction, motion_field, motion_coverage,
+                    )
+                    loss = args.semantic_weight * sem + args.motion_weight * mot
+                if not torch.isfinite(loss):
+                    raise RuntimeError(
+                        f'non-finite training loss at update {progress["update"] + 1}'
+                    )
+                scale_before = scaler.get_scale()
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                gradient_norm = torch.nn.utils.clip_grad_norm_(
+                    trainable, 5.0, error_if_nonfinite=False,
                 )
-                mot, _ = motion_loss(
-                    motion_prediction, motion_field, motion_coverage,
+                scaler.step(optimizer)
+                scaler.update()
+                if torch.isfinite(gradient_norm):
+                    break
+                overflow_retries += 1
+                progress['amp_overflow_retries'] += 1
+                scale_after = scaler.get_scale()
+                print(
+                    f'amp overflow before update={progress["update"] + 1} '
+                    f'retry={overflow_retries} scale={scale_before:g}->{scale_after:g}',
+                    flush=True,
                 )
-                loss = args.semantic_weight * sem + args.motion_weight * mot
-            if not torch.isfinite(loss):
-                raise RuntimeError(
-                    f'non-finite training loss at update {progress["update"] + 1}'
-                )
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(trainable, 5.0, error_if_nonfinite=True)
-            scaler.step(optimizer)
-            scaler.update()
+                if scale_after >= scale_before or overflow_retries >= 16:
+                    raise RuntimeError(
+                        f'non-finite gradients did not recover before update '
+                        f'{progress["update"] + 1}'
+                    )
             torch.cuda.synchronize(device)
             update_seconds = time.perf_counter() - update_start
             progress['update'] += 1
@@ -389,6 +469,7 @@ def main():
                 'semantic_loss': float(sem.detach()),
                 'motion_loss': float(mot.detach()),
                 'motion_covered_cells': motion_info['covered_cells'],
+                'amp_overflow_retries': overflow_retries,
                 'seconds': update_seconds,
                 'allocated_gib': torch.cuda.memory_allocated(device) / GIB,
             })
@@ -409,7 +490,7 @@ def main():
                 checkpoint_seconds += time.perf_counter() - checkpoint_start
                 print(f'checkpoint update={progress["update"]} '
                       f'path={args.checkpoint}', flush=True)
-            if progress['update'] % 10 == 0 or force:
+            if progress['update'] % args.print_every == 0 or force:
                 print(f'update={progress["update"]}/{args.max_updates} '
                       f'loss={float(loss):.4f} sem={float(sem):.4f} '
                       f'mot={float(mot):.4f} seconds={update_seconds:.3f}', flush=True)
@@ -429,6 +510,7 @@ def main():
         validation = validation_summary(
             model, teacher, val_dataset, manifest, args.val_samples, device,
             args.seed, args.validation_records, args.eval_amp,
+            print_every=args.validation_print_every,
         )
     summary = {
         'status': status,
@@ -447,7 +529,15 @@ def main():
         'validation': validation,
     }
     atomic_json_write(summary, args.summary_out)
-    print(json.dumps(summary, indent=2, allow_nan=False), flush=True)
+    console_summary = dict(summary)
+    if validation is not None:
+        console_summary['validation'] = {
+            key: value for key, value in validation.items()
+            if key not in ('positions', 'per_scene')
+        }
+        console_summary['validation']['position_count'] = len(validation['positions'])
+        console_summary['validation']['scene_count'] = len(validation['per_scene'])
+    print(json.dumps(console_summary, indent=2, allow_nan=False), flush=True)
     print('RADAR_SCALING_STOPPED' if stopped else 'RADAR_SCALING_TRAIN_OK', flush=True)
 
 

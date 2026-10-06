@@ -45,7 +45,12 @@ four input modes emit finite incremental per-frame records. P4 is complete: a
 128-update online-DINO joint pilot stopped at update 64, resumed in a new
 process at the exact sampler position and finished with bounded 3.574 GiB peak
 allocation. Measured throughput locks the curve at 30,000 updates per scale
-without a teacher-feature cache. P5 is the next implementation boundary.
+without a teacher-feature cache. P5 is complete: the 64-sample run performed
+30,000 effective updates and evaluated all 6,019 validation frames in four
+radar modes. Its semantic penalties are small, while its motion penalties are
+large and positive; these establish radar dependence for the diagnostic motion
+head, not downstream vehicle-segmentation utility. P6 (256 samples) is the
+next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -353,6 +358,59 @@ chat transcripts, secrets, or unreviewed generated data.
   diagnosis; record-level resume is not yet implemented.
 - Next: P4, integrate the real streaming joint trainer, exercise resume, and
   measure end-to-end throughput/memory before locking the scale-run budget.
+
+### 2026-10-06 — P5 64-sample radar scaling result
+
+- Change: completed the locked seed-125, one-sweep, 64-sample scale at 30,000
+  effective optimizer updates and evaluated all 6,019 validation frames under
+  matched, zero-velocity, empty and deterministic wrong-scene radar. Added
+  per-scene metric aggregation, paired penalties, configurable progress output,
+  and recoverable AMP gradient-overflow retries to
+  `scripts/train_radar_scaling.py`. Whitelisted the compact result
+  `artifacts/trainval/radar_scaling_scale64_seed125.json`; raw JSONL logs and
+  the 188 MB checkpoint remain ignored.
+- Reason: P5 is the first fixed-budget point in the adopted data-scaling curve.
+  Full-validation paired interventions are needed to distinguish semantic and
+  motion dependence on radar before changing the training sample count.
+- Reproduce: run `TORCH_HOME=.cache/torch MPLCONFIGDIR=.cache/matplotlib
+  python scripts/train_radar_scaling.py --data-root
+  /home/students2026/datasets/nuscenes --bevcar-source external/BEVCar
+  --manifest configs/radar_scaling_manifest_seed125.json --scale 64
+  --max-updates 30000 --checkpoint-every 1000 --checkpoint
+  checkpoints/radar_scaling/scale64_seed125/latest.pt --train-log
+  artifacts/trainval/radar_scaling_scale64_seed125_train.jsonl
+  --validation-records
+  artifacts/trainval/radar_scaling_scale64_seed125_val.jsonl --summary-out
+  artifacts/trainval/radar_scaling_scale64_seed125.json --val-samples 6019
+  --print-every 100 --validation-print-every 500 --seed 125 --nsweeps 1`.
+  Add `--resume` with otherwise identical arguments after an interruption.
+- Verification: the initial process saved update 7,000 and then exposed an AMP
+  gradient overflow at update 7,217. The resumed process reproduced that exact
+  event, reduced the scaler from 16,384 to 8,192, retried the same batch, and
+  completed. The final run made 30,000 effective updates over exactly 64 unique
+  training indices, with 18 recovered overflow retries, 10.267 updates/s,
+  3.574 GiB peak CUDA allocation and mean joint/semantic/motion training losses
+  0.1794/0.1510/0.0568. Independent checks found 30,000 consecutive train-log
+  records, 6,019 finite validation records, 150 scene summaries, no same-scene
+  wrong-radar pair and no leftover partial record. The three relevant CPU test
+  suites passed 14/14 and Python compilation passed.
+- Result: full-validation matched semantic loss was 0.46199 versus 0.46504
+  zero-velocity, 0.46413 empty and 0.46216 wrong-scene, giving penalties
+  +0.00304/+0.00214/+0.00017. Matched motion loss was 1.58663 versus
+  2.29385/2.37895/2.36377, giving much larger penalties
+  +0.70722/+0.79232/+0.77715. Moving-frame penalties were
+  +0.79864/+0.89474/+0.87761 and cell-weighted penalties were
+  +0.88404/+0.98410/+0.96961. Motion penalties were positive in 142/150 scenes
+  for empty and wrong-scene radar; semantic wrong-scene penalties were positive
+  in only 74/150 scenes.
+- Limitations: this is a dependence result for feature and motion losses, not a
+  vehicle-segmentation IoU result or proof that fusion improves over a matched
+  camera-only baseline. The camera encoder remains frozen at random
+  initialization, the radar encoder starts randomly, only one seed and one
+  sweep are used, and the 64 samples repeat for 468 epochs. P10 must compute
+  scene-level confidence intervals before making an onset claim.
+- Next: P6, repeat the unchanged 30,000-update/full-validation protocol with
+  the nested 256-sample subset.
 
 ### 2026-10-06 — P4 end-to-end streaming and resume pilot
 
