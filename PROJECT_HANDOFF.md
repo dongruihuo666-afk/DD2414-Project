@@ -25,6 +25,14 @@ held-out feature-loss probes, not all-frame training or downstream accuracy.
 All-frame streaming self-supervision and the combined hybrid model remain
 future implementation work.
 
+The owner has adopted a staged full-data radar scaling study. The frozen order
+is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
+pilot, then single-seed `64 -> 256 -> 1,024 -> 4,096 -> 28,130` training-scale
+results evaluated on the same complete 6,019-frame validation split. Each
+completed milestone must be committed and pushed before the next begins. See
+`FULL_DATA_RADAR_SCALING_PLAN.md`; its dependence curve precedes multi-sweep or
+hybrid-teacher expansion.
+
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
 
@@ -172,11 +180,11 @@ unrelated local work.
 
 ## Next bounded task
 
-Review `TRAINVAL_RUN_PLAN.md`, then execute its data/model smoke stage only when
-the user requests execution. Do not start the all-frame self-supervised run by
-increasing the cached probe sample count: implement streaming and checkpointing
-first. Commit publication is currently blocked by missing local Git author name
-and email; existing staged mini artifacts and local changes are preserved.
+Execute P1 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add deterministic nested
+manifests and an opt-in streaming batch path, then prove that at least 512
+batches can be traversed without retaining previous GPU tensors. Do not start a
+scale run by increasing the cached probe sample count. P1 must be documented,
+tested, committed and pushed before P2 checkpoint/resume work starts.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -195,6 +203,28 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-06 — Adopted full-data radar scaling plan
+
+- Change: added `FULL_DATA_RADAR_SCALING_PLAN.md`, linked it from `README.md`,
+  and updated the current state and next bounded task in this handoff. The plan
+  separates streaming, exact resume and wrong-scene evaluation into independently
+  testable milestones, followed by committed seed-125 scale results at 64, 256,
+  1,024, 4,096 and all 28,130 training frames. Every scale uses the same full
+  6,019-frame validation split and one radar sweep.
+- Reason: the mini comparison changed both sample and update counts and did not
+  identify a data threshold. A nested trainval curve with matched, zero-velocity,
+  empty and wrong-scene controls can test whether radar dependence increases with
+  data diversity before multi-sweep or hybrid-teacher changes add confounders.
+- Verification: `git diff --check` passed. File/link checks confirmed the P0--P11
+  table, the adopted scale sequence, full-validation count, four radar modes and
+  per-milestone commit/push rule. No loader, model or training run was part of
+  this documentation-only milestone.
+- Limitations: the 30,000-update budget is provisional until the P4 throughput
+  pilot. Self-supervised penalties demonstrate dependence, not downstream utility;
+  P11 requires a matched camera-only comparison and complete-val vehicle IoU.
+- Next: P1, deterministic nested manifests and streaming batches. Commit and push
+  each later milestone separately before continuing.
 
 ### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
 

@@ -62,6 +62,7 @@ Historical mini commands require a separate mini dataset.
 ## Project documentation
 
 - [Technical handoff and work log](PROJECT_HANDOFF.md)
+- [Full-data radar scaling study](FULL_DATA_RADAR_SCALING_PLAN.md)
 - [Project progress and meeting report](PROJECT_PROGRESS.md)
 - [Local environment and reproduction commands](SETUP_LOCAL.md)
 - [Simple-BEV architecture notes](SIMPLE_BEV_NOTES.md)
