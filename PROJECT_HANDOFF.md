@@ -33,6 +33,12 @@ completed milestone must be committed and pushed before the next begins. See
 `FULL_DATA_RADAR_SCALING_PLAN.md`; its dependence curve precedes multi-sweep or
 hybrid-teacher expansion.
 
+P1 is complete locally: the seed-125 manifest deterministically nests
+64/256/1,024/4,096/full train subsets, covers 64/256/700/700/700 scenes, and
+keeps all 700 train scenes disjoint from all 150 validation scenes. A real
+512-batch one-sweep traversal retained zero CUDA allocation at every 64-batch
+checkpoint. P2 checkpoint/resume is the next implementation boundary.
+
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
 
@@ -180,11 +186,12 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P1 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add deterministic nested
-manifests and an opt-in streaming batch path, then prove that at least 512
-batches can be traversed without retaining previous GPU tensors. Do not start a
-scale run by increasing the cached probe sample count. P1 must be documented,
-tested, committed and pushed before P2 checkpoint/resume work starts.
+Execute P2 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add periodic, atomic
+checkpoints containing the student, optimizer, GradScaler, epoch/update,
+sampler position and Python/NumPy/Torch/CUDA RNG states. An interrupted-resumed
+smoke must match an uninterrupted reference within a documented numerical
+tolerance. Do not begin wrong-scene evaluation or a scale run before P2 is
+documented, tested, committed and pushed.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -225,6 +232,42 @@ chat transcripts, secrets, or unreviewed generated data.
   P11 requires a matched camera-only comparison and complete-val vehicle IoU.
 - Next: P1, deterministic nested manifests and streaming batches. Commit and push
   each later milestone separately before continuing.
+
+### 2026-10-06 — P1 deterministic manifests and streaming data
+
+- Change: added `scripts/radar_scaling_data.py` with stable SHA-256 scene/sample
+  ordering, prefix-nested scale manifests, validation and a non-materializing
+  `Subset`/`DataLoader` path. Added CPU tests and the real-data checker in
+  `scripts/test_radar_scaling_data.py` and
+  `scripts/check_radar_scaling_stream.py`. Generated the committed seed-125
+  manifest at `configs/radar_scaling_manifest_seed125.json` and the compact
+  acceptance summary at `artifacts/trainval/radar_scaling_stream_check.json`;
+  whitelisted only that summary in `.gitignore`.
+- Reason: the full-data study needs identical, reproducible nested subsets and
+  must fetch batches on demand rather than converting a loader to a Python list
+  and retaining all tensors on GPU.
+- Reproduce: `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/test_radar_scaling_data.py`; then run
+  `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/check_radar_scaling_stream.py --data-root
+  /home/students2026/datasets/nuscenes --manifest-out
+  configs/radar_scaling_manifest_seed125.json --summary-out
+  artifacts/trainval/radar_scaling_stream_check.json --check-batches 512
+  --nsweeps 1` with GPU access.
+- Verification: four CPU unit tests passed, Python compilation and
+  `git diff --check` passed. The real manifest contains 28,130 train samples in
+  700 scenes and 6,019 validation samples in 150 disjoint scenes; scale scene
+  counts are 64/256/700/700/700. Streaming 512 real batches read 221,173 radar
+  points in 50.923 seconds (10.054 batch/s). CUDA allocated/reserved memory was
+  0 MiB at baseline, every 64 batches and completion, so no previous batch was
+  retained by this data-only path. Manifest SHA-256 is
+  `8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc`.
+- Limitations: this milestone did not load DINOv2, build dense BEV targets,
+  train a model, or test optimizer state. `VizData` still initializes CUDA
+  geometry and therefore uses `num_workers=0`; it also constructs supervised
+  labels that self-supervised pretraining does not need. Throughput here is a
+  data-only measurement, not the P4 end-to-end timing result.
+- Next: P2, periodic atomic checkpoints and exact interrupted resume.
 
 ### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
 
