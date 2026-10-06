@@ -39,8 +39,10 @@ keeps all 700 train scenes disjoint from all 150 validation scenes. A real
 512-batch one-sweep traversal retained zero CUDA allocation at every 64-batch
 checkpoint. P2 is also complete: atomic periodic checkpoints restore model,
 optimizer, AMP scaler, sampler position and all RNG states; a CUDA interrupted
-resume matched uninterrupted training exactly. P3 wrong-scene evaluation is
-the next implementation boundary.
+resume matched uninterrupted training exactly. P3 is complete: the full val
+wrong-radar map is a deterministic 6,019-token cross-scene bijection, and all
+four input modes emit finite incremental per-frame records. P4 end-to-end
+throughput and stability is the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -189,11 +191,11 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P3 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add deterministic
-matched/zero-velocity/empty/wrong-scene validation. Wrong radar must always
-come from a different scene, all four modes must cover identical validation
-tokens, and results must be written incrementally as compact per-frame records.
-Do not begin the throughput pilot or a scale run before P3 is documented,
+Execute P4 from `FULL_DATA_RADAR_SCALING_PLAN.md`: integrate streaming batches,
+periodic resume and the locked joint objective in a 128-sample end-to-end pilot.
+Measure model+DINO throughput, peak memory and cache/disk behavior, interrupt
+and resume the real trainer once, then lock or revise the provisional 30,000
+update budget before P5. Do not start a scale result before P4 is documented,
 tested, committed and pushed.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
@@ -307,6 +309,47 @@ chat transcripts, secrets, or unreviewed generated data.
   from the real streaming trainer and exercise a real checkpoint interruption.
 - Next: P3, deterministic wrong-scene radar evaluation alongside matched,
   zero-velocity and empty controls.
+
+### 2026-10-06 — P3 deterministic wrong-scene evaluation
+
+- Change: added `scripts/radar_evaluation.py` with locked matched,
+  zero-velocity, truly empty and wrong-scene VoxelNet inputs. The wrong-scene
+  map groups stable-hash-ordered samples by scene and rotates by the largest
+  scene size, producing a deterministic source-token bijection with no
+  same-scene pairs. Added an incremental JSONL writer, CPU tests, and
+  `scripts/check_wrong_scene_evaluation.py`. Committed candidates include the
+  compact two-frame smoke summary and records under `artifacts/trainval/`.
+- Reason: empty-radar sensitivity alone cannot show that the model uses the
+  radar aligned to the current camera frame. A bijective wrong-scene control
+  preserves the validation radar-token distribution while breaking alignment,
+  and streaming JSONL avoids retaining 6,019 frame results in memory.
+- Reproduce: `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/test_radar_evaluation.py`; then set the repository DINO cache and run
+  `TORCH_HOME=/home/students2026/dd2414/.cache/torch
+  /home/students2026/miniconda3/envs/bev/bin/python
+  scripts/check_wrong_scene_evaluation.py --data-root
+  /home/students2026/datasets/nuscenes --bevcar-source
+  /home/students2026/dd2414/external/BEVCar --manifest
+  configs/radar_scaling_manifest_seed125.json --output
+  artifacts/trainval/wrong_scene_evaluation_check.jsonl --summary-out
+  artifacts/trainval/wrong_scene_evaluation_check.json --samples 2 --seed 125
+  --nsweeps 1` with GPU access.
+- Verification: five CPU tests and Python compilation passed. The real checker
+  verified a 6,019-source full-val bijection and zero same-scene pairs. Two
+  scene-spread real frames produced matched/zero-velocity/empty/wrong-scene
+  records with finite semantic and motion losses; mean motion loss was
+  `1.4486/1.4486/1.4523/1.4526`. The first mapping algorithm (a cyclic shift of
+  a globally hashed order) failed a valid uneven-scene unit case and was
+  replaced by the guaranteed grouped-block construction. Initial random-model
+  FP16 smoke produced NaNs; non-finite JSON is now rejected and the engineering
+  smoke uses FP32, matching its path-validation purpose.
+- Limitations: the smoke model is random and untrained, so its loss differences
+  are not radar-effect evidence. Full 6,019-frame metric evaluation, AMP on a
+  trained fused model, scene-level summaries and confidence intervals belong to
+  P4/P5 and later milestones. Interrupted JSONL files remain as `.partial` for
+  diagnosis; record-level resume is not yet implemented.
+- Next: P4, integrate the real streaming joint trainer, exercise resume, and
+  measure end-to-end throughput/memory before locking the scale-run budget.
 
 ### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
 
