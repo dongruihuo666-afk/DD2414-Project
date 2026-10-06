@@ -13,6 +13,7 @@ from radar_evaluation import (
     RADAR_MODES,
     build_wrong_scene_map,
     radar_for_mode,
+    spread_positions,
     validate_wrong_scene_map,
     wrong_scene_dataset_indices,
 )
@@ -91,6 +92,10 @@ class RadarEvaluationTests(unittest.TestCase):
     def test_impossible_mapping_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'at least two scenes'):
             build_wrong_scene_map(['a', 'b'], ['same', 'same'])
+
+    def test_spread_positions_include_both_ends(self):
+        self.assertEqual(spread_positions(10, 4), [0, 3, 6, 9])
+        self.assertEqual(spread_positions(10, 1), [0])
 
 
 if __name__ == '__main__':

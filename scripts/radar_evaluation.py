@@ -76,6 +76,14 @@ def wrong_scene_dataset_indices(manifest, seed=125):
     return [index_by_token[mapping[token]] for token in val['tokens']], mapping
 
 
+def spread_positions(total, count):
+    if not 1 <= count <= total:
+        raise ValueError('sample count must fit the validation split')
+    if count == 1:
+        return [0]
+    return [round(index * (total - 1) / (count - 1)) for index in range(count)]
+
+
 def radar_for_mode(matched_voxels, mode, wrong_scene_voxels=None):
     """Return BEVCar voxel input for one of the locked evaluation controls."""
     features, coords, counts = matched_voxels

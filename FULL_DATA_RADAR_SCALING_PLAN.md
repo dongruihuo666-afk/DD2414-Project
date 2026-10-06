@@ -37,7 +37,7 @@ a documented protocol revision and a restart of affected comparisons.
 | Sensors | All five nuScenes radar sensors, using the existing project geometry and velocity rotation |
 | Seed | 125 for the full curve; seeds 42 and 7 only for confirmation of the onset point and full-data result |
 | Data subsets | Deterministic, nested and scene-spread; never the first contiguous frames; manifests record indices, sample tokens and scene tokens |
-| Training budget | Provisional fixed budget of 30,000 optimizer updates per scale, batch size 1. This lets the full run see every training frame while holding compute constant. The throughput milestone must confirm or revise this before any scale result is started. |
+| Training budget | Fixed budget of 30,000 optimizer updates per scale, batch size 1. P4 measured 9.61 online-DINO joint updates/s (about 0.87 h pure training per scale), so the provisional budget is now locked. This lets the full run see every training frame while holding compute constant. |
 | Objective | Freeze one objective and its weights before the curve. Initial candidate: semantic weight 1.0 plus motion weight 0.5. Do not tune weights separately per scale. |
 | Validation | All 6,019 validation frames, deterministic order, no parameter updates |
 | Radar evaluation modes | `matched`, `zero_velocity`, `empty`, and deterministic `wrong_scene` |
@@ -78,7 +78,7 @@ Status values are `not started`, `in progress`, `blocked`, and `complete`.
 | P1 | complete | Deterministic nested manifests and streaming batches | Manifests for 64/256/1,024/4,096/full are nested, scene-spread, reproducible and train/val-disjoint; iterate at least 512 batches without retaining prior GPU tensors | `feat: add streaming radar scaling data path` |
 | P2 | complete | Periodic checkpoint and exact resume | Save student, optimizer, GradScaler, epoch/update, sampler position and Python/NumPy/Torch/CUDA RNG; interrupted-resumed smoke matches an uninterrupted run within the documented numerical tolerance | `feat: add resumable self-supervised checkpoints` |
 | P3 | complete | Matched/zero/empty/wrong-scene validation | Wrong radar always comes from a different scene under a deterministic token map; all four modes cover identical validation tokens and produce compact per-frame records | `feat: add wrong-scene radar evaluation` |
-| P4 | not started | End-to-end throughput and stability pilot | 128-sample train / fixed dev pilot runs, resumes once, shows bounded memory, measures samples/s and cache/disk cost, and locks or revises the provisional 30,000-update budget before P5 | `test: validate full-data radar training pipeline` |
+| P4 | complete | End-to-end throughput and stability pilot | 128-sample train / fixed dev pilot runs, resumes once, shows bounded memory, measures samples/s and cache/disk cost, and locks or revises the provisional 30,000-update budget before P5 | `test: validate full-data radar training pipeline` |
 | P5 | not started | Run the 64-sample scale | Seed 125 training completes under the locked protocol; evaluate all 6,019 val frames in four radar modes; record exact manifest and paired metrics | `exp: record 64-sample radar scaling result` |
 | P6 | not started | Run the 256-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 256-sample radar scaling result` |
 | P7 | not started | Run the 1,024-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 1024-sample radar scaling result` |

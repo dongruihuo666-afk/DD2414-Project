@@ -11,8 +11,10 @@ import numpy as np
 from torch.utils.data import Dataset
 
 from radar_scaling_data import (
+    IndexedSubset,
     build_scaling_manifest,
     make_streaming_loader,
+    prefix_indices,
     scale_indices,
     validate_scaling_manifest,
     write_manifest,
@@ -95,6 +97,10 @@ class RadarScalingDataTests(unittest.TestCase):
         self.assertEqual(len(batches), 4)
         observed = [int(value) for batch in batches for value in batch]
         self.assertEqual(observed, scale_indices(manifest, 8))
+        indexed = IndexedSubset(self.train, prefix_indices(manifest, 4))
+        position, value = indexed[2]
+        self.assertEqual(position, 2)
+        self.assertEqual(value, prefix_indices(manifest, 4)[2])
 
 
 if __name__ == '__main__':

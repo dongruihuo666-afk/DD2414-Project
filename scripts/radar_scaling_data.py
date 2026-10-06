@@ -7,12 +7,26 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Dataset, Subset
 
 
 MANIFEST_SCHEMA_VERSION = 1
 DEFAULT_SEED = 125
 DEFAULT_SCALE_COUNTS = (64, 256, 1024, 4096)
+
+
+class IndexedSubset(Dataset):
+    """Subset that also returns its stable position for token-level logging."""
+
+    def __init__(self, dataset, indices):
+        self.dataset = dataset
+        self.indices = list(indices)
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getitem__(self, position):
+        return position, self.dataset[self.indices[position]]
 
 
 def _stable_rank(seed, namespace, token):
@@ -208,3 +222,11 @@ def scale_indices(manifest, scale):
     if key not in manifest['scales']:
         raise KeyError(f'unknown scale {scale}; choose from {list(manifest["scales"])}')
     return manifest['scales'][key]['dataset_indices']
+
+
+def prefix_indices(manifest, count):
+    count = int(count)
+    full = manifest['scales']['full']['dataset_indices']
+    if not 1 <= count <= len(full):
+        raise ValueError('prefix count must fit the full training scale')
+    return full[:count]

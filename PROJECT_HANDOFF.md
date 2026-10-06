@@ -41,8 +41,11 @@ checkpoint. P2 is also complete: atomic periodic checkpoints restore model,
 optimizer, AMP scaler, sampler position and all RNG states; a CUDA interrupted
 resume matched uninterrupted training exactly. P3 is complete: the full val
 wrong-radar map is a deterministic 6,019-token cross-scene bijection, and all
-four input modes emit finite incremental per-frame records. P4 end-to-end
-throughput and stability is the next implementation boundary.
+four input modes emit finite incremental per-frame records. P4 is complete: a
+128-update online-DINO joint pilot stopped at update 64, resumed in a new
+process at the exact sampler position and finished with bounded 3.574 GiB peak
+allocation. Measured throughput locks the curve at 30,000 updates per scale
+without a teacher-feature cache. P5 is the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -191,12 +194,12 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P4 from `FULL_DATA_RADAR_SCALING_PLAN.md`: integrate streaming batches,
-periodic resume and the locked joint objective in a 128-sample end-to-end pilot.
-Measure model+DINO throughput, peak memory and cache/disk behavior, interrupt
-and resume the real trainer once, then lock or revise the provisional 30,000
-update budget before P5. Do not start a scale result before P4 is documented,
-tested, committed and pushed.
+Execute P5 from `FULL_DATA_RADAR_SCALING_PLAN.md`: train the seed-125 64-sample
+scale for the locked 30,000 updates with one sweep and checkpoints every 1,000
+updates, then evaluate all 6,019 validation frames under matched,
+zero-velocity, empty and wrong-scene radar. Commit the compact result and
+per-scene analysis, not the checkpoint, raw log or raw predictions. Do not
+start P6 before P5 is documented, tested, committed and pushed.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -350,6 +353,50 @@ chat transcripts, secrets, or unreviewed generated data.
   diagnosis; record-level resume is not yet implemented.
 - Next: P4, integrate the real streaming joint trainer, exercise resume, and
   measure end-to-end throughput/memory before locking the scale-run budget.
+
+### 2026-10-06 — P4 end-to-end streaming and resume pilot
+
+- Change: added `scripts/train_radar_scaling.py`, an opt-in batch-streaming
+  trainer that builds frozen-DINO radar-anchored targets online, optimizes the
+  current BEVCar semantic+motion joint model under AMP, calls the P2 periodic
+  checkpoint utility, truncates stale post-checkpoint log records on resume,
+  and performs streaming four-mode validation with all/moving/cell-weighted
+  motion summaries. Added `IndexedSubset`/prefix helpers to
+  `scripts/radar_scaling_data.py`, shared scene-spread validation positions,
+  and the compact result `artifacts/trainval/radar_scaling_pilot128.json`.
+- Reason: P1--P3 tested the components independently. Scale runs require proof
+  that the real DINO target, VoxelNet fusion, optimizer/AMP state, sampler and
+  validation path remain bounded and coherent across an actual process restart,
+  plus a measured compute budget before starting the 64-sample result.
+- Reproduce: first run the trainer with `--scale 128 --max-updates 128
+  --checkpoint-every 64 --stop-after-update 64 --val-samples 4` and paths
+  `checkpoints/radar_scaling/pilot128/latest.pt`,
+  `artifacts/trainval/radar_scaling_pilot128_train.jsonl`,
+  `artifacts/trainval/radar_scaling_pilot128_val.jsonl`, and
+  `artifacts/trainval/radar_scaling_pilot128.json`; rerun the identical command
+  without `--stop-after-update` and with `--resume`. Both use seed 125, one
+  sweep, semantic weight 1.0 and motion weight 0.5. Set `TORCH_HOME` and
+  `MPLCONFIGDIR` to the repository caches.
+- Verification: CPU manifest/evaluation/checkpoint suites and compilation
+  passed. A two-update end-to-end precursor passed joint backward, a 188 MB
+  checkpoint and trained-model AMP validation. The formal run stopped at update
+  64 with sampler position 64, then a new process printed
+  `resumed update=64 epoch=0 position=64` and completed all 128 unique training
+  positions. It saw moving targets in 113/128 updates and 738 covered cells;
+  mean joint/semantic/motion losses were 1.5688/0.5384/2.0608. Online-DINO
+  throughput was 9.608 updates/s, estimated 30,000-update pure training time
+  0.867 h, peak allocation 3.574 GiB, and the final checkpoint was 187,965,586
+  bytes. Four scene-spread AMP validation frames (3 moving, 18 cells) ran at
+  3.063 frames/s with finite four-mode metrics. Matched semantic/motion loss was
+  0.3828/1.4902 versus empty 0.4875/1.6268 and wrong-scene 0.4557/1.6909.
+- Decision/limitations: lock 30,000 updates and online teacher extraction for
+  P5--P9; do not allocate the optional ~49 GiB DINO patch cache. Checkpoint
+  interval becomes 1,000 for scale runs. The pilot's four-frame losses are an
+  engineering signal only, not radar-effect evidence. The current diagnostic
+  still freezes a randomly initialized camera encoder, and full-val downstream
+  utility remains P11. Initialization/devkit loading and full 6,019-frame
+  validation add wall time beyond the 0.867 h pure-training estimate.
+- Next: P5, the committed 64-sample / 30,000-update / full-val seed-125 result.
 
 ### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
 

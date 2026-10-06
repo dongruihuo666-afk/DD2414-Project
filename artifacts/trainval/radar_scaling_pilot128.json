@@ -1,0 +1,79 @@
+{
+  "status": "complete",
+  "run_config": {
+    "dataset": "v1.0-trainval",
+    "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc",
+    "scale": "128",
+    "train_samples": 128,
+    "seed": 125,
+    "nsweeps": 1,
+    "max_updates": 128,
+    "learning_rate": 0.0002,
+    "semantic_weight": 1.0,
+    "motion_weight": 0.5,
+    "model_name": "dinov2_vits14",
+    "bevcar_voxelnet_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac",
+    "checkpoint_every": 64,
+    "num_workers": 0
+  },
+  "progress": {
+    "epoch": 0,
+    "update": 128,
+    "loss_sum": 200.8075647354126,
+    "semantic_sum": 68.91795808076859,
+    "motion_sum": 263.7792126946151,
+    "moving_updates": 113,
+    "covered_cells": 738,
+    "train_seconds": 13.322008496616036,
+    "peak_allocated_gib": 3.57419490814209
+  },
+  "mean_train_loss": 1.568809099495411,
+  "mean_semantic_loss": 0.5384215475060046,
+  "mean_motion_loss": 2.0607750991766807,
+  "updates_per_second": 9.608160813927846,
+  "estimated_30000_update_hours": 0.8673182614984398,
+  "checkpoint_seconds_this_process": 0.5628526210784912,
+  "checkpoint_bytes": 187965586,
+  "teacher_feature_cache": null,
+  "validation": {
+    "samples": 4,
+    "moving_frames": 3,
+    "covered_cells": 18,
+    "positions": [
+      0,
+      2006,
+      4012,
+      6018
+    ],
+    "seconds": 1.3057522210292518,
+    "frames_per_second": 3.0633683294423366,
+    "amp": true,
+    "means": {
+      "matched": {
+        "semantic_loss": 0.38279273360967636,
+        "motion_loss": 1.4901712238788605,
+        "moving_frame_motion_loss": 1.986894965171814,
+        "cell_weighted_motion_loss": 1.986894965171814
+      },
+      "zero_velocity": {
+        "semantic_loss": 0.38236264139413834,
+        "motion_loss": 1.5411466658115387,
+        "moving_frame_motion_loss": 2.0548622210820517,
+        "cell_weighted_motion_loss": 2.0548622210820517
+      },
+      "empty": {
+        "semantic_loss": 0.48749111592769623,
+        "motion_loss": 1.626801609992981,
+        "moving_frame_motion_loss": 2.1690688133239746,
+        "cell_weighted_motion_loss": 2.1690688133239746
+      },
+      "wrong_scene": {
+        "semantic_loss": 0.4556824043393135,
+        "motion_loss": 1.6909105777740479,
+        "moving_frame_motion_loss": 2.254547437032064,
+        "cell_weighted_motion_loss": 2.254547437032064
+      }
+    },
+    "records": "artifacts/trainval/radar_scaling_pilot128_val.jsonl"
+  }
+}

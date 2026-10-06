@@ -26,6 +26,7 @@ from radar_evaluation import (  # noqa: E402
     IncrementalEvaluationWriter,
     RADAR_MODES,
     radar_for_mode,
+    spread_positions,
     wrong_scene_dataset_indices,
 )
 from radar_scaling_data import make_streaming_loader, validate_scaling_manifest  # noqa: E402
@@ -44,14 +45,6 @@ def parse_args():
     parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--model-name', default='dinov2_vits14')
     return parser.parse_args()
-
-
-def spread_positions(total, count):
-    if not 1 <= count <= total:
-        raise ValueError('sample count must fit the validation split')
-    if count == 1:
-        return [0]
-    return [round(index * (total - 1) / (count - 1)) for index in range(count)]
 
 
 def main():
