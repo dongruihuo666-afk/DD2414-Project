@@ -65,3 +65,4 @@ artifacts/trainval/*
 !artifacts/trainval/wrong_scene_evaluation_check.jsonl
 !artifacts/trainval/radar_scaling_pilot128.json
 !artifacts/trainval/radar_scaling_scale64_seed125.json
+!artifacts/trainval/radar_scaling_scale256_seed125.json

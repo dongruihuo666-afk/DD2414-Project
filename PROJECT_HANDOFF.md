@@ -49,8 +49,11 @@ without a teacher-feature cache. P5 is complete: the 64-sample run performed
 30,000 effective updates and evaluated all 6,019 validation frames in four
 radar modes. Its semantic penalties are small, while its motion penalties are
 large and positive; these establish radar dependence for the diagnostic motion
-head, not downstream vehicle-segmentation utility. P6 (256 samples) is the
-next implementation boundary.
+head, not downstream vehicle-segmentation utility. P6 is also complete under
+the unchanged protocol: the 256-sample point lowers matched validation losses
+and increases semantic and motion radar-intervention penalties relative to P5.
+This is a two-point, single-seed dependence trend, not yet an onset or utility
+claim. P7 (1,024 samples) is the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -358,6 +361,43 @@ chat transcripts, secrets, or unreviewed generated data.
   diagnosis; record-level resume is not yet implemented.
 - Next: P4, integrate the real streaming joint trainer, exercise resume, and
   measure end-to-end throughput/memory before locking the scale-run budget.
+
+### 2026-10-06 — P6 256-sample radar scaling result
+
+- Change: completed the unchanged seed-125, one-sweep, 256-sample scale at
+  30,000 effective optimizer updates and evaluated all 6,019 validation frames
+  under the four locked radar modes. Whitelisted the compact result
+  `artifacts/trainval/radar_scaling_scale256_seed125.json`; the checkpoint and
+  raw train/validation JSONL files remain ignored.
+- Reason: P6 is the second fixed-budget point and tests whether the dependence
+  seen at 64 samples strengthens when the nested subset contains four times as
+  many samples and scenes.
+- Reproduce: use the P5 command with `--scale 256` and replace each
+  `scale64_seed125` output stem with `scale256_seed125`; all other arguments,
+  including 30,000 updates, seed 125, one sweep and 6,019 validation samples,
+  are unchanged.
+- Verification: the run completed 30,000 consecutive effective updates over
+  exactly 256 unique training indices, with 19 recovered AMP-overflow retries,
+  10.295 updates/s, 3.574 GiB peak CUDA allocation and mean
+  joint/semantic/motion training losses 0.3282/0.2517/0.1531. Independent
+  checks found exactly 30,000 train and 6,019 finite validation records, 150
+  scene summaries, no same-scene wrong-radar pair and no partial record. The
+  same test suites and compilation used by P5 remained passing before the run;
+  result integrity assertions passed after it.
+- Result: full-validation matched semantic loss was 0.38045 versus
+  0.38740 zero-velocity, 0.39019 empty and 0.38495 wrong-scene, giving
+  penalties +0.00694/+0.00974/+0.00450. Matched motion loss was 1.25646 versus
+  2.36205/2.37656/2.36359, giving penalties +1.10560/+1.12010/+1.10714.
+  Moving-frame penalties were +1.24852/+1.26490/+1.25025 and cell-weighted
+  penalties were +1.37098/+1.38008/+1.36908. Semantic wrong-scene penalties
+  were positive in 111/150 scenes and motion penalties in 136/150 scenes.
+- Interpretation/limitations: from P5 to P6, matched semantic and motion losses
+  decreased while wrong-scene penalties increased from +0.00017 to +0.00450
+  and +0.77715 to +1.10714. This is consistent with greater radar dependence
+  at 256 samples, but two single-seed points cannot establish a reproducible
+  onset. The random frozen camera path and lack of downstream IoU remain the
+  same limitations as P5.
+- Next: P7, repeat the unchanged protocol with the nested 1,024-sample subset.
 
 ### 2026-10-06 — P5 64-sample radar scaling result
 
