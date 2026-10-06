@@ -33,11 +33,14 @@ completed milestone must be committed and pushed before the next begins. See
 `FULL_DATA_RADAR_SCALING_PLAN.md`; its dependence curve precedes multi-sweep or
 hybrid-teacher expansion.
 
-P1 is complete locally: the seed-125 manifest deterministically nests
+P1 is complete: the seed-125 manifest deterministically nests
 64/256/1,024/4,096/full train subsets, covers 64/256/700/700/700 scenes, and
 keeps all 700 train scenes disjoint from all 150 validation scenes. A real
 512-batch one-sweep traversal retained zero CUDA allocation at every 64-batch
-checkpoint. P2 checkpoint/resume is the next implementation boundary.
+checkpoint. P2 is also complete: atomic periodic checkpoints restore model,
+optimizer, AMP scaler, sampler position and all RNG states; a CUDA interrupted
+resume matched uninterrupted training exactly. P3 wrong-scene evaluation is
+the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -186,12 +189,12 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P2 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add periodic, atomic
-checkpoints containing the student, optimizer, GradScaler, epoch/update,
-sampler position and Python/NumPy/Torch/CUDA RNG states. An interrupted-resumed
-smoke must match an uninterrupted reference within a documented numerical
-tolerance. Do not begin wrong-scene evaluation or a scale run before P2 is
-documented, tested, committed and pushed.
+Execute P3 from `FULL_DATA_RADAR_SCALING_PLAN.md`: add deterministic
+matched/zero-velocity/empty/wrong-scene validation. Wrong radar must always
+come from a different scene, all four modes must cover identical validation
+tokens, and results must be written incrementally as compact per-frame records.
+Do not begin the throughput pilot or a scale run before P3 is documented,
+tested, committed and pushed.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -268,6 +271,42 @@ chat transcripts, secrets, or unreviewed generated data.
   labels that self-supervised pretraining does not need. Throughput here is a
   data-only measurement, not the P4 end-to-end timing result.
 - Next: P2, periodic atomic checkpoints and exact interrupted resume.
+
+### 2026-10-06 — P2 periodic checkpoints and exact resume
+
+- Change: added `scripts/training_checkpoint.py` with atomic `latest` writes,
+  fixed-update periodic/forced-save policy, a stateful epoch-shuffle sampler,
+  run-configuration validation and complete Python/NumPy/Torch CPU/CUDA RNG
+  capture. It saves model, optimizer, GradScaler, sampler and progress state.
+  Added CPU failure/round-trip tests in `scripts/test_training_checkpoint.py`,
+  the CUDA equivalence check in `scripts/check_training_resume.py`, and the
+  compact result `artifacts/trainval/training_resume_check.json`.
+- Reason: the 30,000-update scale runs must survive preemption without silently
+  changing sample order, dropout/random augmentation, optimizer moments or AMP
+  scaling. Atomic replacement prevents a partially written `latest` file from
+  being treated as valid.
+- Reproduce: `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/test_training_checkpoint.py`; then run
+  `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/check_training_resume.py --checkpoint
+  artifacts/trainval/checkpoint_resume_smoke/latest.pt --summary-out
+  artifacts/trainval/training_resume_check.json --total-updates 8
+  --interrupt-after 4 --seed 125` with GPU access.
+- Verification: four CPU tests and Python compilation passed. On the RTX 3090
+  Ti, uninterrupted eight-update AMP training and a four-update checkpoint plus
+  process-state rebuild/resume reached identical sampler state (epoch 1,
+  position 3); maximum parameter and per-step loss absolute differences were
+  both `0.0`, tighter than the declared `1e-7` tolerance. The first CUDA run
+  exposed that `map_location=cuda` moved serialized CPU RNG bytes to CUDA; the
+  loader now explicitly returns all generator-state bytes to CPU, and the
+  rerun passed with `TRAINING_RESUME_OK`.
+- Limitations: the equivalence test uses a small CUDA network rather than the
+  full BEV fusion model. Exact sampler resume currently requires
+  `num_workers=0`; worker prefetch would need acknowledgement of consumed rather
+  than merely requested indices. The P4 end-to-end pilot must call this utility
+  from the real streaming trainer and exercise a real checkpoint interruption.
+- Next: P3, deterministic wrong-scene radar evaluation alongside matched,
+  zero-velocity and empty controls.
 
 ### 2026-09-28 — Matched lightweight-vs-BEVCar supervised comparison
 

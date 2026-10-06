@@ -60,3 +60,4 @@ artifacts/trainval/*
 !artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_head.json
 !artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_uniform.json
 !artifacts/trainval/radar_scaling_stream_check.json
+!artifacts/trainval/training_resume_check.json
