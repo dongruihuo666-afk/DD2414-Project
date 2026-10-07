@@ -81,7 +81,7 @@ Status values are `not started`, `in progress`, `blocked`, and `complete`.
 | P4 | complete | End-to-end throughput and stability pilot | 128-sample train / fixed dev pilot runs, resumes once, shows bounded memory, measures samples/s and cache/disk cost, and locks or revises the provisional 30,000-update budget before P5 | `test: validate full-data radar training pipeline` |
 | P5 | complete | Run the 64-sample scale | Seed 125 training completes under the locked protocol; evaluate all 6,019 val frames in four radar modes; record exact manifest and paired metrics | `exp: record 64-sample radar scaling result` |
 | P6 | complete | Run the 256-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 256-sample radar scaling result` |
-| P7 | not started | Run the 1,024-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 1024-sample radar scaling result` |
+| P7 | complete | Run the 1,024-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 1024-sample radar scaling result` |
 | P8 | not started | Run the 4,096-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 4096-sample radar scaling result` |
 | P9 | not started | Run the complete 28,130-sample scale | Every train token is seen under the locked sampler; resume is exercised in the real run; all 6,019 val frames receive four-mode evaluation | `exp: record full-data radar scaling result` |
 | P10 | not started | Analyze the dependence curve | One compact report plots data scale against velocity/empty/wrong-scene penalties, includes per-scene uncertainty and identifies whether an onset is repeatable rather than a single noisy point | `docs: analyze radar dependence scaling curve` |
