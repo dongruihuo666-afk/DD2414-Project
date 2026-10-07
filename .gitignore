@@ -51,6 +51,8 @@ artifacts/*
 !artifacts/light_supervised_summary.json
 checkpoints/
 logs_*/
+fullsize_baseline/cache/
+fullsize_baseline/runs/
 .env
 .env.*
 *.pem

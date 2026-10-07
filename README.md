@@ -24,6 +24,13 @@ every scale; both saturate around 4,096 rather than growing indefinitely. Read
 and motion losses, not downstream segmentation accuracy. Historical mini
 commands require a separate mini dataset.
 
+An independent epoch-matched follow-up is now prepared under
+[`fullsize_baseline/`](fullsize_baseline/README.md). It keeps the P9 model and
+one-sweep objective unchanged, but compares 4,096 and all 28,130 samples at
+eight epochs with a measured batch/worker configuration and live status,
+TensorBoard, and plot monitoring. Only engineering pilots have run; neither
+formal eight-epoch result exists yet.
+
 - Completed the one-sweep full-data radar scaling curve with deterministic
   manifests, exact checkpoint/resume and matched/zero/empty/wrong-scene
   evaluation. The matched absolute losses improve rather than collapse, but
@@ -69,6 +76,7 @@ commands require a separate mini dataset.
 - [Technical handoff and work log](PROJECT_HANDOFF.md)
 - [Full-data radar scaling study](FULL_DATA_RADAR_SCALING_PLAN.md)
 - [Radar dependence scaling analysis](RADAR_SCALING_ANALYSIS.md)
+- [Epoch-matched full-size baseline and monitoring](fullsize_baseline/README.md)
 - [Project progress and meeting report](PROJECT_PROGRESS.md)
 - [Local environment and reproduction commands](SETUP_LOCAL.md)
 - [Simple-BEV architecture notes](SIMPLE_BEV_NOTES.md)

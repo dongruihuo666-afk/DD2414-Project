@@ -1044,7 +1044,11 @@ class VizData(NuscData):
         Z, Y, X = self.res_3d
         self.vox_util = utils.vox.Vox_util(
             Z, Y, X,
-            scene_centroid=torch.from_numpy(self.centroid).float().cuda(),
+            # Vox_util immediately stores scalar bounds on CPU and creates
+            # transforms on the input tensor's device. Keeping this temporary
+            # centroid on CPU makes VizData safe to construct in DataLoader
+            # workers without changing any geometry.
+            scene_centroid=torch.from_numpy(self.centroid).float(),
             bounds=self.bounds,
             assert_cube=False)
         self.Z, self.Y, self.X = Z, Y, X

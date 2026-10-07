@@ -70,9 +70,11 @@ still needs its own definition, integration and incremental ablations.
 - A total-sample limit of 160 rejects accidental all-dataset GPU caching in
   these bounded probes. It is a guard, not a promise that every configuration
   below the limit fits on every GPU.
-- The existing smoke helper accepts `--dset trainval`. The supervised trainer
-  exposes `nworkers_val`; this profile sets both worker counts to zero because
-  `VizData` currently allocates CUDA geometry while loading a sample.
+- The existing smoke helper accepts `--dset trainval`. The historical
+  supervised profile keeps both worker counts at zero for reproducibility.
+  `VizData` no longer creates a temporary CUDA centroid during construction;
+  the separate epoch-matched trainer can therefore use worker prefetch with an
+  acknowledgement-based resume cursor.
 
 Selecting trainval does **not** mean all 28,130 training frames are used by a
 64-sample probe. All-frame self-supervised training cannot be enabled by changing

@@ -68,8 +68,19 @@ at 256 samples, while all motion penalties are positive from 64 samples. The
 semantic full-minus-4,096 wrong-scene change is `-0.00383` with 95% interval
 `[-0.00460, -0.00309]`; the motion change is `-0.02506` with interval
 `[-0.06251, +0.01415]`. This supports saturation or a small late decline, not
-indefinite growth. See `RADAR_SCALING_ANALYSIS.md`. P11 downstream IoU is the
-next implementation boundary.
+indefinite growth. See `RADAR_SCALING_ANALYSIS.md`. P11 downstream IoU remains
+the later utility boundary after the newly requested exposure control.
+
+On 2026-10-08 the owner approved a separate epoch-matched follow-up without
+changing the P9 architecture: independently train the deterministic 4,096
+subset and all 28,130 samples for eight epochs, using identical optimized
+training parameters. The new opt-in path under `fullsize_baseline/` supports
+true multi-sample batches, epoch-native warmup/cosine AdamW training,
+prefetch-safe exact resume, and live JSON/TensorBoard/PNG monitoring. Real
+engineering pilots selected batch 5 with eight workers: 9.85 samples/s,
+16.721 GiB PyTorch peak allocation and 20,638/24,564 MiB total GPU use on the
+RTX 3090 Ti. This is a short throughput measurement, not a training result.
+Neither formal eight-epoch run has begun.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -218,14 +229,15 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P11 from `FULL_DATA_RADAR_SCALING_PLAN.md`: define and run a matched
-downstream vehicle-segmentation protocol on the official validation split.
-Camera-only and fused models must use identical labeled samples, initialization
-policy, update budget, resolution and evaluation code. Report full-validation
-IoU for camera-only and for the same fused checkpoint under matched, empty and
-wrong-scene radar. If seed 125 is positive, confirm the selected onset and full
-scale with seeds 42 and 7 before claiming repeatability. Keep this work separate
-from multi-sweep or hybrid-teacher changes.
+Finish the approved epoch-matched follow-up under `fullsize_baseline/`: complete
+a longer batch-5/workers-8 stability pilot, decide the compact-DINO-cache path
+from measured wall time, freeze one shared configuration, then independently
+train 4,096 and all 28,130 samples for eight epochs. Evaluate both checkpoints
+on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
+P9 architecture, one-sweep input and objective unchanged. P11 downstream
+vehicle-segmentation IoU remains the next research boundary after this
+explicitly requested exposure control; keep it separate from multi-sweep and
+hybrid-teacher changes.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -244,6 +256,58 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-08 — Epoch-matched trainer and live monitoring
+
+- Change: added the isolated `fullsize_baseline/` output convention and an
+  opt-in epoch-native trainer for the unchanged P9 one-sweep model. The target,
+  motion and loss paths now support real batches; AdamW uses quarter-epoch
+  warmup and cosine decay; an acknowledgement-based sampler saves only samples
+  whose optimizer update completed, so worker prefetch remains exactly
+  resumable. Added atomic `status.json`, batch metrics, TensorBoard events, an
+  auto-refreshing PNG/terminal monitor, automatic console retention, CPU tests
+  and a real two-sample batch-equivalence checker. `VizData` now constructs its
+  temporary centroid on CPU, which is geometrically equivalent and permits
+  DataLoader workers.
+- Reason: the fixed 30,000-update study exposed the 4,096 subset about 7.32
+  times but full train only 1.07 times. The follow-up compares both scales at
+  eight complete passes while using the 3090 Ti more effectively and giving a
+  human operator loss, ETA, throughput, VRAM and GPU telemetry throughout.
+- Reproduce: run `MPLCONFIGDIR=.cache/matplotlib
+  /home/students2026/miniconda3/envs/bev/bin/python
+  scripts/test_fullsize_training.py`; preview with `bash
+  scripts/run_fullsize_baseline.sh`; check batching with
+  `/home/students2026/miniconda3/envs/bev/bin/python
+  scripts/check_fullsize_batch_equivalence.py --data-root
+  /home/students2026/datasets/nuscenes --bevcar-source external/BEVCar
+  --manifest configs/radar_scaling_manifest_seed125.json --output
+  fullsize_baseline/runs/batch_equivalence.json`. Monitoring commands are in
+  `fullsize_baseline/README.md`.
+- Verification: six CPU tests, Python compilation, launcher previews, shell
+  syntax and `git diff --check` passed. A real batch-2 BF16 run stopped and
+  resumed from step 2 to step 4 with finite losses and no overflow; a separate
+  four-worker run restored its acknowledged sample cursor and continued from
+  step 5 to step 10. Against two historical batch-one forwards, batched
+  target/confidence maximum absolute
+  differences were `0.000244/0`, motion target/coverage differences were zero,
+  and FP32 semantic/motion prediction mean differences were
+  `0.001630/0.001422`. Online-DINO pilots measured batch 4/workers 4 at 9.08
+  samples/s and 13.432 GiB peak allocation, batch 5/workers 8 at 9.85 samples/s
+  and 16.721 GiB, and batch 6/workers 8 at 10.01 samples/s and 20.010 GiB. The
+  batch-6 process consumed 23,449/24,564 MiB in `nvidia-smi`, so its small
+  throughput gain did not justify the low memory headroom; batch 5 used
+  20,638 MiB. BF16 and FP16 batch-4 throughput were effectively equal; BF16 had
+  no overflow.
+- Limitations: pilots cover at most 40 optimizer steps and do not establish
+  eight-epoch numerical stability. Online DINO and unused supervised-label
+  construction still limit throughput; the planned compact teacher cache is
+  not implemented. Validation remains the historical batch-one four-mode path.
+  No 4,096/full scientific result was produced.
+- Next: run a longer batch-5/workers-8 stability pilot, implement and verify
+  the compact DINO cache if its measured end-to-end benefit justifies the path,
+  freeze one shared configuration, then run 4,096 and full independently for
+  eight epochs
+  with complete validation at epochs 1/3/5/8.
 
 ### 2026-10-07 — P10 radar dependence curve analysis
 
@@ -373,10 +437,11 @@ chat transcripts, secrets, or unreviewed generated data.
   retained by this data-only path. Manifest SHA-256 is
   `8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc`.
 - Limitations: this milestone did not load DINOv2, build dense BEV targets,
-  train a model, or test optimizer state. `VizData` still initializes CUDA
-  geometry and therefore uses `num_workers=0`; it also constructs supervised
-  labels that self-supervised pretraining does not need. Throughput here is a
-  data-only measurement, not the P4 end-to-end timing result.
+  train a model, or test optimizer state. At the time, `VizData` initialized
+  temporary CUDA state and therefore used `num_workers=0`; the 2026-10-08
+  epoch-based path removed that construction-time restriction. It still
+  constructs supervised labels that self-supervised pretraining does not need.
+  Throughput here is a data-only measurement, not the P4 end-to-end timing.
 - Next: P2, periodic atomic checkpoints and exact interrupted resume.
 
 ### 2026-10-06 — P2 periodic checkpoints and exact resume
@@ -408,10 +473,11 @@ chat transcripts, secrets, or unreviewed generated data.
   loader now explicitly returns all generator-state bytes to CPU, and the
   rerun passed with `TRAINING_RESUME_OK`.
 - Limitations: the equivalence test uses a small CUDA network rather than the
-  full BEV fusion model. Exact sampler resume currently requires
-  `num_workers=0`; worker prefetch would need acknowledgement of consumed rather
-  than merely requested indices. The P4 end-to-end pilot must call this utility
-  from the real streaming trainer and exercise a real checkpoint interruption.
+  full BEV fusion model. This historical sampler requires `num_workers=0`;
+  the separate 2026-10-08 epoch trainer adds the required acknowledgement of
+  consumed rather than merely prefetched indices. The P4 end-to-end pilot must
+  call this utility from the real streaming trainer and exercise a real
+  checkpoint interruption.
 - Next: P3, deterministic wrong-scene radar evaluation alongside matched,
   zero-velocity and empty controls.
 
