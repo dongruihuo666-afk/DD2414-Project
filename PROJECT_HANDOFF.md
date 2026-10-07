@@ -77,10 +77,13 @@ subset and all 28,130 samples for eight epochs, using identical optimized
 training parameters. The new opt-in path under `fullsize_baseline/` supports
 true multi-sample batches, epoch-native warmup/cosine AdamW training,
 prefetch-safe exact resume, and live JSON/TensorBoard/PNG monitoring. Real
-engineering pilots selected batch 5 with eight workers: 9.85 samples/s,
-16.721 GiB PyTorch peak allocation and 20,638/24,564 MiB total GPU use on the
-RTX 3090 Ti. This is a short throughput measurement, not a training result.
-Neither formal eight-epoch run has begun.
+engineering pilots selected batch 5 with eight workers. The longer 256-update
+pilot processed 1,280 unique samples at 12.27 samples/s, with 16.721 GiB peak
+PyTorch allocation, 20,560/24,564 MiB total process memory at the final status
+sample, finite losses/gradients, and zero AMP overflow retries. A synchronized
+profile attributed only 8.3% of a stable step to DINO, so the roughly 49 GiB
+teacher cache was rejected. This is an engineering result, not a training
+result. Neither formal eight-epoch run has begun.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -229,9 +232,8 @@ unrelated local work.
 
 ## Next bounded task
 
-Finish the approved epoch-matched follow-up under `fullsize_baseline/`: complete
-a longer batch-5/workers-8 stability pilot, decide the compact-DINO-cache path
-from measured wall time, freeze one shared configuration, then independently
+Finish the approved epoch-matched follow-up under `fullsize_baseline/`: use the
+now-frozen online-DINO, batch-5, workers-8, BF16 configuration to independently
 train 4,096 and all 28,130 samples for eight epochs. Evaluate both checkpoints
 on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
 P9 architecture, one-sweep input and objective unchanged. P11 downstream
@@ -308,6 +310,39 @@ chat transcripts, secrets, or unreviewed generated data.
   freeze one shared configuration, then run 4,096 and full independently for
   eight epochs
   with complete validation at epochs 1/3/5/8.
+
+### 2026-10-08 — Full-size stability pilot and configuration freeze
+
+- Change: completed a 256-update full-split engineering pilot with batch 5,
+  eight workers and BF16. Added the opt-in `--profile-timing` diagnostic and
+  separated frozen-DINO extraction from target projection so their costs can
+  be measured independently without changing the default path.
+- Reason: freeze the formal 4,096/full comparison from measured stability and
+  determine whether the proposed compact teacher cache would materially reduce
+  end-to-end time before accepting its storage and consistency costs.
+- Reproduce: run `FULLSIZE_BATCH_SIZE=5 FULLSIZE_NUM_WORKERS=8
+  RUN_DIR=fullsize_baseline/runs/pilot_batch5_workers8_256 bash
+  scripts/run_fullsize_baseline.sh --execute --stop-after-steps 256
+  --print-every-steps 25 --checkpoint-every-steps 1000
+  --validation-epochs '' --val-samples 4`. Add `--profile-timing` with a fresh
+  run directory for the synchronized 50-update phase profile.
+- Verification: all 256 metric rows were finite and covered exactly 1,280
+  unique subset positions and dataset indices. The run reached 12.27 samples/s,
+  16.721 GiB peak PyTorch allocation and zero overflow retries; stable
+  25-update windows fell from mean loss 1.992 to 0.957. Stable phase time was
+  8.3% DINO, 6.8% target projection, 14.0% input/motion target, and 70.9%
+  optimization. Seven CPU tests and Python compilation passed after the timing
+  refactor.
+- Decision and limitations: keep online DINO. Eliminating its measured 0.0322
+  seconds per batch gives only a 14.05 samples/s theoretical ceiling before
+  cache I/O, which does not justify an approximately 49 GiB FP16 cache. This
+  pilot covers only 0.046 epoch and is not evidence of final convergence or
+  validation quality. The shared formal configuration is now frozen at batch
+  5, eight workers, BF16, AdamW, one sweep, eight epochs and validation at
+  epochs 1/3/5/8.
+- Next: launch the independent 4,096-sample run, complete its scheduled full
+  validations, then launch the all-28,130-sample run under the same frozen
+  configuration. Do not enable `--profile-timing` in either formal run.
 
 ### 2026-10-07 — P10 radar dependence curve analysis
 

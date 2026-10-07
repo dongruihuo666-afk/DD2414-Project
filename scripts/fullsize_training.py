@@ -124,6 +124,15 @@ def build_targets_batched(batch, teacher, device):
     images = batch[0][:, 0]
     with torch.inference_mode():
         features = extract_teacher_features_batched(teacher, images, device)
+        return build_targets_from_features_batched(batch, features, device)
+
+
+def build_targets_from_features_batched(batch, features, device):
+    """Project already-extracted camera features into radar-anchored targets."""
+    images = batch[0][:, 0]
+    if features.shape[:2] != images.shape[:2]:
+        raise ValueError('features must match the batch and camera dimensions')
+    with torch.inference_mode():
         targets = []
         confidences = []
         for index in range(images.shape[0]):

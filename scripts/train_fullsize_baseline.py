@@ -31,6 +31,8 @@ from fullsize_training import (  # noqa: E402
     atomic_json_write,
     build_motion_targets_batched,
     build_targets_batched,
+    build_targets_from_features_batched,
+    extract_teacher_features_batched,
     learning_rate_at_step,
     motion_loss_batched,
     progress_status,
@@ -82,6 +84,8 @@ def parse_args():
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--stop-after-steps', type=int, default=0,
                         help='engineering-only clean stop for resume checks')
+    parser.add_argument('--profile-timing', action='store_true',
+                        help='synchronize CUDA and record engineering phase timings')
     return parser.parse_args()
 
 
@@ -396,12 +400,43 @@ def main():
                     )
                     for group in optimizer.param_groups:
                         group['lr'] = current_lr
-                    fusion_targets, confidences = build_targets_batched(
-                        batch, teacher, device,
-                    )
+                    phase_timings = {}
+                    if args.profile_timing:
+                        torch.cuda.synchronize(device)
+                        phase_started = time.perf_counter()
+                        with torch.inference_mode():
+                            teacher_features = extract_teacher_features_batched(
+                                teacher, batch[0][:, 0], device,
+                            )
+                        torch.cuda.synchronize(device)
+                        phase_timings['dino_seconds'] = (
+                            time.perf_counter() - phase_started
+                        )
+                        phase_started = time.perf_counter()
+                        fusion_targets, confidences = \
+                            build_targets_from_features_batched(
+                                batch, teacher_features, device,
+                            )
+                        torch.cuda.synchronize(device)
+                        phase_timings['target_projection_seconds'] = (
+                            time.perf_counter() - phase_started
+                        )
+                        del teacher_features
+                    else:
+                        fusion_targets, confidences = build_targets_batched(
+                            batch, teacher, device,
+                        )
+                    if args.profile_timing:
+                        phase_started = time.perf_counter()
                     inputs = prepare_bevcar_inputs(batch, device)
                     motion_fields, motion_coverages, motion_infos = \
                         build_motion_targets_batched(batch, device)
+                    if args.profile_timing:
+                        torch.cuda.synchronize(device)
+                        phase_timings['input_motion_seconds'] = (
+                            time.perf_counter() - phase_started
+                        )
+                        phase_started = time.perf_counter()
                     overflow_retries = 0
                     while True:
                         optimizer.zero_grad(set_to_none=True)
@@ -442,6 +477,11 @@ def main():
                         progress['amp_overflow_retries'] += 1
                         if scaler.get_scale() >= scale_before or overflow_retries >= 16:
                             raise RuntimeError('FP16 gradient overflow did not recover')
+                    if args.profile_timing:
+                        torch.cuda.synchronize(device)
+                        phase_timings['optimization_seconds'] = (
+                            time.perf_counter() - phase_started
+                        )
 
                     batch_size = int(batch[0].shape[0])
                     sampler.acknowledge(batch_size)
@@ -499,6 +539,7 @@ def main():
                         'allocated_gib': torch.cuda.memory_allocated(device) / GIB,
                         'amp_overflow_retries': overflow_retries,
                     }
+                    record.update(phase_timings)
                     append_json_line(metrics_handle, record)
                     writer.add_scalar('train/loss', current['loss'], progress['update'])
                     writer.add_scalar('train/semantic_loss', current['semantic_loss'], progress['update'])

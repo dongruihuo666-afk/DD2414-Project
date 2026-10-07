@@ -11,6 +11,7 @@ import torch
 from fullsize_training import (
     AcknowledgedShuffleSampler,
     atomic_json_write,
+    build_targets_from_features_batched,
     learning_rate_at_step,
     motion_loss_batched,
     progress_status,
@@ -43,6 +44,12 @@ class FullsizeTrainingTests(unittest.TestCase):
         self.assertEqual(sliced[0].shape, (1, 4))
         self.assertEqual(sliced[1].shape, (1, 2, 5))
         self.assertTrue(torch.equal(sliced[0], batch[0][1:2]))
+
+    def test_preextracted_target_builder_rejects_mismatched_batch(self):
+        batch = (torch.zeros(2, 1, 6, 3, 4, 5),)
+        features = torch.zeros(1, 6, 384, 8, 13)
+        with self.assertRaisesRegex(ValueError, 'batch and camera dimensions'):
+            build_targets_from_features_batched(batch, features, torch.device('cpu'))
 
     def test_semantic_batch_loss_is_mean_of_batch_one_losses(self):
         torch.manual_seed(4)

@@ -33,13 +33,23 @@ Select the 4,096 control with `SCALE=4096`. Execution remains opt-in through
 `--execute`; the launcher defaults to the measured batch size 5, eight loader
 workers, BF16, eight epochs, seed 125 and one radar sweep. Each run starts from
 its own initialization and never resumes a historical fixed-update checkpoint.
-The batch-5 pilot used 20,638/24,564 MiB total GPU memory and reached 9.85
-samples/s over 40 updates. Batch 6 was only 1.6% faster but used 23,449 MiB, so
-it was rejected for insufficient memory headroom. These short measurements
-still require a longer stability pilot before formal training.
+The frozen configuration is batch 5, eight workers and BF16. A 256-update
+stability pilot processed 1,280 unique samples at 12.27 samples/s, used 16.721
+GiB peak PyTorch allocation (20,560/24,564 MiB total process memory at the
+final status sample), and had no non-finite losses, gradients, or AMP overflow
+retries. Batch 6 was only 1.6% faster in the earlier matched short pilot but
+used 23,449 MiB, so it was rejected for insufficient memory headroom.
 
-After the final configuration is frozen, the two independent launch commands
-are:
+An opt-in synchronized phase profile (`--profile-timing`) measured the stable
+batch-5 step as 8.3% frozen DINO extraction, 6.8% radar target projection,
+14.0% input/motion-target construction, and 70.9% model forward/backward plus
+AdamW. Removing DINO entirely would therefore have a theoretical throughput
+ceiling of only about 14.05 samples/s, before cache I/O. The roughly 49 GiB
+FP16 teacher cache is not used for this comparison: its complexity and storage
+cost are not justified by that upper bound. The flag is for engineering pilots
+only and adds CUDA synchronizations; do not use it for formal training.
+
+The two formal launch commands for the frozen configuration are:
 
 ```bash
 SCALE=4096 bash scripts/run_fullsize_baseline.sh --execute
