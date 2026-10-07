@@ -83,7 +83,9 @@ PyTorch allocation, 20,560/24,564 MiB total process memory at the final status
 sample, finite losses/gradients, and zero AMP overflow retries. A synchronized
 profile attributed only 8.3% of a stable step to DINO, so the roughly 49 GiB
 teacher cache was rejected. This is an engineering result, not a training
-result. Neither formal eight-epoch run has begun.
+result. The formal 4,096-sample run started as the persistent user service
+`dd2414-fullsize-4096.service` at 2026-10-08 00:25 CEST; the full-split run has
+not begun.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -232,9 +234,9 @@ unrelated local work.
 
 ## Next bounded task
 
-Finish the approved epoch-matched follow-up under `fullsize_baseline/`: use the
-now-frozen online-DINO, batch-5, workers-8, BF16 configuration to independently
-train 4,096 and all 28,130 samples for eight epochs. Evaluate both checkpoints
+Finish the active 4,096-sample run and its scheduled validations, then use the
+same frozen online-DINO, batch-5, workers-8, BF16 configuration to train all
+28,130 samples for eight epochs. Evaluate both checkpoints
 on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
 P9 architecture, one-sweep input and objective unchanged. P11 downstream
 vehicle-segmentation IoU remains the next research boundary after this
@@ -343,6 +345,22 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: launch the independent 4,096-sample run, complete its scheduled full
   validations, then launch the all-28,130-sample run under the same frozen
   configuration. Do not enable `--profile-timing` in either formal run.
+
+### 2026-10-08 — Formal 4,096-sample run launched
+
+- Action: launched `SCALE=4096 bash scripts/run_fullsize_baseline.sh --execute`
+  as the persistent user service `dd2414-fullsize-4096.service`. Runtime output
+  is isolated under `fullsize_baseline/runs/scale4096_seed125/` and remains
+  ignored by Git.
+- Initial health check: at update 50/6,560 the process reported 10.62 samples/s,
+  finite loss 1.7161, 85--95% sampled GPU utilization, 20,557/24,564 MiB VRAM,
+  256 W power and no launch error. This is a startup health check, not an
+  experiment result.
+- Limitations and next: training and the four complete 6,019-frame validations
+  are still running. Do not interpret the partial loss or start the full-split
+  run concurrently. After 4,096 completes, verify its checkpoint, metrics,
+  validation summaries and exact sample exposure, commit the reviewed summary,
+  and only then launch the full-split run.
 
 ### 2026-10-07 — P10 radar dependence curve analysis
 
