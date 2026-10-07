@@ -22,8 +22,8 @@ so it is weak generalization evidence. A separate uniform 64/16-scene control
 gave `+0.7980` and `+0.8602`, with correct radar outperforming no radar. See
 `TRAINVAL_RUN_PLAN.md` and the 2026-10-05 work-log entry. These are bounded
 held-out feature-loss probes, not all-frame training or downstream accuracy.
-All-frame streaming self-supervision and the combined hybrid model remain
-future implementation work.
+The scaling trainer now provides all-frame streaming self-supervision; the
+combined hybrid model remains future implementation work.
 
 The owner has adopted a staged full-data radar scaling study. The frozen order
 is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
@@ -56,8 +56,14 @@ P7 is complete as well: at 1,024 samples, matched losses fall again and empty /
 wrong-scene penalties strengthen substantially. P8 is now complete: the 4,096
 sample point continues the monotonic increase in semantic and motion
 wrong-scene penalties, with positive semantic penalties in all 150 validation
-scenes. This is a four-point, single-seed dependence trend, not yet a downstream
-utility claim. P9 (all 28,130 samples) is the next implementation boundary.
+scenes. P9 is complete as well: the full 28,130-sample run covered every train
+token, exercised a real process restart at update 1,000 and evaluated all 6,019
+validation frames. Its semantic/motion wrong-scene penalties remain strong at
+`+0.02470`/`+1.56690`, but are slightly below P8's `+0.02854`/`+1.59196`.
+The single-seed curve therefore strengthens through 4,096 samples and then
+plateaus or slightly recedes under the fixed 30,000-update budget; it is not a
+monotonic full-range trend or a downstream utility claim. P10 curve analysis is
+the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -206,12 +212,13 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P5 from `FULL_DATA_RADAR_SCALING_PLAN.md`: train the seed-125 64-sample
-scale for the locked 30,000 updates with one sweep and checkpoints every 1,000
-updates, then evaluate all 6,019 validation frames under matched,
-zero-velocity, empty and wrong-scene radar. Commit the compact result and
-per-scene analysis, not the checkpoint, raw log or raw predictions. Do not
-start P6 before P5 is documented, tested, committed and pushed.
+Execute P10 from `FULL_DATA_RADAR_SCALING_PLAN.md`: analyze the completed
+seed-125 `64 -> 256 -> 1,024 -> 4,096 -> 28,130` curve with paired per-scene
+uncertainty, and plot velocity, empty and wrong-scene penalties. State clearly
+that the dependence signal rises through 4,096 samples but does not increase
+again at full scale. Commit the compact report and plot, not checkpoints, raw
+logs or per-frame prediction files. Do not start P11 before P10 is documented,
+tested, committed and pushed.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -230,6 +237,46 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-07 — P9 full-data radar scaling result
+
+- Change: completed the unchanged seed-125, one-sweep, full 28,130-sample
+  scale at 30,000 effective optimizer updates and evaluated all 6,019
+  validation frames under the four locked radar modes. Whitelisted the compact
+  result `artifacts/trainval/radar_scaling_full_seed125.json`; checkpoint and
+  raw JSONL outputs remain ignored.
+- Reason: P9 is the final fixed-budget data-scale point and tests whether the
+  radar-dependence increase through 4,096 samples persists when every official
+  training token is included.
+- Reproduce: use the P5 command with `--scale full` and replace each
+  `scale64_seed125` output stem with `full_seed125`. Run the first process with
+  `--stop-after-update 1000`, then repeat the otherwise identical command with
+  `--resume` and without `--stop-after-update` to complete training and
+  validation.
+- Verification: the first process stopped cleanly at update 1,000 and the
+  second restored epoch zero and sampler position 1,000. The completed run made
+  30,000 consecutive effective updates, covered all 28,130 unique training
+  indices, recovered 20 AMP overflows, sustained 10.225 updates/s and peaked at
+  3.574 GiB CUDA allocation. Independent checks found exactly 30,000 train and
+  6,019 finite validation records, 150 scene summaries, four modes per frame,
+  no same-scene wrong-radar pair and no partial record.
+- Result: full-validation matched semantic loss was 0.30538 versus 0.30966
+  zero-velocity, 0.34502 empty and 0.33008 wrong-scene, giving penalties
+  +0.00428/+0.03964/+0.02470. Matched motion loss was 0.79639 versus
+  2.33211/2.40259/2.36329, giving penalties +1.53571/+1.60619/+1.56690.
+  Moving-frame penalties were +1.73423/+1.81382/+1.76945 and cell-weighted
+  penalties were +1.80552/+1.90730/+1.87137. Semantic wrong-scene penalties
+  were positive in 150/150 scenes and motion penalties in 144/150 scenes.
+- Interpretation/limitations: radar dependence remains strong at full scale,
+  but semantic and motion wrong-scene penalties are slightly below P8's
+  +0.02854/+1.59196. The five-point curve rises through 4,096 samples and then
+  plateaus or slightly recedes, rather than increasing monotonically to full
+  scale. Full scale exposes each token only about once under the fixed 30,000
+  updates, whereas smaller subsets repeat tokens more often. This remains one
+  seed with diagnostic losses and a random frozen camera encoder, not evidence
+  of downstream vehicle-segmentation IoU.
+- Next: P10, produce the paired per-scene uncertainty analysis and compact
+  dependence-curve report before starting downstream IoU work.
 
 ### 2026-10-06 — Adopted full-data radar scaling plan
 
