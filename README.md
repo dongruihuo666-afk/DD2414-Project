@@ -15,14 +15,19 @@ from the upstream code.
 ## Current milestone
 
 Full nuScenes trainval is installed on the Ubuntu training host; mini was
-removed there. Read [the trainval run plan](TRAINVAL_RUN_PLAN.md) for the current
-project review and launcher. The exact 64-train / 16-val BEVCar VoxelNet
-reproduction completed with motion-only/joint zero-velocity penalties of
-`+0.0768`/`+0.0804`. A uniform 64-scene / 16-scene control produced much larger
-`+0.7980`/`+0.8602` penalties, exposing scene coverage as a major factor. These
-are held-out motion-feature losses, not downstream segmentation accuracy.
-Historical mini commands require a separate mini dataset.
+removed there. The seed-125 streaming study has completed the fixed-budget
+`64 -> 256 -> 1,024 -> 4,096 -> 28,130` curve, with every point evaluated on
+all 6,019 validation frames. Scene-bootstrap analysis finds semantic
+wrong-scene dependence from 256 samples onward and strong motion dependence at
+every scale; both saturate around 4,096 rather than growing indefinitely. Read
+[the scaling analysis](RADAR_SCALING_ANALYSIS.md). These are diagnostic feature
+and motion losses, not downstream segmentation accuracy. Historical mini
+commands require a separate mini dataset.
 
+- Completed the one-sweep full-data radar scaling curve with deterministic
+  manifests, exact checkpoint/resume and matched/zero/empty/wrong-scene
+  evaluation. The matched absolute losses improve rather than collapse, but
+  vehicle-segmentation IoU remains the P11 acceptance gate.
 - Reproduced camera-only and camera-plus-radar inference, training, checkpoint
   save/reload, and visualization on nuScenes mini.
 - Evaluated both official checkpoints on the same fixed 10-sample subset:
@@ -63,6 +68,7 @@ Historical mini commands require a separate mini dataset.
 
 - [Technical handoff and work log](PROJECT_HANDOFF.md)
 - [Full-data radar scaling study](FULL_DATA_RADAR_SCALING_PLAN.md)
+- [Radar dependence scaling analysis](RADAR_SCALING_ANALYSIS.md)
 - [Project progress and meeting report](PROJECT_PROGRESS.md)
 - [Local environment and reproduction commands](SETUP_LOCAL.md)
 - [Simple-BEV architecture notes](SIMPLE_BEV_NOTES.md)

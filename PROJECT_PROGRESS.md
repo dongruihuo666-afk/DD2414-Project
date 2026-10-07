@@ -2,6 +2,17 @@
 
 ## Executive summary
 
+2026-10-07 full-data update: the locked seed-125, one-sweep scaling study is
+complete at 64, 256, 1,024, 4,096 and all 28,130 training samples. Every point
+used 30,000 updates and all 6,019 validation frames. A paired 150-scene
+bootstrap places the persistent semantic wrong-scene onset at 256 samples;
+motion dependence is already strong at 64. Both rise through 4,096 and then
+saturate or slightly decline at full scale. Matched semantic/motion losses
+improve from 0.46199/1.58663 at 64 to 0.30538/0.79639 at full scale, so the
+diagnostic objectives do not collapse. This remains a one-seed dependence
+result with a random frozen camera encoder, not downstream vehicle IoU. See
+`RADAR_SCALING_ANALYSIS.md`.
+
 2026-10-05 trainval update: the project-pinned BEVCar `nets/voxelnet.py` was
 reproduced under the latest 64-train / 16-val / 512-step / three-seed motion
 protocol after replacing mini with full `v1.0-trainval`. The exact head-selected
@@ -18,9 +29,9 @@ radar-anchored geometry. Finally, we audited the radar representation, fixed an
 optional velocity-frame issue, and implemented a standalone point/voxel radar
 encoder.
 
-The current work is an engineering and small-sample feasibility milestone. It
-is not a full-dataset benchmark and must not be presented as final validation
-performance or a completed self-supervised pretraining method.
+The current work now includes a full-train-split diagnostic study, but it is
+not a matched downstream benchmark and must not be presented as final vehicle
+segmentation performance or a completed self-supervised pretraining method.
 
 ## 1. Official baseline reproduction
 

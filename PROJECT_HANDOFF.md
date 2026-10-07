@@ -62,8 +62,14 @@ validation frames. Its semantic/motion wrong-scene penalties remain strong at
 `+0.02470`/`+1.56690`, but are slightly below P8's `+0.02854`/`+1.59196`.
 The single-seed curve therefore strengthens through 4,096 samples and then
 plateaus or slightly recedes under the fixed 30,000-update budget; it is not a
-monotonic full-range trend or a downstream utility claim. P10 curve analysis is
-the next implementation boundary.
+monotonic full-range trend or a downstream utility claim. P10 is complete: a
+paired 150-scene bootstrap places persistent semantic wrong-scene dependence
+at 256 samples, while all motion penalties are positive from 64 samples. The
+semantic full-minus-4,096 wrong-scene change is `-0.00383` with 95% interval
+`[-0.00460, -0.00309]`; the motion change is `-0.02506` with interval
+`[-0.06251, +0.01415]`. This supports saturation or a small late decline, not
+indefinite growth. See `RADAR_SCALING_ANALYSIS.md`. P11 downstream IoU is the
+next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -212,13 +218,14 @@ unrelated local work.
 
 ## Next bounded task
 
-Execute P10 from `FULL_DATA_RADAR_SCALING_PLAN.md`: analyze the completed
-seed-125 `64 -> 256 -> 1,024 -> 4,096 -> 28,130` curve with paired per-scene
-uncertainty, and plot velocity, empty and wrong-scene penalties. State clearly
-that the dependence signal rises through 4,096 samples but does not increase
-again at full scale. Commit the compact report and plot, not checkpoints, raw
-logs or per-frame prediction files. Do not start P11 before P10 is documented,
-tested, committed and pushed.
+Execute P11 from `FULL_DATA_RADAR_SCALING_PLAN.md`: define and run a matched
+downstream vehicle-segmentation protocol on the official validation split.
+Camera-only and fused models must use identical labeled samples, initialization
+policy, update budget, resolution and evaluation code. Report full-validation
+IoU for camera-only and for the same fused checkpoint under matched, empty and
+wrong-scene radar. If seed 125 is positive, confirm the selected onset and full
+scale with seeds 42 and 7 before claiming repeatability. Keep this work separate
+from multi-sweep or hybrid-teacher changes.
 
 Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
 as a small positive radar-use control, not a solution to DINOv2 insensitivity.
@@ -237,6 +244,42 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-07 — P10 radar dependence curve analysis
+
+- Change: added `scripts/analyze_radar_scaling_curve.py` and its CPU tests,
+  generated the machine-readable
+  `artifacts/trainval/radar_scaling_curve_seed125.json`, rendered
+  `artifacts/trainval/radar_scaling_curve_seed125.png`, and documented the
+  result in `RADAR_SCALING_ANALYSIS.md`. Updated the plan, README and broader
+  progress report to make P10 and its downstream boundary visible.
+- Reason: raw validation means do not show whether penalties are stable across
+  scenes or whether a data-scale onset is more than a single noisy point. The
+  analysis resamples the 150 validation scenes rather than treating 6,019
+  temporally adjacent frames as independent.
+- Reproduce: `MPLCONFIGDIR=.cache/matplotlib python
+  scripts/analyze_radar_scaling_curve.py --bootstrap-iterations 10000
+  --bootstrap-seed 20261007`.
+- Verification: four CPU analysis tests passed; the integration run reproduced
+  every stored aggregate from per-scene paired penalties within `1e-9`, checked
+  identical scenes/configuration across all five inputs, completed 10,000
+  deterministic bootstrap resamples and emitted the JSON, Markdown and PNG.
+  The three pre-existing scaling/evaluation test suites also remain passing.
+- Result: semantic zero-velocity and empty-radar intervals are positive from 64
+  samples, while the semantic wrong-scene interval first becomes and remains
+  positive at 256 (`+0.00450`, 95% CI `[+0.00319, +0.00582]`). All motion
+  intervals are positive from 64. Semantic and motion wrong-scene penalties
+  peak at 4,096. Full-minus-4,096 is `-0.00383`
+  `[-0.00460, -0.00309]` for semantic and `-0.02506`
+  `[-0.06251, +0.01415]` for motion. Matched losses improve from
+  0.46199/1.58663 at 64 to 0.30538/0.79639 at full scale.
+- Interpretation/limitations: scene-level persistence supports a semantic
+  alignment onset followed by saturation, and the absolute diagnostic losses
+  do not collapse. All training points still use seed 125, so the bootstrap
+  does not establish training-seed repeatability. The random frozen camera
+  encoder and diagnostic targets do not establish downstream vehicle utility.
+- Next: P11, use a matched camera-only/fused labeled protocol and complete-val
+  vehicle IoU before changing sweeps, teachers or fusion objectives.
 
 ### 2026-10-07 — P9 full-data radar scaling result
 

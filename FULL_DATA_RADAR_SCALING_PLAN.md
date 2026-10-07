@@ -84,7 +84,7 @@ Status values are `not started`, `in progress`, `blocked`, and `complete`.
 | P7 | complete | Run the 1,024-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 1024-sample radar scaling result` |
 | P8 | complete | Run the 4,096-sample scale | Same acceptance criteria and unchanged protocol as P5 | `exp: record 4096-sample radar scaling result` |
 | P9 | complete | Run the complete 28,130-sample scale | Every train token is seen under the locked sampler; resume is exercised in the real run; all 6,019 val frames receive four-mode evaluation | `exp: record full-data radar scaling result` |
-| P10 | not started | Analyze the dependence curve | One compact report plots data scale against velocity/empty/wrong-scene penalties, includes per-scene uncertainty and identifies whether an onset is repeatable rather than a single noisy point | `docs: analyze radar dependence scaling curve` |
+| P10 | complete | Analyze the dependence curve | One compact report plots data scale against velocity/empty/wrong-scene penalties, includes per-scene uncertainty and identifies whether an onset is repeatable rather than a single noisy point | `docs: analyze radar dependence scaling curve` |
 | P11 | not started | Confirm radar utility with downstream IoU | Matched camera-only and fused checkpoints use identical labeled probe/fine-tune budgets; report full-val IoU under matched/empty/wrong radar; repeat the onset and full scale with seeds 42 and 7 if the seed-125 result is positive | `exp: validate radar utility on full-val IoU` |
 
 ## Metrics and interpretation
