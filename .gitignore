@@ -67,3 +67,4 @@ artifacts/trainval/*
 !artifacts/trainval/radar_scaling_scale64_seed125.json
 !artifacts/trainval/radar_scaling_scale256_seed125.json
 !artifacts/trainval/radar_scaling_scale1024_seed125.json
+!artifacts/trainval/radar_scaling_scale4096_seed125.json

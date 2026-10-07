@@ -53,10 +53,11 @@ head, not downstream vehicle-segmentation utility. P6 is also complete under
 the unchanged protocol: the 256-sample point lowers matched validation losses
 and increases semantic and motion radar-intervention penalties relative to P5.
 P7 is complete as well: at 1,024 samples, matched losses fall again and empty /
-wrong-scene penalties strengthen substantially, including a positive semantic
-wrong-scene penalty in 149/150 scenes. This is a three-point, single-seed
-dependence trend, not yet a downstream utility claim. P8 (4,096 samples) is the
-next implementation boundary.
+wrong-scene penalties strengthen substantially. P8 is now complete: the 4,096
+sample point continues the monotonic increase in semantic and motion
+wrong-scene penalties, with positive semantic penalties in all 150 validation
+scenes. This is a four-point, single-seed dependence trend, not yet a downstream
+utility claim. P9 (all 28,130 samples) is the next implementation boundary.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -364,6 +365,42 @@ chat transcripts, secrets, or unreviewed generated data.
   diagnosis; record-level resume is not yet implemented.
 - Next: P4, integrate the real streaming joint trainer, exercise resume, and
   measure end-to-end throughput/memory before locking the scale-run budget.
+
+### 2026-10-07 — P8 4,096-sample radar scaling result
+
+- Change: completed the unchanged seed-125, one-sweep, 4,096-sample scale at
+  30,000 effective optimizer updates and evaluated all 6,019 validation frames
+  under the four locked radar modes. Whitelisted the compact result
+  `artifacts/trainval/radar_scaling_scale4096_seed125.json`; checkpoint and raw
+  JSONL outputs remain ignored.
+- Reason: P8 tests whether the growing radar-dependence curve persists after
+  another fourfold increase in nested training-set size under the same compute
+  budget.
+- Reproduce: use the P5 command with `--scale 4096` and replace each
+  `scale64_seed125` output stem with `scale4096_seed125`; keep all other locked
+  arguments unchanged.
+- Verification: 30,000 consecutive effective updates covered exactly 4,096
+  unique training indices and seven completed sampler epochs. The run recovered
+  20 AMP overflows, sustained 10.269 updates/s, peaked at 3.574 GiB CUDA
+  allocation and had mean joint/semantic/motion training losses
+  0.5524/0.3100/0.4847. Independent checks found exactly 30,000 train and 6,019
+  finite validation records, 150 scene summaries, no same-scene wrong-radar
+  pair and no partial record.
+- Result: full-validation matched semantic loss was 0.30256 versus
+  0.30866 zero-velocity, 0.34537 empty and 0.33110 wrong-scene, giving
+  penalties +0.00609/+0.04281/+0.02854. Matched motion loss was 0.79707 versus
+  2.35184/2.42179/2.38903, giving penalties +1.55477/+1.62472/+1.59196.
+  Moving-frame penalties were +1.75575/+1.83475/+1.79775 and cell-weighted
+  penalties were +1.82575/+1.93068/+1.89969. Semantic wrong-scene penalties
+  were positive in 150/150 scenes and motion penalties in 142/150 scenes.
+- Interpretation/limitations: P5 through P8 wrong-scene penalties rise
+  monotonically from +0.00017 to +0.00450 to +0.02093 to +0.02854 for semantic
+  loss, and from +0.77715 to +1.10714 to +1.41765 to +1.59196 for motion loss.
+  This strongly supports increasing scene-aligned radar dependence with data
+  diversity. It remains one seed and a diagnostic loss result with a random
+  frozen camera encoder, not proof of downstream IoU improvement.
+- Next: P9, run the complete 28,130-sample training split under the unchanged
+  protocol and verify that every training token is seen.
 
 ### 2026-10-07 — P7 1,024-sample radar scaling result
 
