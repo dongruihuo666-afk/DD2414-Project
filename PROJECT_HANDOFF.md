@@ -82,10 +82,12 @@ pilot processed 1,280 unique samples at 12.27 samples/s, with 16.721 GiB peak
 PyTorch allocation, 20,560/24,564 MiB total process memory at the final status
 sample, finite losses/gradients, and zero AMP overflow retries. A synchronized
 profile attributed only 8.3% of a stable step to DINO, so the roughly 49 GiB
-teacher cache was rejected. This is an engineering result, not a training
-result. The formal 4,096-sample run started as the persistent user service
-`dd2414-fullsize-4096.service` at 2026-10-08 00:25 CEST; the full-split run has
-not begun.
+teacher cache was rejected. The formal 4,096-sample run completed all eight
+epochs and four full validations in 10,225.6 seconds with 6,560 finite updates
+and zero AMP retries. From epoch 1 to 8, matched semantic/motion validation
+loss improved from `0.33595/0.91730` to `0.30503/0.28907`; at epoch 8 the
+empty-radar penalties were `+0.03868/+2.29595` and wrong-scene penalties were
+`+0.02051/+2.12402`. The full-split run is the next active experiment.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -234,9 +236,9 @@ unrelated local work.
 
 ## Next bounded task
 
-Finish the active 4,096-sample run and its scheduled validations, then use the
-same frozen online-DINO, batch-5, workers-8, BF16 configuration to train all
-28,130 samples for eight epochs. Evaluate both checkpoints
+Use the frozen online-DINO, batch-5, workers-8, BF16 configuration to train all
+28,130 samples for eight epochs, now that the matched 4,096-sample control is
+complete. Evaluate the full checkpoint
 on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
 P9 architecture, one-sweep input and objective unchanged. P11 downstream
 vehicle-segmentation IoU remains the next research boundary after this
@@ -361,6 +363,31 @@ chat transcripts, secrets, or unreviewed generated data.
   run concurrently. After 4,096 completes, verify its checkpoint, metrics,
   validation summaries and exact sample exposure, commit the reviewed summary,
   and only then launch the full-split run.
+
+### 2026-10-08 — Formal 4,096-sample control completed
+
+- Result: the run ended with `FULLSIZE_TRAIN_OK` after eight epochs, 6,560
+  optimizer updates and exactly 32,768 sample exposures. All metric rows were
+  finite, AMP overflow retries were zero, and epoch 1/3/5/8 checkpoints plus
+  complete 6,019-frame validation records were written.
+- Runtime: total wall time was 10,225.6 seconds (2 h 50 min), including four
+  validations of approximately 1,947--1,956 seconds each. Runtime artifacts
+  remain under the git-ignored
+  `fullsize_baseline/runs/scale4096_seed125/` directory.
+- Validation trend: matched semantic loss improved monotonically
+  `0.33595 -> 0.32169 -> 0.31200 -> 0.30503`; matched motion loss improved
+  `0.91730 -> 0.63530 -> 0.42343 -> 0.28907`. At epoch 8, semantic penalties
+  for zero velocity / empty / wrong scene were
+  `+0.00476 / +0.03868 / +0.02051`; motion penalties were
+  `+2.01498 / +2.29595 / +2.12402`.
+- Interpretation and limitation: the control did not collapse, and dependence
+  on matched radar strengthened across training, especially for the
+  radar-derived motion objective. Motion is not an independent human-labelled
+  velocity ground truth, and this remains a distillation/motion evaluation
+  rather than downstream vehicle-segmentation IoU.
+- Next: launch the independent 28,130-sample run with the identical frozen
+  configuration, then compare its epoch-matched validation curve against this
+  control.
 
 ### 2026-10-07 — P10 radar dependence curve analysis
 

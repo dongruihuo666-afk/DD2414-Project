@@ -11,6 +11,12 @@ training two independently initialized runs for eight complete data passes:
 | `scale4096_seed125` | 4,096 | 8 |
 | `full28130_seed125` | 28,130 | 8 |
 
+The 4,096-sample control is complete: 6,560 finite updates, 32,768 sample
+exposures, zero AMP overflow retries, and complete validation at epochs
+1/3/5/8. Matched semantic/motion loss improved from `0.33595/0.91730` at epoch
+1 to `0.30503/0.28907` at epoch 8. The full 28,130-sample run is the remaining
+half of the comparison.
+
 Runtime products are intentionally ignored by Git:
 
 - `cache/`: frozen-teacher feature caches;
