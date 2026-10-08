@@ -13,6 +13,8 @@ import utils.basic
 from torchvision.models.resnet import resnet18
 from efficientnet_pytorch import EfficientNet
 
+from nets.radar_encoder import RadarPointEncoder
+
 EPS = 1e-4
 
 from functools import partial
@@ -58,7 +60,7 @@ class UpsamplingAdd(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, in_channels, n_classes, predict_future_flow):
         super().__init__()
-        backbone = resnet18(pretrained=False, zero_init_residual=True)
+        backbone = resnet18(weights=None, zero_init_residual=True)
         self.first_conv = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = backbone.bn1
         self.relu = backbone.relu
@@ -156,11 +158,13 @@ class Decoder(nn.Module):
         }
 
 import torchvision
+from torchvision.models import ResNet50_Weights, ResNet101_Weights
 class Encoder_res101(nn.Module):
-    def __init__(self, C):
+    def __init__(self, C, pretrained=True):
         super().__init__()
         self.C = C
-        resnet = torchvision.models.resnet101(pretrained=True)
+        weights = ResNet101_Weights.DEFAULT if pretrained else None
+        resnet = torchvision.models.resnet101(weights=weights)
         self.backbone = nn.Sequential(*list(resnet.children())[:-4])
         self.layer3 = resnet.layer3
 
@@ -176,10 +180,11 @@ class Encoder_res101(nn.Module):
         return x
 
 class Encoder_res50(nn.Module):
-    def __init__(self, C):
+    def __init__(self, C, pretrained=True):
         super().__init__()
         self.C = C
-        resnet = torchvision.models.resnet50(pretrained=True)
+        weights = ResNet50_Weights.DEFAULT if pretrained else None
+        resnet = torchvision.models.resnet50(weights=weights)
         self.backbone = nn.Sequential(*list(resnet.children())[:-4])
         self.layer3 = resnet.layer3
 
@@ -195,16 +200,17 @@ class Encoder_res50(nn.Module):
         return x
 
 class Encoder_eff(nn.Module):
-    def __init__(self, C, version='b4'):
+    def __init__(self, C, version='b4', pretrained=True):
         super().__init__()
         self.C = C
         self.downsample = 8
         self.version = version
 
-        if self.version == 'b0':
-            self.backbone = EfficientNet.from_pretrained('efficientnet-b0')
-        elif self.version == 'b4':
-            self.backbone = EfficientNet.from_pretrained('efficientnet-b4')
+        model_name = 'efficientnet-%s' % self.version
+        if pretrained:
+            self.backbone = EfficientNet.from_pretrained(model_name)
+        else:
+            self.backbone = EfficientNet.from_name(model_name)
         self.delete_unused_layers()
 
         if self.downsample == 16:
@@ -293,7 +299,14 @@ class Segnet(nn.Module):
                  do_rgbcompress=True,
                  rand_flip=False,
                  latent_dim=128,
-                 encoder_type="res101"):
+                 encoder_type="res101",
+                 pretrained_backbone=True,
+                 use_radar_encoder=False,
+                 radar_encoder_channels=64,
+                 use_bevcar_encoder=False,
+                 bevcar_encoder=None,
+                 bevcar_encoder_channels=128,
+                 zero_camera_bev=False):
         super(Segnet, self).__init__()
         assert (encoder_type in ["res101", "res50", "effb0", "effb4"])
 
@@ -301,28 +314,101 @@ class Segnet(nn.Module):
         self.use_radar = use_radar
         self.use_lidar = use_lidar
         self.use_metaradar = use_metaradar
-        self.do_rgbcompress = do_rgbcompress   
+        self.use_radar_encoder = use_radar_encoder
+        self.use_bevcar_encoder = use_bevcar_encoder
+        self.zero_camera_bev = zero_camera_bev
+        self.do_rgbcompress = do_rgbcompress
         self.rand_flip = rand_flip
         self.latent_dim = latent_dim
         self.encoder_type = encoder_type
 
-        self.mean = torch.as_tensor([0.485, 0.456, 0.406]).reshape(1,3,1,1).float().cuda()
-        self.std = torch.as_tensor([0.229, 0.224, 0.225]).reshape(1,3,1,1).float().cuda()
+        if self.use_radar_encoder and (self.use_radar or self.use_lidar):
+            raise ValueError(
+                'use_radar_encoder is a separate radar path and cannot be '
+                'combined with use_radar or use_lidar'
+            )
+        if self.use_radar_encoder and self.use_metaradar:
+            raise ValueError(
+                'use_metaradar belongs to the legacy radar path'
+            )
+        if self.use_bevcar_encoder and (
+                self.use_radar or self.use_lidar or self.use_metaradar
+                or self.use_radar_encoder):
+            raise ValueError(
+                'use_bevcar_encoder is a separate radar path and cannot be '
+                'combined with the other radar/lidar paths'
+            )
+        if self.use_bevcar_encoder and bevcar_encoder is None:
+            raise ValueError(
+                'bevcar_encoder must be provided when use_bevcar_encoder=True'
+            )
+
+        self.register_buffer(
+            'mean',
+            torch.as_tensor([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1).float(),
+            persistent=False,
+        )
+        self.register_buffer(
+            'std',
+            torch.as_tensor([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1).float(),
+            persistent=False,
+        )
         
         # Encoder
         self.feat2d_dim = feat2d_dim = latent_dim
         if encoder_type == "res101":
-            self.encoder = Encoder_res101(feat2d_dim)
+            self.encoder = Encoder_res101(feat2d_dim, pretrained=pretrained_backbone)
         elif encoder_type == "res50":
-            self.encoder = Encoder_res50(feat2d_dim)
+            self.encoder = Encoder_res50(feat2d_dim, pretrained=pretrained_backbone)
         elif encoder_type == "effb0":
-            self.encoder = Encoder_eff(feat2d_dim, version='b0')
+            self.encoder = Encoder_eff(
+                feat2d_dim, version='b0', pretrained=pretrained_backbone
+            )
         else:
             # effb4
-            self.encoder = Encoder_eff(feat2d_dim, version='b4')
+            self.encoder = Encoder_eff(
+                feat2d_dim, version='b4', pretrained=pretrained_backbone
+            )
 
         # BEV compressor
-        if self.use_radar:
+        if self.use_bevcar_encoder:
+            self.bevcar_encoder = bevcar_encoder
+            self.bev_compressor = nn.Sequential(
+                nn.Conv2d(
+                    feat2d_dim * Y + bevcar_encoder_channels,
+                    feat2d_dim, kernel_size=3, padding=1, stride=1,
+                    bias=False,
+                ),
+                nn.InstanceNorm2d(latent_dim),
+                nn.GELU(),
+            )
+        elif self.use_radar_encoder:
+            if vox_util is None:
+                # Default Simple-BEV bounds after its (0, 1, 0) centroid.
+                radar_bounds = (-50.0, 50.0, -4.0, 6.0, -50.0, 50.0)
+            else:
+                radar_bounds = (
+                    vox_util.XMIN, vox_util.XMAX,
+                    vox_util.YMIN, vox_util.YMAX,
+                    vox_util.ZMIN, vox_util.ZMAX,
+                )
+            self.radar_encoder = RadarPointEncoder(
+                Z=Z, Y=Y, X=X,
+                bounds=radar_bounds,
+                scene_centroid=(0.0, 0.0, 0.0),
+                out_channels=radar_encoder_channels,
+                use_quality_mask=True,
+            )
+            self.bev_compressor = nn.Sequential(
+                nn.Conv2d(
+                    feat2d_dim * Y + radar_encoder_channels,
+                    feat2d_dim, kernel_size=3, padding=1, stride=1,
+                    bias=False,
+                ),
+                nn.InstanceNorm2d(latent_dim),
+                nn.GELU(),
+            )
+        elif self.use_radar:
             if self.use_metaradar:
                 self.bev_compressor = nn.Sequential(
                     nn.Conv2d(feat2d_dim*Y + 16*Y, feat2d_dim, kernel_size=3, padding=1, stride=1, bias=False),
@@ -372,7 +458,9 @@ class Segnet(nn.Module):
         else:
             self.xyz_camA = None
         
-    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util, rad_occ_mem0=None):
+    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util,
+                rad_occ_mem0=None, radar_points=None, bevcar_voxels=None,
+                return_shared_bev=False):
         '''
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
         rgb_camXs: (B,S,C,H,W)
@@ -384,6 +472,9 @@ class Segnet(nn.Module):
             - (B, 1, Z, Y, X) when use_radar = True, use_metaradar = False
             - (B, 16, Z, Y, X) when use_radar = True, use_metaradar = True
             - (B, 1, Z, Y, X) when use_lidar = True
+        radar_points:
+            - (B, R, 19) in the reference-camera frame when
+              use_radar_encoder = True
         '''
         B, S, C, H, W = rgb_camXs.shape
         assert(C==3)
@@ -437,31 +528,83 @@ class Segnet(nn.Module):
                 rad_occ_mem0[self.bev_flip1_index] = torch.flip(rad_occ_mem0[self.bev_flip1_index], [-1])
                 rad_occ_mem0[self.bev_flip2_index] = torch.flip(rad_occ_mem0[self.bev_flip2_index], [-3])
 
+        # camera-only BEV, before any radar/lidar concatenation
+        camera_bev = feat_mem.permute(0, 1, 3, 2, 4).reshape(
+            B, self.feat2d_dim * Y, Z, X
+        )
+
+        if self.zero_camera_bev:
+            # Diagnostic ablation: cut the camera shortcut so the fusion can only
+            # reach a downstream head through the radar branch.
+            camera_bev = torch.zeros_like(camera_bev)
+
         # bev compressing
-        if self.use_radar:
+        if self.use_bevcar_encoder:
+            if bevcar_voxels is None:
+                raise ValueError(
+                    'bevcar_voxels is required when use_bevcar_encoder=True'
+                )
+            radar_bev = self.bevcar_encoder(*bevcar_voxels)
+            radar_bev = radar_bev.to(camera_bev.dtype)
+            if self.rand_flip:
+                radar_bev[self.bev_flip1_index] = torch.flip(
+                    radar_bev[self.bev_flip1_index], [-1]
+                )
+                radar_bev[self.bev_flip2_index] = torch.flip(
+                    radar_bev[self.bev_flip2_index], [-2]
+                )
+            feat_bev = self.bev_compressor(
+                torch.cat((camera_bev, radar_bev), dim=1)
+            )
+        elif self.use_radar_encoder:
+            if radar_points is None:
+                raise ValueError(
+                    'radar_points is required when use_radar_encoder=True'
+                )
+            radar_bev = self.radar_encoder(radar_points)
+            if self.rand_flip:
+                radar_bev[self.bev_flip1_index] = torch.flip(
+                    radar_bev[self.bev_flip1_index], [-1]
+                )
+                radar_bev[self.bev_flip2_index] = torch.flip(
+                    radar_bev[self.bev_flip2_index], [-2]
+                )
+            feat_bev = self.bev_compressor(
+                torch.cat((camera_bev, radar_bev), dim=1)
+            )
+        elif self.use_radar:
             assert(rad_occ_mem0 is not None)
             if not self.use_metaradar:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
                 rad_bev = torch.sum(rad_occ_mem0, 3).clamp(0,1) # squish the vertical dim
-                feat_bev_ = torch.cat([feat_bev_, rad_bev], dim=1)
+                feat_bev_ = torch.cat([camera_bev, rad_bev], dim=1)
                 feat_bev = self.bev_compressor(feat_bev_)
             else:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
                 rad_bev_ = rad_occ_mem0.permute(0, 1, 3, 2, 4).reshape(B, 16*Y, Z, X)
-                feat_bev_ = torch.cat([feat_bev_, rad_bev_], dim=1)
+                feat_bev_ = torch.cat([camera_bev, rad_bev_], dim=1)
                 feat_bev = self.bev_compressor(feat_bev_)
         elif self.use_lidar:
             assert(rad_occ_mem0 is not None)
-            feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
             rad_bev_ = rad_occ_mem0.permute(0, 1, 3, 2, 4).reshape(B, Y, Z, X)
-            feat_bev_ = torch.cat([feat_bev_, rad_bev_], dim=1)
+            feat_bev_ = torch.cat([camera_bev, rad_bev_], dim=1)
             feat_bev = self.bev_compressor(feat_bev_)
         else: # rgb only
             if self.do_rgbcompress:
-                feat_bev_ = feat_mem.permute(0, 1, 3, 2, 4).reshape(B, self.feat2d_dim*Y, Z, X)
-                feat_bev = self.bev_compressor(feat_bev_)
+                feat_bev = self.bev_compressor(camera_bev)
             else:
                 feat_bev = torch.sum(feat_mem, dim=3)
+
+        if return_shared_bev:
+            self.last_forward_shapes = {
+                'image_features_packed': tuple(feat_camXs_.shape),
+                'camera_features_3d': tuple(feat_mems.shape),
+                **(
+                    {'radar_features_bev': tuple(radar_bev.shape)}
+                    if self.use_radar_encoder else {}
+                ),
+                'camera_bev_features': tuple(camera_bev.shape),
+                'fused_bev_features': tuple(feat_bev.shape),
+            }
+            return feat_bev, camera_bev, feat_camXs_
 
         # bev decoder
         out_dict = self.decoder(feat_bev, (self.bev_flip1_index, self.bev_flip2_index) if self.rand_flip else None)
@@ -472,5 +615,18 @@ class Segnet(nn.Module):
         center_e = out_dict['instance_center']
         offset_e = out_dict['instance_offset']
 
-        return raw_e, feat_e, seg_e, center_e, offset_e
+        self.last_forward_shapes = {
+            'image_features_packed': tuple(feat_camXs_.shape),
+            'camera_features_3d': tuple(feat_mems.shape),
+            **(
+                {'radar_features_bev': tuple(radar_bev.shape)}
+                if self.use_radar_encoder else {}
+            ),
+            'fused_bev_features': tuple(feat_bev.shape),
+            'decoder_features': tuple(feat_e.shape),
+            'segmentation': tuple(seg_e.shape),
+            'instance_center': tuple(center_e.shape),
+            'instance_offset': tuple(offset_e.shape),
+        }
 
+        return raw_e, feat_e, seg_e, center_e, offset_e

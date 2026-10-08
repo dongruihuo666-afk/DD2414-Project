@@ -1,0 +1,74 @@
+{
+  "seeds": [
+    125,
+    126,
+    127
+  ],
+  "training_samples": 4,
+  "steps_per_seed": 80,
+  "validation_frames_per_seed": 12,
+  "validation_scenes": [
+    "scene-0103",
+    "scene-0916"
+  ],
+  "pretrained_camera_decoder_used": true,
+  "human_box_derived_labels_used": true,
+  "frozen_dinov2_used": false,
+  "official_bevcar_checkpoint_used": false,
+  "condition_iou_per_seed": {
+    "camera": [
+      0.1212688535451889,
+      0.1212688535451889,
+      0.1212688535451889
+    ],
+    "correct": [
+      0.17704193449268738,
+      0.18129045143723488,
+      0.18203567216793695
+    ],
+    "empty": [
+      0.16332423438628516,
+      0.16914925165474415,
+      0.1668408215045929
+    ],
+    "wrong": [
+      0.1690745403369268,
+      0.17448154961069426,
+      0.16861331649124622
+    ]
+  },
+  "condition_segmentation_loss_per_seed": {
+    "camera": [
+      5.707755486170451,
+      5.707755486170451,
+      5.707755486170451
+    ],
+    "correct": [
+      4.903906603654225,
+      4.838250736395518,
+      4.786935359239578
+    ],
+    "empty": [
+      5.068844825029373,
+      4.942141592502594,
+      4.981936027606328
+    ],
+    "wrong": [
+      5.053246180216472,
+      4.904266049464543,
+      4.906787067651749
+    ]
+  },
+  "condition_iou_mean": {
+    "camera": 0.1212688535451889,
+    "correct": 0.18012268603261974,
+    "empty": 0.1664381025152074,
+    "wrong": 0.17072313547962242
+  },
+  "correct_better_than_empty_cases": 29,
+  "correct_better_than_wrong_cases": 30,
+  "total_seed_frame_cases": 36,
+  "mean_correct_empty_probability_difference": 0.0033787156167414244,
+  "peak_allocated_cuda_gib": 3.6227145195007324,
+  "mean_training_seconds_per_seed": 13.392297864998303
+}
