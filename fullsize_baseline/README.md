@@ -106,3 +106,44 @@ nvidia-smi dmon -s pucvmet
 ```
 
 These commands are monitors only; they do not start or alter training.
+
+## Teacher-requested velocity control and downstream probe
+
+The unattended follow-up keeps the same architecture, optimizer, seed,
+one-sweep input, losses, eight-epoch budget, and full train/validation splits.
+It compares the active full-velocity backbone (`V+`) with a separately trained
+backbone (`V0`) in which only BEVCar input channels 4 and 5 (the two velocity
+components) are zero throughout training and evaluation. Point locations,
+RCS, masks, targets, tensor shapes, and model parameters are unchanged.
+
+After epochs 1 and 8, each backbone is frozen and the same single `1x1`
+convolution is trained for one epoch to predict the nuScenes vehicle BEV mask.
+The formal result reports vehicle IoU, precision, recall, and F1 over all 6,019
+validation samples. This is the requested test of whether explicit radar
+velocity makes the learned BEV representation more useful. It is not a fully
+trained end-to-end segmentation result: the historical camera encoder remains
+frozen at random initialization, and only one seed is used.
+
+The persistent pipeline runs these stages in order and stops on the first
+failure: wait for V+, two-update V0 smoke, four-sample probe smoke, V0 epoch 1,
+both epoch-1 probes and comparison, V0 epochs 2--8, then both epoch-8 probes and
+comparison. Re-running the driver skips completed stages and resumes V0 from
+its latest exact checkpoint.
+
+Monitor the entire chain with:
+
+```bash
+watch -n 10 $HOME/miniconda3/envs/bev/bin/python \
+  scripts/render_teacher_overnight_progress.py
+```
+
+The service and its journal can be inspected with:
+
+```bash
+systemctl --user status dd2414-teacher-overnight.service
+journalctl --user -u dd2414-teacher-overnight.service -f
+```
+
+Stage-specific logs and final Markdown comparisons are written below
+`fullsize_baseline/teacher_overnight/`; probe checkpoints and metrics are below
+`fullsize_baseline/probes/`. All runtime products are ignored by Git.

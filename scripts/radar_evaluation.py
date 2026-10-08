@@ -12,6 +12,7 @@ import torch
 
 RADAR_MODES = ('matched', 'zero_velocity', 'empty', 'wrong_scene')
 BEVCAR_VELOCITY_CHANNELS = slice(4, 6)
+RADAR_VELOCITY_MODES = ('full', 'zero')
 
 
 def _stable_rank(seed, token):
@@ -100,6 +101,23 @@ def radar_for_mode(matched_voxels, mode, wrong_scene_voxels=None):
     if mode == 'empty':
         return torch.zeros_like(features), torch.zeros_like(coords), torch.zeros_like(counts)
     raise ValueError(f'unknown radar mode: {mode}')
+
+
+def apply_radar_velocity_mode(voxels, mode):
+    """Apply the locked train-time velocity-input ablation.
+
+    ``zero`` preserves voxel coordinates, RCS, the valid mask, and tensor
+    shapes while hiding only the two BEVCar velocity feature channels. This
+    keeps the V+ and V0 architectures and parameter counts identical.
+    """
+    if mode not in RADAR_VELOCITY_MODES:
+        raise ValueError(f'unknown radar velocity mode: {mode}')
+    if mode == 'full':
+        return voxels
+    features, coords, counts = voxels
+    output = features.clone()
+    output[..., BEVCAR_VELOCITY_CHANNELS] = 0.0
+    return output, coords, counts
 
 
 class IncrementalEvaluationWriter:

@@ -33,6 +33,7 @@ from eval_image_distill_heldout import build_targets  # noqa: E402
 from radar_evaluation import (  # noqa: E402
     IncrementalEvaluationWriter,
     RADAR_MODES,
+    apply_radar_velocity_mode,
     radar_for_mode,
     spread_positions,
     wrong_scene_dataset_indices,
@@ -181,7 +182,8 @@ def _paired_penalties(means):
 
 
 def validation_summary(model, teacher, dataset, manifest, count, device, seed,
-                       output_path, use_amp, print_every=500):
+                       output_path, use_amp, print_every=500,
+                       radar_velocity_mode='full'):
     val = manifest['val']
     if not 1 <= count <= val['count']:
         raise ValueError('val-samples must fit the full validation split')
@@ -216,6 +218,7 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
                 radar = radar_for_mode(
                     matched_voxels, mode, wrong_scene_voxels=wrong_inputs[-1],
                 )
+                radar = apply_radar_velocity_mode(radar, radar_velocity_mode)
                 amp = torch.autocast(device_type='cuda', dtype=torch.float16) \
                     if use_amp else nullcontext()
                 with amp:
@@ -281,6 +284,7 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
             'penalties': _paired_penalties(scene_means),
         }
     return {
+        'radar_velocity_mode': radar_velocity_mode,
         'samples': count,
         'moving_frames': moving_frames,
         'covered_cells': covered_cells,

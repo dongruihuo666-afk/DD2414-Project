@@ -53,6 +53,9 @@ checkpoints/
 logs_*/
 fullsize_baseline/cache/
 fullsize_baseline/runs/
+fullsize_baseline/probes/
+fullsize_baseline/smoke/
+fullsize_baseline/teacher_overnight/
 .env
 .env.*
 *.pem

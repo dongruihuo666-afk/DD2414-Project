@@ -40,6 +40,7 @@ from fullsize_training import (  # noqa: E402
     semantic_loss_batched,
 )
 from radar_scaling_data import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
+from radar_evaluation import apply_radar_velocity_mode  # noqa: E402
 from train_radar_scaling import (  # noqa: E402
     file_sha256,
     prepare_train_log,
@@ -75,6 +76,8 @@ def parse_args():
     parser.add_argument('--nsweeps', type=int, default=1)
     parser.add_argument('--semantic-weight', type=float, default=1.0)
     parser.add_argument('--motion-weight', type=float, default=0.5)
+    parser.add_argument('--radar-velocity-mode', choices=('full', 'zero'),
+                        default='full')
     parser.add_argument('--model-name', default='dinov2_vits14')
     parser.add_argument('--checkpoint-every-steps', type=int, default=1000)
     parser.add_argument('--print-every-steps', type=int, default=50)
@@ -84,6 +87,8 @@ def parse_args():
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--stop-after-steps', type=int, default=0,
                         help='engineering-only clean stop for resume checks')
+    parser.add_argument('--stop-after-epoch', type=int, default=0,
+                        help='cleanly stop after this epoch and its validation')
     parser.add_argument('--profile-timing', action='store_true',
                         help='synchronize CUDA and record engineering phase timings')
     return parser.parse_args()
@@ -139,6 +144,7 @@ def write_status(args, progress, total_steps, dataset_size, latest, ema,
         latest=latest, ema=ema, learning_rate=learning_rate,
         gpu=query_nvidia_smi(), message=message,
     )
+    status['radar_velocity_mode'] = args.radar_velocity_mode
     atomic_json_write(status, args.run_dir / 'status.json')
     return status
 
@@ -175,6 +181,7 @@ def run_epoch_validation(*, args, completed_epoch, model, teacher, val_dataset,
         model, teacher, val_dataset, manifest, args.val_samples,
         device, args.seed, validation_path, use_amp=True,
         print_every=args.validation_print_every,
+        radar_velocity_mode=args.radar_velocity_mode,
     )
     atomic_json_write(
         result, validation_dir / f'epoch{completed_epoch:03d}_summary.json',
@@ -212,6 +219,10 @@ def main():
         raise ValueError('the epoch baseline keeps the historical one-sweep input')
     if args.semantic_weight != 1.0 or args.motion_weight != 0.5:
         raise ValueError('the epoch baseline keeps semantic=1.0 and motion=0.5')
+    if args.stop_after_steps and args.stop_after_epoch:
+        raise ValueError('choose at most one clean-stop condition')
+    if args.stop_after_epoch < 0 or args.stop_after_epoch > args.epochs:
+        raise ValueError('stop-after-epoch must fall within the training run')
     validation_epochs = parse_validation_epochs(args.validation_epochs, args.epochs)
     learning_rate = args.learning_rate or default_learning_rate(args.batch_size)
 
@@ -290,6 +301,10 @@ def main():
         'num_workers': args.num_workers,
         'prefetch_factor': args.prefetch_factor,
     }
+    # Preserve byte-for-byte run-config compatibility with the already active
+    # historical full-velocity run. The new field is required only for V0.
+    if args.radar_velocity_mode != 'full':
+        run_config['radar_velocity_mode'] = args.radar_velocity_mode
     progress = {
         'epoch': 0,
         'update': 0,
@@ -429,6 +444,9 @@ def main():
                     if args.profile_timing:
                         phase_started = time.perf_counter()
                     inputs = prepare_bevcar_inputs(batch, device)
+                    inputs = (*inputs[:-1], apply_radar_velocity_mode(
+                        inputs[-1], args.radar_velocity_mode,
+                    ))
                     motion_fields, motion_coverages, motion_infos = \
                         build_motion_targets_batched(batch, device)
                     if args.profile_timing:
@@ -616,6 +634,16 @@ def main():
                         base_wall_seconds=base_wall_seconds, started_at=started_at,
                     )
                     state = 'running'
+                if (args.stop_after_epoch > 0
+                        and completed_epoch >= args.stop_after_epoch):
+                    state = 'stopped'
+                    message = f'clean stop after epoch {completed_epoch}'
+                    refresh_wall_time(progress, base_wall_seconds, started_at)
+                    write_status(
+                        args, progress, total_steps, dataset_size, latest, ema,
+                        current_lr, state=state, message=message,
+                    )
+                    break
         except Exception as error:
             state = 'failed'
             message = f'{type(error).__name__}: {error}'
@@ -644,6 +672,7 @@ def main():
         elapsed_seconds=progress['wall_train_seconds'], latest=latest, ema=ema,
         learning_rate=current_lr, gpu=query_nvidia_smi(), message=message,
     )
+    status['radar_velocity_mode'] = args.radar_velocity_mode
     atomic_json_write(status, args.run_dir / 'status.json')
     summary = {
         'status': state,

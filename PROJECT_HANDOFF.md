@@ -90,6 +90,17 @@ empty-radar penalties were `+0.03868/+2.29595` and wrong-scene penalties were
 `+0.02051/+2.12402`. The full-split run started as the persistent user service
 `dd2414-fullsize-full.service` at 2026-10-08 20:37 CEST.
 
+The next teacher-requested control is now implemented as an unattended,
+restart-aware sequence. It first lets that V+ run finish, then trains a matched
+V0 backbone with only the two BEVCar velocity input channels zeroed. At epochs
+1 and 8 it freezes each backbone and trains an identical single-layer vehicle
+segmentation probe, reporting IoU, precision, recall, and F1 on all 6,019
+validation frames. The sequence includes real V0 and probe smokes before the
+formal stages and stops visibly on any failure. This directly tests explicit
+radar-velocity utility under the existing frozen-camera architecture; it does
+not add camera SSL, dual-level distillation, a hybrid teacher, soft guidance,
+or an end-to-end downstream head.
+
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
 
@@ -262,6 +273,54 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-09 — Unattended V+ versus V0 velocity control and linear probe
+
+- Change: added a locked `full|zero` radar-velocity input mode to the epoch
+  trainer and all its validation interventions. `zero` clones the BEVCar voxel
+  features and zeros only channels 4:6, preserving positions, RCS, masks,
+  shapes, model parameter count, supervised targets, losses, and every other
+  formal training setting. The legacy `full` run configuration stays byte-for-
+  byte compatible with its active checkpoint. Added an epoch-boundary clean
+  stop so V0 can expose an epoch-1 checkpoint before exact resume.
+- Change: added `scripts/train_fullsize_linear_probe.py`, which freezes the
+  complete checkpoint backbone and trains exactly one `1x1` convolution on
+  the box-derived vehicle mask. It records balanced BCE plus validation vehicle
+  IoU, precision, recall, F1, and confusion counts. Added a comparison writer,
+  a compact progress renderer, CPU tests, and a persistent restart-aware driver
+  that runs both required smokes before formal V0/probe work.
+- Reproduce implementation checks: `PYTHONPATH=scripts
+  $HOME/miniconda3/envs/bev/bin/python -m unittest
+  scripts.test_radar_evaluation scripts.test_fullsize_training
+  scripts.test_fullsize_linear_probe`; `PYTHONPATH=scripts
+  $HOME/miniconda3/envs/bev/bin/python -m py_compile
+  scripts/radar_evaluation.py scripts/train_radar_scaling.py
+  scripts/train_fullsize_baseline.py scripts/train_fullsize_linear_probe.py
+  scripts/summarize_velocity_probe.py scripts/run_teacher_overnight.py
+  scripts/render_teacher_overnight_progress.py`; and `bash -n
+  scripts/run_fullsize_baseline.sh`.
+- Actual result: all 17 CPU tests passed, Python compilation passed, the shell
+  launcher syntax passed, and a non-executing V0 preview selected
+  `fullsize_baseline/runs/full28130_zero_velocity_seed125` with the expected
+  zero-mode argument. A real batch inspection confirmed vehicle/valid labels
+  have shape `(B,1,1,200,200)`, matching the probe after removal of the time
+  dimension. The CUDA smokes deliberately remain pipeline gates because the
+  active V+ process currently occupies the GPU.
+- Monitor: `watch -n 10 $HOME/miniconda3/envs/bev/bin/python
+  scripts/render_teacher_overnight_progress.py`; service state is available via
+  `systemctl --user status dd2414-teacher-overnight.service` and logs via
+  `journalctl --user -u dd2414-teacher-overnight.service -f`.
+- Limitations: this is one seed and one radar sweep. The probe measures linear
+  separability of a frozen representation rather than end-to-end fine-tuned
+  segmentation. Both backbones retain the historical frozen random camera
+  encoder, so the result isolates velocity utility in this controlled baseline
+  rather than establishing final camera-radar model quality. Runtime and
+  completion depend on the host, dataset, and GPU remaining available; the
+  pipeline fails closed and records the failing stage instead of silently
+  changing parameters.
+- Next: allow the persistent pipeline to complete, review the epoch-1 and
+  epoch-8 V+ minus V0 IoU/F1 reports, then decide with the teacher whether a
+  trained camera encoder or additional seeds are the next controlled change.
 
 ### 2026-10-08 — Epoch-matched trainer and live monitoring
 

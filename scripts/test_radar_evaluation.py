@@ -9,6 +9,7 @@ from pathlib import Path
 import torch
 
 from radar_evaluation import (
+    apply_radar_velocity_mode,
     IncrementalEvaluationWriter,
     RADAR_MODES,
     build_wrong_scene_map,
@@ -20,6 +21,22 @@ from radar_evaluation import (
 
 
 class RadarEvaluationTests(unittest.TestCase):
+    def test_train_time_zero_velocity_preserves_nonvelocity_inputs(self):
+        features = torch.arange(42, dtype=torch.float32).reshape(1, 1, 6, 7)
+        coords = torch.tensor([[[1, 2, 3]]])
+        counts = torch.tensor([1])
+        voxels = features, coords, counts
+        self.assertIs(apply_radar_velocity_mode(voxels, 'full'), voxels)
+        zero = apply_radar_velocity_mode(voxels, 'zero')
+        self.assertTrue(torch.equal(zero[0][..., :4], features[..., :4]))
+        self.assertTrue(torch.equal(zero[0][..., 4:6], torch.zeros_like(features[..., 4:6])))
+        self.assertTrue(torch.equal(zero[0][..., 6:], features[..., 6:]))
+        self.assertIs(zero[1], coords)
+        self.assertIs(zero[2], counts)
+        self.assertTrue(torch.equal(features, voxels[0]))
+        with self.assertRaisesRegex(ValueError, 'unknown radar velocity mode'):
+            apply_radar_velocity_mode(voxels, 'invalid')
+
     def setUp(self):
         self.tokens = [f'token-{index}' for index in range(9)]
         self.scenes = ['scene-a'] * 4 + ['scene-b'] * 3 + ['scene-c'] * 2
