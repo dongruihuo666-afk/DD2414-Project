@@ -306,6 +306,13 @@ chat transcripts, secrets, or unreviewed generated data.
   have shape `(B,1,1,200,200)`, matching the probe after removal of the time
   dimension. The CUDA smokes deliberately remain pipeline gates because the
   active V+ process currently occupies the GPU.
+- Launch: commit `9fd53c4` was pushed to `origin/dd2414-mini-baseline`, then
+  `dd2414-teacher-overnight.service` started at 2026-10-09 00:28 CEST. Its
+  first recorded stage is `waiting_for_full_velocity`; both that controller
+  and `dd2414-fullsize-full.service` were verified active. User lingering is
+  enabled (`Linger=yes`), so closing terminals or ending an agent session does
+  not stop the user services. At launch V+ was at epoch 4.808/8 with 86% GPU
+  utilization and no failure status.
 - Monitor: `watch -n 10 $HOME/miniconda3/envs/bev/bin/python
   scripts/render_teacher_overnight_progress.py`; service state is available via
   `systemctl --user status dd2414-teacher-overnight.service` and logs via
