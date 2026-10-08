@@ -87,7 +87,8 @@ epochs and four full validations in 10,225.6 seconds with 6,560 finite updates
 and zero AMP retries. From epoch 1 to 8, matched semantic/motion validation
 loss improved from `0.33595/0.91730` to `0.30503/0.28907`; at epoch 8 the
 empty-radar penalties were `+0.03868/+2.29595` and wrong-scene penalties were
-`+0.02051/+2.12402`. The full-split run is the next active experiment.
+`+0.02051/+2.12402`. The full-split run started as the persistent user service
+`dd2414-fullsize-full.service` at 2026-10-08 20:37 CEST.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -236,9 +237,8 @@ unrelated local work.
 
 ## Next bounded task
 
-Use the frozen online-DINO, batch-5, workers-8, BF16 configuration to train all
-28,130 samples for eight epochs, now that the matched 4,096-sample control is
-complete. Evaluate the full checkpoint
+Finish the active 28,130-sample, eight-epoch run under the frozen online-DINO,
+batch-5, workers-8, BF16 configuration. Evaluate the full checkpoint
 on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
 P9 architecture, one-sweep input and objective unchanged. P11 downstream
 vehicle-segmentation IoU remains the next research boundary after this
@@ -388,6 +388,21 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: launch the independent 28,130-sample run with the identical frozen
   configuration, then compare its epoch-matched validation curve against this
   control.
+
+### 2026-10-08 — Formal full-split run launched
+
+- Action: launched `SCALE=full bash scripts/run_fullsize_baseline.sh --execute`
+  as the persistent user service `dd2414-fullsize-full.service`, using the same
+  batch 5, eight-worker, BF16, AdamW, one-sweep and eight-epoch configuration
+  as the completed control.
+- Initial health check: at update 100/45,008 the process had consumed 500 of
+  225,040 planned sample exposures, reported finite loss `1.2278`, reached
+  11.68 samples/s, and used approximately 20.5/24.6 GiB VRAM at 84--99% sampled
+  GPU utilization. The run directory is
+  `fullsize_baseline/runs/full28130_seed125/`.
+- Limitation and next: this is only a launch check, not a result. Let the run
+  complete validation at epochs 1/3/5/8, verify exact exposures and finite
+  metrics, then perform the epoch-matched 4,096-versus-full analysis.
 
 ### 2026-10-07 — P10 radar dependence curve analysis
 
