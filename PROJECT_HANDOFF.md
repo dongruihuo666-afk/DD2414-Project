@@ -248,16 +248,28 @@ unrelated local work.
 
 ## Next bounded task
 
-Finish the active 28,130-sample, eight-epoch run under the frozen online-DINO,
-batch-5, workers-8, BF16 configuration. Evaluate the full checkpoint
-on all 6,019 validation frames at epochs 1/3/5/8. This follow-up must keep the
-P9 architecture, one-sweep input and objective unchanged. P11 downstream
-vehicle-segmentation IoU remains the next research boundary after this
-explicitly requested exposure control; keep it separate from multi-sweep and
-hybrid-teacher changes.
+Finish the active V0 eight-epoch run and its matched V+/V0 frozen one-layer
+vehicle probes. V+ has completed all eight epochs and validations; the
+unattended controller is now training and validating V0. Treat this as the
+legacy frozen-camera velocity control, not the requested final dual-level
+distillation model. Audit the epoch-8 absolute IoU, probe convergence, frozen
+backbone integrity, and V+ minus V0 delta before starting another full run.
 
-Keep the lightweight encoder unchanged. Treat the supervised BEVCar result
-as a small positive radar-use control, not a solution to DINOv2 insensitivity.
+The subsequent primary experiment is the one-sweep, matched A/B/C comparison:
+camera-only, camera plus radar without velocity, and camera plus radar with
+velocity. Its shared objective must use DINO at both the trainable camera
+encoder and the fused BEV, with the BEV term restricted to radar-supported
+regions. Keep any motion-head objective as a separately reported ablation.
+Only after A/B/C pretraining, frozen linear probing, and qualitative evaluation
+are complete should radar history change. Then run a strict 1/5/10-sweep
+follow-up, beginning with a 5-sweep smoke and advancing to 10 sweeps only after
+resource and alignment checks. Incomplete long runs are acceptable, but must
+retain resumable checkpoints and must not be reported as completed results.
+
+Keep the pinned official BEVCar VoxelNet and the project voxel adapter
+unchanged across matched radar configurations. Treat the earlier supervised
+BEVCar result as a small positive radar-use control, not a solution to DINOv2
+insensitivity.
 Investigate why the self-supervised target loss ignores radar removal and
 measurements; test output-map sensitivity and add an objective/control in
 which matched radar beats empty and mismatched radar. Any architecture claim
@@ -273,6 +285,34 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-09 — Post-main 5/10-sweep follow-up added to the plan
+
+- Change: updated `SELF_SUPERVISED_EXTENSION_PLAN.md` and this handoff to place
+  a matched multi-sweep experiment after the one-sweep dual-level A/B/C
+  pretraining and frozen-probe evaluation. The order is 1-sweep reference,
+  5-sweep smoke and formal run, then 10-sweep smoke and formal run if time and
+  resources permit. The camera-only checkpoint is reusable because it has no
+  radar-sweep input; the preferred controlled matrix pairs radar-no-velocity
+  and radar-with-velocity at each sweep count.
+- Rationale: the supervisor also requested testing denser temporal radar, but
+  introducing it before the main A/B/C result would confound radar modality,
+  velocity, and point-density effects.
+- Reproduction: no experiment command is claimed yet. Before a formal run,
+  execute loader/coordinate/velocity/voxel-capacity, memory, forward/backward,
+  and resume smokes at the selected sweep count, then use the same split,
+  epochs, batch/effective batch, seed, losses, probe, and validation samples as
+  the locked one-sweep reference.
+- Verification: documentation-only change; `git diff --check` passed. No
+  training process or current one-sweep configuration was changed.
+- Limitations: past 64-sample 1/5/10-sweep probes are engineering evidence,
+  not a substitute for the future full-data dual-level comparison. More
+  sweeps add older points but no temporal camera model, and may exceed the
+  current 3,500-voxel cap or require a smaller batch. An unfinished run is only
+  a progress artifact, not a result.
+- Next: finish the active V0 and epoch-8 probes, implement and validate the
+  one-sweep dual-level A/B/C study, and start the 5-sweep smoke only after those
+  deliverables are reviewed.
 
 ### 2026-10-09 — Unattended V+ versus V0 velocity control and linear probe
 

@@ -177,7 +177,42 @@ one-step paths used about 3.42 GiB, while the full five-step camera training
 peaked at 3.58 GiB. Online DINOv2 may still dominate memory, which is why cached
 teacher maps are the safest first prototype.
 
-## 10. Original implementation order (historical)
+## 10. Post-main multi-sweep follow-up
+
+Multi-sweep radar is a follow-up to, not part of, the primary one-sweep
+dual-level-distillation comparison. First complete matched one-sweep
+pretraining and frozen probing for camera-only (A), radar without velocity (B),
+and radar with velocity (C). This preserves an interpretable answer for radar
+spatial gain (`B - A`) and velocity gain (`C - B`) before radar density changes.
+
+After that result is reviewed, increase history in this order:
+
+1. Run a real 5-sweep loader and VoxelNet smoke. Verify point timestamps,
+   coordinate and velocity rotation, valid-point counts, occupied voxels, the
+   3,500-voxel limit, peak memory, and a finite forward/backward update.
+2. If the smoke passes, run the formal 5-sweep configuration with the same
+   train/validation split, epochs, seed, objective weights, augmentation,
+   effective batch, checkpoint selection, frozen probe, and metrics as the
+   one-sweep reference.
+3. Repeat the same gates for 10 sweeps. A smaller physical batch is permitted
+   only with gradient accumulation that preserves the locked effective batch;
+   report any resulting normalization or throughput difference.
+4. Reuse A for every sweep count because camera-only has no radar history.
+   Ideally train both B and C at 1/5/10 sweeps so point-density and velocity
+   effects remain separable. If compute permits only one follow-up, prioritize
+   C at 5 sweeps, but describe it as a density follow-up rather than a complete
+   factorial ablation.
+5. Evaluate every completed checkpoint with the identical frozen linear probe
+   and matched/empty/wrong-scene/zero-velocity radar interventions. Plot
+   Vehicle IoU and velocity gain against sweep count.
+
+More sweeps aggregate older radar measurements; they do not add temporal
+camera attention or prove motion understanding. Long runs must remain exactly
+resumable. It is acceptable to stop with only a smoke, partial checkpoint, or
+5-sweep result when time expires, but incomplete work must be labeled as such
+and never promoted to a final metric.
+
+## 11. Original implementation order (historical)
 
 Steps 1-3 below are complete in `scripts/semantic_distill_smoke.py`: the shared
 `(B,128,200,200)` feature is exposed without invoking the supervised decoder, a
