@@ -181,9 +181,9 @@ teacher maps are the safest first prototype.
 
 Multi-sweep radar is a follow-up to, not part of, the primary one-sweep
 dual-level-distillation comparison. First complete matched one-sweep
-pretraining and frozen probing for camera-only (A), radar without velocity (B),
-and radar with velocity (C). This preserves an interpretable answer for radar
-spatial gain (`B - A`) and velocity gain (`C - B`) before radar density changes.
+pretraining and frozen probing for camera-only, radar without velocity, and
+radar with velocity. This preserves interpretable radar-spatial and velocity
+gains before radar density changes.
 
 After that result is reviewed, increase history in this order:
 
@@ -197,11 +197,12 @@ After that result is reviewed, increase history in this order:
 3. Repeat the same gates for 10 sweeps. A smaller physical batch is permitted
    only with gradient accumulation that preserves the locked effective batch;
    report any resulting normalization or throughput difference.
-4. Reuse A for every sweep count because camera-only has no radar history.
-   Ideally train both B and C at 1/5/10 sweeps so point-density and velocity
+4. Reuse the camera-only result for every sweep count because it has no radar
+   history. Ideally train both the radar-without-velocity and radar-with-
+   velocity configurations at 1/5/10 sweeps so point-density and velocity
    effects remain separable. If compute permits only one follow-up, prioritize
-   C at 5 sweeps, but describe it as a density follow-up rather than a complete
-   factorial ablation.
+   radar with velocity at 5 sweeps, but describe it as a density follow-up
+   rather than a complete factorial ablation.
 5. Evaluate every completed checkpoint with the identical frozen linear probe
    and matched/empty/wrong-scene/zero-velocity radar interventions. Plot
    Vehicle IoU and velocity gain against sweep count.

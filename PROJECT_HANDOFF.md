@@ -90,16 +90,25 @@ empty-radar penalties were `+0.03868/+2.29595` and wrong-scene penalties were
 `+0.02051/+2.12402`. The full-split run started as the persistent user service
 `dd2414-fullsize-full.service` at 2026-10-08 20:37 CEST.
 
-The next teacher-requested control is now implemented as an unattended,
-restart-aware sequence. It first lets that V+ run finish, then trains a matched
-V0 backbone with only the two BEVCar velocity input channels zeroed. At epochs
-1 and 8 it freezes each backbone and trains an identical single-layer vehicle
-segmentation probe, reporting IoU, precision, recall, and F1 on all 6,019
-validation frames. The sequence includes real V0 and probe smokes before the
-formal stages and stops visibly on any failure. This directly tests explicit
-radar-velocity utility under the existing frozen-camera architecture; it does
-not add camera SSL, dual-level distillation, a hybrid teacher, soft guidance,
-or an end-to-end downstream head.
+The teacher-requested velocity control was implemented as an unattended,
+restart-aware sequence. It completed one backbone with raw radar velocity and
+a matched backbone with the two BEVCar velocity input channels zeroed. At
+epochs 1 and 8 it froze each backbone and trained an identical single-layer
+vehicle-segmentation probe, reporting IoU, precision, recall, and F1 on all
+6,019 validation frames. This directly tests explicit radar-velocity utility
+under the existing frozen-camera architecture; it does not add camera SSL,
+dual-level distillation, a hybrid teacher, soft guidance, or an end-to-end
+downstream head.
+
+That unattended control is complete. Both configurations finished eight
+epochs, 45,008 updates and full validation at epochs 1/3/5/8. At epoch 8, the
+raw-velocity model reached motion/semantic losses `0.0881/0.2739`; the model
+trained with velocity channels zeroed reached `1.5684/0.2794`. The frozen
+one-layer vehicle probes reached `4.962%` versus `4.848%` Vehicle IoU, only a
+`+0.114` percentage-point raw-velocity gain. Precision remained about `5%`
+with roughly 69% recall, exposing widespread false positives. Reproducible
+meeting figures, including direct prediction-mask/GT/error-map comparisons,
+are documented in `FULLSIZE_MEETING_VISUALS.md`.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -248,23 +257,24 @@ unrelated local work.
 
 ## Next bounded task
 
-Finish the active V0 eight-epoch run and its matched V+/V0 frozen one-layer
-vehicle probes. V+ has completed all eight epochs and validations; the
-unattended controller is now training and validating V0. Treat this as the
-legacy frozen-camera velocity control, not the requested final dual-level
-distillation model. Audit the epoch-8 absolute IoU, probe convergence, frozen
-backbone integrity, and V+ minus V0 delta before starting another full run.
+The raw-velocity and velocity-channels-zeroed eight-epoch runs and their frozen
+one-layer vehicle probes are complete. Treat them as the legacy frozen-camera
+velocity control, not the requested final dual-level-distillation model. Audit
+probe convergence and frozen-backbone integrity before starting another full
+run; the completed meeting figures already document the absolute IoU, raw-
+velocity difference, radar interventions, and false-positive failure mode.
 
-The subsequent primary experiment is the one-sweep, matched A/B/C comparison:
-camera-only, camera plus radar without velocity, and camera plus radar with
-velocity. Its shared objective must use DINO at both the trainable camera
-encoder and the fused BEV, with the BEV term restricted to radar-supported
-regions. Keep any motion-head objective as a separately reported ablation.
-Only after A/B/C pretraining, frozen linear probing, and qualitative evaluation
-are complete should radar history change. Then run a strict 1/5/10-sweep
-follow-up, beginning with a 5-sweep smoke and advancing to 10 sweeps only after
-resource and alignment checks. Incomplete long runs are acceptable, but must
-retain resumable checkpoints and must not be reported as completed results.
+The subsequent primary experiment is a matched one-sweep comparison of the
+camera-only configuration, camera plus radar without velocity, and camera plus
+radar with velocity. Its shared objective must use DINO at both the trainable
+camera encoder and the fused BEV, with the BEV term restricted to radar-
+supported regions. Keep any motion-head objective as a separately reported
+ablation. Only after all three configurations complete pretraining, frozen
+linear probing, and qualitative evaluation should radar history change. Then
+run a strict 1/5/10-sweep follow-up, beginning with a 5-sweep smoke and
+advancing to 10 sweeps only after resource and alignment checks. Incomplete
+long runs are acceptable, but must retain resumable checkpoints and must not
+be reported as completed results.
 
 Keep the pinned official BEVCar VoxelNet and the project voxel adapter
 unchanged across matched radar configurations. Treat the earlier supervised
@@ -286,18 +296,59 @@ result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
 
+### 2026-10-09 — Final full-data results and meeting visualizations
+
+- Experiment completion: the persistent controller completed both eight-epoch
+  full-data configurations, all epoch 1/3/5/8 validations, both epoch-1 and
+  epoch-8 frozen probes, and the comparison reports. Each backbone processed
+  225,040 sample exposures in 45,008 optimizer updates with zero AMP overflow
+  retries and about 16.72 GiB peak PyTorch allocation.
+- Result: at epoch 8, raw velocity reduced held-out motion loss from `1.5684`
+  to `0.0881` and semantic loss from `0.2794` to `0.2739`. The downstream
+  Vehicle IoU changed only from `4.848%` to `4.962%` (`+0.114` percentage
+  points). Raw-velocity precision/recall/F1 were `5.074%/69.185%/9.455%`;
+  false-positive cells outnumbered true-positive cells by about `18.7x`.
+- Change: added `scripts/render_fullsize_meeting_results.py`,
+  `FULLSIZE_MEETING_VISUALS.md`, five reviewed PNG figures, and a JSON
+  provenance record. The direct mask figure compares GT, both hard prediction
+  masks, and TP/FP/FN maps on four deterministic scene-diverse validation
+  samples. Selection uses only scene position and GT non-emptiness, never model
+  performance. The remaining figures cover validation curves, radar input
+  interventions, linear-probe metrics/failure counts, and a 16:9 overview.
+  Active planning and run documentation now uses full configuration names
+  instead of the ambiguous `V+`/`V0` and `A`/`B`/`C` shorthand.
+- Reproduce: `MPLCONFIGDIR=/tmp/dd2414-matplotlib PYTHONPATH=scripts
+  $HOME/miniconda3/envs/bev/bin/python
+  scripts/render_fullsize_meeting_results.py`.
+- Verification: Python compilation and `git diff --check` passed. The real CUDA
+  render ended with `FULLSIZE_MEETING_VISUALS_OK`; all five PNGs passed Pillow
+  decoding and were visually inspected for labels, orientation, values, and
+  error colors. The metadata contains four distinct validation scenes and the
+  exact sample/scene tokens, GT-cell counts, radar-return counts and per-sample
+  IoUs.
+- Limitations: this is one seed, one radar sweep, raw rather than compensated
+  velocity, and binary vehicle IoU rather than multi-class mIoU. The probe ran
+  for one epoch. The camera ResNet is random-initialized and frozen. The four
+  displayed frames illustrate the aggregate failure but do not replace metrics
+  over all 6,019 validation frames.
+- Next: use these figures as the controlled legacy-baseline report. Audit probe
+  convergence and frozen-weight integrity, then implement the one-sweep
+  trainable-camera dual-level comparison of camera-only, radar without
+  velocity, and radar with velocity before the planned 5/10-sweep follow-up.
+
 ### 2026-10-09 — Post-main 5/10-sweep follow-up added to the plan
 
 - Change: updated `SELF_SUPERVISED_EXTENSION_PLAN.md` and this handoff to place
-  a matched multi-sweep experiment after the one-sweep dual-level A/B/C
-  pretraining and frozen-probe evaluation. The order is 1-sweep reference,
+  a matched multi-sweep experiment after the one-sweep dual-level comparison
+  of camera-only, radar without velocity, and radar with velocity. The order is
+  1-sweep reference,
   5-sweep smoke and formal run, then 10-sweep smoke and formal run if time and
   resources permit. The camera-only checkpoint is reusable because it has no
   radar-sweep input; the preferred controlled matrix pairs radar-no-velocity
   and radar-with-velocity at each sweep count.
 - Rationale: the supervisor also requested testing denser temporal radar, but
-  introducing it before the main A/B/C result would confound radar modality,
-  velocity, and point-density effects.
+  introducing it before the main three-configuration result would confound
+  radar modality, velocity, and point-density effects.
 - Reproduction: no experiment command is claimed yet. Before a formal run,
   execute loader/coordinate/velocity/voxel-capacity, memory, forward/backward,
   and resume smokes at the selected sweep count, then use the same split,
@@ -310,11 +361,11 @@ chat transcripts, secrets, or unreviewed generated data.
   sweeps add older points but no temporal camera model, and may exceed the
   current 3,500-voxel cap or require a smaller batch. An unfinished run is only
   a progress artifact, not a result.
-- Next: finish the active V0 and epoch-8 probes, implement and validate the
-  one-sweep dual-level A/B/C study, and start the 5-sweep smoke only after those
-  deliverables are reviewed.
+- Next: complete and validate the one-sweep dual-level camera-only, radar-
+  without-velocity, and radar-with-velocity study, and start the 5-sweep smoke
+  only after those deliverables are reviewed.
 
-### 2026-10-09 — Unattended V+ versus V0 velocity control and linear probe
+### 2026-10-09 — Unattended raw-velocity versus velocity-zeroed control
 
 - Change: added a locked `full|zero` radar-velocity input mode to the epoch
   trainer and all its validation interventions. `zero` clones the BEVCar voxel
@@ -322,13 +373,14 @@ chat transcripts, secrets, or unreviewed generated data.
   shapes, model parameter count, supervised targets, losses, and every other
   formal training setting. The legacy `full` run configuration stays byte-for-
   byte compatible with its active checkpoint. Added an epoch-boundary clean
-  stop so V0 can expose an epoch-1 checkpoint before exact resume.
+  stop so the velocity-zeroed run can expose an epoch-1 checkpoint before
+  exact resume.
 - Change: added `scripts/train_fullsize_linear_probe.py`, which freezes the
   complete checkpoint backbone and trains exactly one `1x1` convolution on
   the box-derived vehicle mask. It records balanced BCE plus validation vehicle
   IoU, precision, recall, F1, and confusion counts. Added a comparison writer,
   a compact progress renderer, CPU tests, and a persistent restart-aware driver
-  that runs both required smokes before formal V0/probe work.
+  that runs both required smokes before formal velocity-zeroed/probe work.
 - Reproduce implementation checks: `PYTHONPATH=scripts
   $HOME/miniconda3/envs/bev/bin/python -m unittest
   scripts.test_radar_evaluation scripts.test_fullsize_training
@@ -340,19 +392,19 @@ chat transcripts, secrets, or unreviewed generated data.
   scripts/render_teacher_overnight_progress.py`; and `bash -n
   scripts/run_fullsize_baseline.sh`.
 - Actual result: all 17 CPU tests passed, Python compilation passed, the shell
-  launcher syntax passed, and a non-executing V0 preview selected
+  launcher syntax passed, and a non-executing velocity-zeroed preview selected
   `fullsize_baseline/runs/full28130_zero_velocity_seed125` with the expected
   zero-mode argument. A real batch inspection confirmed vehicle/valid labels
   have shape `(B,1,1,200,200)`, matching the probe after removal of the time
   dimension. The CUDA smokes deliberately remain pipeline gates because the
-  active V+ process currently occupies the GPU.
+  active raw-velocity process currently occupies the GPU.
 - Launch: commit `9fd53c4` was pushed to `origin/dd2414-mini-baseline`, then
   `dd2414-teacher-overnight.service` started at 2026-10-09 00:28 CEST. Its
   first recorded stage is `waiting_for_full_velocity`; both that controller
   and `dd2414-fullsize-full.service` were verified active. User lingering is
   enabled (`Linger=yes`), so closing terminals or ending an agent session does
-  not stop the user services. At launch V+ was at epoch 4.808/8 with 86% GPU
-  utilization and no failure status.
+  not stop the user services. At launch the raw-velocity run was at epoch
+  4.808/8 with 86% GPU utilization and no failure status.
 - Monitor: `watch -n 10 $HOME/miniconda3/envs/bev/bin/python
   scripts/render_teacher_overnight_progress.py`; service state is available via
   `systemctl --user status dd2414-teacher-overnight.service` and logs via
@@ -366,8 +418,9 @@ chat transcripts, secrets, or unreviewed generated data.
   pipeline fails closed and records the failing stage instead of silently
   changing parameters.
 - Next: allow the persistent pipeline to complete, review the epoch-1 and
-  epoch-8 V+ minus V0 IoU/F1 reports, then decide with the teacher whether a
-  trained camera encoder or additional seeds are the next controlled change.
+  epoch-8 raw-velocity minus velocity-zeroed IoU/F1 reports, then decide with
+  the teacher whether a trained camera encoder or additional seeds are the
+  next controlled change.
 
 ### 2026-10-08 — Epoch-matched trainer and live monitoring
 

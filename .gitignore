@@ -6,6 +6,12 @@ __pycache__
 /external/BEVCar/
 artifacts/*
 !artifacts/meeting_demo_comparison.png
+!artifacts/fullsize_experiment_overview.png
+!artifacts/fullsize_linear_probe_summary.png
+!artifacts/fullsize_radar_intervention.png
+!artifacts/fullsize_training_validation_curves.png
+!artifacts/fullsize_vehicle_mask_comparison.png
+!artifacts/fullsize_meeting_visuals.json
 !artifacts/mini_subset_comparison.png
 !artifacts/mini_subset_metrics.csv
 !artifacts/baseline_overfit_4samples.png

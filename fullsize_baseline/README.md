@@ -111,8 +111,8 @@ These commands are monitors only; they do not start or alter training.
 
 The unattended follow-up keeps the same architecture, optimizer, seed,
 one-sweep input, losses, eight-epoch budget, and full train/validation splits.
-It compares the active full-velocity backbone (`V+`) with a separately trained
-backbone (`V0`) in which only BEVCar input channels 4 and 5 (the two velocity
+It compares one backbone trained with raw radar velocity against a separately
+trained backbone in which only BEVCar input channels 4 and 5 (the two velocity
 components) are zero throughout training and evaluation. Point locations,
 RCS, masks, targets, tensor shapes, and model parameters are unchanged.
 
@@ -125,10 +125,11 @@ trained end-to-end segmentation result: the historical camera encoder remains
 frozen at random initialization, and only one seed is used.
 
 The persistent pipeline runs these stages in order and stops on the first
-failure: wait for V+, two-update V0 smoke, four-sample probe smoke, V0 epoch 1,
-both epoch-1 probes and comparison, V0 epochs 2--8, then both epoch-8 probes and
-comparison. Re-running the driver skips completed stages and resumes V0 from
-its latest exact checkpoint.
+failure: wait for raw-velocity training, run a two-update velocity-zeroed smoke,
+run a four-sample probe smoke, train the velocity-zeroed backbone through epoch
+1, run both epoch-1 probes, resume the velocity-zeroed backbone through epoch
+8, then run both epoch-8 probes and the final comparison. Re-running the driver
+skips completed stages and resumes from the latest exact checkpoint.
 
 Monitor the entire chain with:
 
