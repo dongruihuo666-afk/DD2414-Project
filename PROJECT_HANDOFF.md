@@ -119,7 +119,10 @@ points, 1,228/769 occupied voxels (below the 3,500 limit), and about 0.32 s of
 history. A batch-5 BF16 smoke ran 15 finite updates with a real restart at
 update 10, zero overflow retries and 16.723 GiB peak PyTorch allocation. This
 is still the legacy frozen-random-camera architecture and is only a radar
-density follow-up, not the requested final dual-level-distillation model.
+density follow-up, not the requested final dual-level-distillation model. The
+formal eight-epoch run is active as the restart-on-failure user service
+`dd2414-fullsize-5sweep.service`; it wrote a durable checkpoint at update 100,
+resumed, and reached update 150 at about 9.0 samples/s with finite losses.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -346,10 +349,22 @@ chat transcripts, secrets, or unreviewed generated data.
   occupied voxels. Five sweeps add older transformed points but no temporal
   attention. The camera encoder remains random and frozen, so this experiment
   measures radar-density effects within the legacy baseline only.
-- Next: commit and push the tested support, then launch the eight-epoch
-  five-sweep full-data run as a persistent user service and record its service
-  identity and first live status. Test ten sweeps only after the five-sweep run
-  and its full-validation result are reviewed.
+- Commit and launch: tested support was pushed as `721615f`. The formal run
+  first completed 100 updates in
+  `fullsize_baseline/runs/full28130_sweeps5_seed125` to establish a durable
+  checkpoint, then `dd2414-fullsize-5sweep.service` resumed it with
+  `Restart=on-failure`. The first post-resume status reached update 150,
+  750 sample exposures, loss/semantic/motion `0.7836/0.4632/0.6407`, about
+  9.03 samples/s, 63% sampled GPU utilization and 20,606/24,564 MiB process
+  memory. Monitor with `watch -n 10 $HOME/miniconda3/envs/bev/bin/python
+  scripts/render_fullsize_progress.py --run-dir
+  fullsize_baseline/runs/full28130_sweeps5_seed125 --no-plot`, or inspect
+  `systemctl --user status dd2414-fullsize-5sweep.service` and
+  `journalctl --user -u dd2414-fullsize-5sweep.service -f`.
+- Next: let the five-sweep run complete its scheduled full validations at
+  epochs 1/3/5/8, then run the identical frozen linear probe and compare with
+  the completed one-sweep raw-velocity checkpoint. Test ten sweeps only after
+  the five-sweep result is reviewed.
 
 ### 2026-10-09 — Final full-data results and meeting visualizations
 
