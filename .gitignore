@@ -8,6 +8,7 @@ artifacts/*
 !artifacts/meeting_demo_comparison.png
 !artifacts/fullsize_experiment_overview.png
 !artifacts/fullsize_linear_probe_summary.png
+!artifacts/fullsize_low_iou_future_plan.png
 !artifacts/fullsize_radar_intervention.png
 !artifacts/fullsize_training_validation_curves.png
 !artifacts/fullsize_vehicle_mask_comparison.png

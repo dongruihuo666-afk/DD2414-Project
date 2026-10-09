@@ -63,6 +63,17 @@ Talking point: the raw-velocity gain is positive but falls from `+0.180` to
 precision is only `5.07%`, and the raw-velocity model produces about `18.7`
 false-positive cells per true-positive cell.
 
+### 6. Why IoU is low and what to test next
+
+![Low-IoU diagnosis and future plan](artifacts/fullsize_low_iou_future_plan.png)
+
+Talking point: the directly measured reason for low IoU is the large
+false-positive term in the IoU denominator. The frozen random camera encoder,
+objective/readout mismatch, limited probe audit, and one-sweep/one-seed scope
+are plausible contributors that require controlled tests rather than causal
+claims. The slide orders those tests so that only one major factor changes at
+a time.
+
 ## Headline results
 
 | Result | Raw velocity included | Velocity channels zeroed | Difference |
@@ -91,3 +102,11 @@ MPLCONFIGDIR=/tmp/dd2414-matplotlib PYTHONPATH=scripts \
 The script reads the completed epoch-8 backbone checkpoints, the completed
 frozen linear heads, all aggregate JSON summaries, and the original nuScenes
 validation samples. It does not retrain or modify a model.
+
+The standalone future-plan slide does not require CUDA:
+
+```bash
+MPLCONFIGDIR=/tmp/dd2414-matplotlib \
+  $HOME/miniconda3/envs/bev/bin/python \
+  scripts/render_fullsize_future_plan_slide.py
+```

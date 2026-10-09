@@ -336,6 +336,31 @@ chat transcripts, secrets, or unreviewed generated data.
   trainable-camera dual-level comparison of camera-only, radar without
   velocity, and radar with velocity before the planned 5/10-sweep follow-up.
 
+### 2026-10-09 — Low-IoU diagnosis and future-plan slide
+
+- Change: added `scripts/render_fullsize_future_plan_slide.py` and the 16:9
+  meeting slide `artifacts/fullsize_low_iou_future_plan.png`, with usage notes
+  in `FULLSIZE_MEETING_VISUALS.md`. The slide separates the measured metric
+  failure (false positives dominate the IoU denominator) from plausible but
+  not yet causally proven contributors.
+- Rationale: the meeting package needed one concise page that explains why the
+  completed frozen-probe Vehicle IoU is low and turns each limitation into an
+  ordered, controlled future experiment.
+- Reproduce: `MPLCONFIGDIR=/tmp/dd2414-matplotlib
+  $HOME/miniconda3/envs/bev/bin/python
+  scripts/render_fullsize_future_plan_slide.py`.
+- Verification: the renderer reads the epoch-8 comparison JSON rather than
+  copying headline metrics by hand. Python compilation, a real render, PNG
+  decoding, visual inspection and `git diff --check` passed.
+- Limitations: only the `4.96%` IoU, `5.07%` precision, `69.2%` recall and
+  `18.7x` false-positive/true-positive ratio are direct aggregate findings.
+  The frozen random camera encoder, objective/readout mismatch, limited probe
+  audit and one-sweep/one-seed scope are hypotheses to test, not established
+  causal attributions.
+- Next: first audit probe convergence and the precision-recall/threshold curve;
+  then run the requested trainable-camera dual-level comparison before changing
+  radar density to 5 or 10 sweeps.
+
 ### 2026-10-09 — Post-main 5/10-sweep follow-up added to the plan
 
 - Change: updated `SELF_SUPERVISED_EXTENSION_PLAN.md` and this handoff to place
