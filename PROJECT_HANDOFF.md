@@ -110,6 +110,17 @@ with roughly 69% recall, exposing widespread false positives. Reproducible
 meeting figures, including direct prediction-mask/GT/error-map comparisons,
 are documented in `FULLSIZE_MEETING_VISUALS.md`.
 
+On 2026-10-09 the owner explicitly advanced the legacy multi-sweep density
+follow-up ahead of the previously planned dual-level-distillation study. The
+epoch trainer, launcher, progress renderer, batch-equivalence audit and frozen
+probe now support strict 1/5/10-sweep configurations in isolated run
+directories. A real five-sweep two-sample audit observed 2,549/2,154 raw radar
+points, 1,228/769 occupied voxels (below the 3,500 limit), and about 0.32 s of
+history. A batch-5 BF16 smoke ran 15 finite updates with a real restart at
+update 10, zero overflow retries and 16.723 GiB peak PyTorch allocation. This
+is still the legacy frozen-random-camera architecture and is only a radar
+density follow-up, not the requested final dual-level-distillation model.
+
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
 
@@ -295,6 +306,50 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-09 — Five-sweep full-data support and real CUDA gates
+
+- Change: generalized the epoch trainer, launcher, status renderer,
+  batch-equivalence audit and frozen linear probe from the historical one-sweep
+  input to explicit 1/5/10-sweep configurations. Run names include their sweep
+  count, so the formal five-sweep output is isolated at
+  `fullsize_baseline/runs/full28130_sweeps5_seed125`. The model, losses,
+  optimizer, seed, split, eight-epoch budget and pinned VoxelNet are unchanged.
+- Reason: the owner requested starting the multi-sweep experiment now. This
+  intentionally advances the legacy density control ahead of the planned
+  dual-level study; it must not be presented as the final architecture.
+- Reproduce static checks: `git diff --check`; `$HOME/miniconda3/envs/bev/bin/python
+  -m py_compile scripts/train_fullsize_baseline.py
+  scripts/train_fullsize_linear_probe.py scripts/render_fullsize_progress.py
+  scripts/check_fullsize_batch_equivalence.py`; `bash -n
+  scripts/run_fullsize_baseline.sh`; and `PYTHONPATH=scripts
+  $HOME/miniconda3/envs/bev/bin/python -m unittest
+  scripts.test_fullsize_training scripts.test_fullsize_linear_probe`.
+- Reproduce real-data gate: `$HOME/miniconda3/envs/bev/bin/python
+  scripts/check_fullsize_batch_equivalence.py --data-root
+  $HOME/datasets/nuscenes --bevcar-source external/BEVCar --manifest
+  configs/radar_scaling_manifest_seed125.json --output
+  fullsize_baseline/smoke/multisweep5_batch_equivalence.json --nsweeps 5`.
+  Then run `NSWEEPS=5 RUN_DIR=$PWD/fullsize_baseline/smoke/multisweep5_10steps
+  bash scripts/run_fullsize_baseline.sh --execute --stop-after-steps 10
+  --checkpoint-every-steps 5 --print-every-steps 1 --validation-epochs 8` and
+  repeat with `--resume --stop-after-steps 15`.
+- Actual result: all 10 CPU tests, compilation, shell syntax and diff checks
+  passed. Two real five-sweep frames contained 2,549/2,154 raw points,
+  1,228/769 occupied voxels and maximum time lags 0.325/0.320 s. Batched versus
+  per-sample semantic/motion outputs stayed inside the existing tolerance. The
+  trainer completed 15 finite updates and resumed exactly from update 10;
+  batch 5 peaked at 16.723 GiB, reported zero BF16 overflow retries, and
+  reached about 4.8 samples/s after startup.
+- Limitations: the audit covers two frames and the optimization smoke 75 sample
+  exposures; the adapter still fails closed if any later sample exceeds 3,500
+  occupied voxels. Five sweeps add older transformed points but no temporal
+  attention. The camera encoder remains random and frozen, so this experiment
+  measures radar-density effects within the legacy baseline only.
+- Next: commit and push the tested support, then launch the eight-epoch
+  five-sweep full-data run as a persistent user service and record its service
+  identity and first live status. Test ten sweeps only after the five-sweep run
+  and its full-validation result are reviewed.
 
 ### 2026-10-09 — Final full-data results and meeting visualizations
 

@@ -10,15 +10,21 @@ batch_size="${FULLSIZE_BATCH_SIZE:-5}"
 precision="${PRECISION:-bf16}"
 num_workers="${FULLSIZE_NUM_WORKERS:-8}"
 seed="${SEED:-125}"
+nsweeps="${NSWEEPS:-1}"
 velocity_mode="${RADAR_VELOCITY_MODE:-full}"
 case "${velocity_mode}" in
     full) velocity_suffix="" ;;
     zero) velocity_suffix="_zero_velocity" ;;
     *) echo 'RADAR_VELOCITY_MODE must be full or zero.' >&2; exit 2 ;;
 esac
+case "${nsweeps}" in
+    1) sweep_suffix="" ;;
+    5|10) sweep_suffix="_sweeps${nsweeps}" ;;
+    *) echo 'NSWEEPS must be 1, 5, or 10.' >&2; exit 2 ;;
+esac
 case "${scale}" in
-    4096) run_name="scale4096${velocity_suffix}_seed${seed}" ;;
-    full) run_name="full28130${velocity_suffix}_seed${seed}" ;;
+    4096) run_name="scale4096${velocity_suffix}${sweep_suffix}_seed${seed}" ;;
+    full) run_name="full28130${velocity_suffix}${sweep_suffix}_seed${seed}" ;;
     *) echo 'SCALE must be 4096 or full.' >&2; exit 2 ;;
 esac
 run_dir="${RUN_DIR:-${REPO_ROOT}/fullsize_baseline/runs/${run_name}}"
@@ -43,7 +49,7 @@ command=(
     --precision "${precision}"
     --num-workers "${num_workers}"
     --seed "${seed}"
-    --nsweeps 1
+    --nsweeps "${nsweeps}"
     --radar-velocity-mode "${velocity_mode}"
     "${extra[@]}"
 )

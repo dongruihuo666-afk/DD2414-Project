@@ -62,6 +62,19 @@ SCALE=4096 bash scripts/run_fullsize_baseline.sh --execute
 bash scripts/run_fullsize_baseline.sh --execute
 ```
 
+The post-baseline radar-density follow-up uses the same model, objective,
+split, seed, optimizer and eight-epoch budget. Set `NSWEEPS=5` or
+`NSWEEPS=10`; each setting receives an isolated run directory such as
+`full28130_sweeps5_seed125`. A real data/voxel/forward/backward/resume smoke is
+required before each formal multi-sweep launch. These runs retain the legacy
+frozen random camera encoder and must not be described as the future
+dual-level-distillation model.
+
+```bash
+NSWEEPS=5 bash scripts/run_fullsize_baseline.sh --execute
+NSWEEPS=5 bash scripts/run_fullsize_baseline.sh --execute --resume
+```
+
 Append `--resume` to the same command after an interruption. Configuration
 validation rejects a resume with a different batch size, optimizer, precision,
 epoch count, manifest, or validation schedule.

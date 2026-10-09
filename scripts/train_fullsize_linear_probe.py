@@ -239,8 +239,9 @@ def main():
     payload = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
     velocity_mode = resolve_velocity_mode(args.radar_velocity_mode, payload)
     run_config = payload['run_config']
-    if run_config['seed'] != args.seed or run_config['nsweeps'] != 1:
-        raise ValueError('checkpoint seed/sweeps do not match the locked probe')
+    nsweeps = int(run_config['nsweeps'])
+    if run_config['seed'] != args.seed or nsweeps not in (1, 5, 10):
+        raise ValueError('checkpoint seed/sweeps do not match the supported probe')
     official_class = official_voxelnet(args.bevcar_source)
     model = build_model(device, args.seed, official_class, zero_camera=False)
     model.load_state_dict(payload['model'], strict=True)
@@ -256,7 +257,7 @@ def main():
     )
 
     train_loader_raw, val_loader_raw = build_loaders(
-        args.data_root, num_workers=0, nsweeps=1,
+        args.data_root, num_workers=0, nsweeps=nsweeps,
         rotate_radar_velocity=True, dset='trainval',
     )
     generator = torch.Generator().manual_seed(args.seed)
@@ -281,6 +282,7 @@ def main():
         'checkpoint_sha256': file_sha256(args.checkpoint),
         'backbone_epoch': int(payload['sampler']['epoch']),
         'radar_velocity_mode': velocity_mode,
+        'nsweeps': nsweeps,
         'probe_epochs': args.epochs,
         'train_samples': train_count,
         'val_samples': args.val_samples,

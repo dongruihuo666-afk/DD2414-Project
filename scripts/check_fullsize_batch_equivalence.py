@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seed', type=int, default=125)
+    parser.add_argument('--nsweeps', type=int, choices=(1, 5, 10), default=1)
     return parser.parse_args()
 
 
@@ -52,7 +53,7 @@ def main():
     validate_scaling_manifest(manifest)
     indices = scale_indices(manifest, 4096)[:2]
     train_loader, _ = build_loaders(
-        args.data_root, num_workers=0, nsweeps=1,
+        args.data_root, num_workers=0, nsweeps=args.nsweeps,
         rotate_radar_velocity=True, dset='trainval',
     )
     subset = IndexedSubset(train_loader.dataset, indices)
@@ -87,9 +88,13 @@ def main():
     model = build_model(device, args.seed, official_class, zero_camera=False)
     model.eval()
     with torch.inference_mode():
-        batched_semantic, batched_motion_prediction = model(
-            *prepare_bevcar_inputs(batch, device)
-        )
+        batched_inputs = prepare_bevcar_inputs(batch, device)
+        radar_points = batch[16][:, 0].to(device).permute(0, 2, 1)
+        nonpadding = radar_points[..., :3].abs().sum(dim=-1).gt(0)
+        time_lag = radar_points[..., 18]
+        voxel_features, _, occupied_voxels = batched_inputs[-1]
+        retained_voxel_points = voxel_features[..., 6].gt(0).sum(dim=(1, 2))
+        batched_semantic, batched_motion_prediction = model(*batched_inputs)
         single_semantic = []
         single_motion_prediction = []
         for index in range(2):
@@ -103,6 +108,15 @@ def main():
 
     result = {
         'samples': 2,
+        'nsweeps': args.nsweeps,
+        'raw_radar_points': [int(value) for value in nonpadding.sum(dim=1)],
+        'occupied_voxels': [int(value) for value in occupied_voxels],
+        'retained_voxel_points': [int(value) for value in retained_voxel_points],
+        'maximum_time_lag_seconds': [
+            float(time_lag[index, nonpadding[index]].max())
+            if nonpadding[index].any() else 0.0
+            for index in range(nonpadding.shape[0])
+        ],
         'target_max_abs_difference': maximum_difference(
             batched_target, historical_target,
         ),

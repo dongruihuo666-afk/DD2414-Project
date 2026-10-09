@@ -54,6 +54,7 @@ from training_checkpoint import (  # noqa: E402
 
 
 GIB = 1024 ** 3
+SUPPORTED_RADAR_SWEEPS = (1, 5, 10)
 
 
 def parse_args():
@@ -73,7 +74,8 @@ def parse_args():
     parser.add_argument('--weight-decay', type=float, default=1e-5)
     parser.add_argument('--precision', choices=('bf16', 'fp16'), default='bf16')
     parser.add_argument('--seed', type=int, default=125)
-    parser.add_argument('--nsweeps', type=int, default=1)
+    parser.add_argument('--nsweeps', type=int, choices=SUPPORTED_RADAR_SWEEPS,
+                        default=1)
     parser.add_argument('--semantic-weight', type=float, default=1.0)
     parser.add_argument('--motion-weight', type=float, default=0.5)
     parser.add_argument('--radar-velocity-mode', choices=('full', 'zero'),
@@ -145,6 +147,7 @@ def write_status(args, progress, total_steps, dataset_size, latest, ema,
         gpu=query_nvidia_smi(), message=message,
     )
     status['radar_velocity_mode'] = args.radar_velocity_mode
+    status['nsweeps'] = args.nsweeps
     atomic_json_write(status, args.run_dir / 'status.json')
     return status
 
@@ -215,8 +218,10 @@ def main():
         raise ValueError('num-workers must be nonnegative and prefetch-factor positive')
     if args.checkpoint_every_steps < 1 or args.print_every_steps < 1:
         raise ValueError('checkpoint and print intervals must be positive')
-    if args.nsweeps != 1:
-        raise ValueError('the epoch baseline keeps the historical one-sweep input')
+    if args.nsweeps not in SUPPORTED_RADAR_SWEEPS:
+        raise ValueError(
+            f'nsweeps must be one of {SUPPORTED_RADAR_SWEEPS}'
+        )
     if args.semantic_weight != 1.0 or args.motion_weight != 0.5:
         raise ValueError('the epoch baseline keeps semantic=1.0 and motion=0.5')
     if args.stop_after_steps and args.stop_after_epoch:
@@ -662,7 +667,7 @@ def main():
 
     if state != 'stopped':
         state = 'complete'
-        message = 'eight-epoch run complete'
+        message = f'{args.epochs}-epoch run complete'
     current_lr = optimizer.param_groups[0]['lr']
     status = progress_status(
         state=state, scale=args.scale, epochs=args.epochs,
@@ -673,6 +678,7 @@ def main():
         learning_rate=current_lr, gpu=query_nvidia_smi(), message=message,
     )
     status['radar_velocity_mode'] = args.radar_velocity_mode
+    status['nsweeps'] = args.nsweeps
     atomic_json_write(status, args.run_dir / 'status.json')
     summary = {
         'status': state,

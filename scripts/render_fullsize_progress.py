@@ -55,6 +55,7 @@ def terminal_summary(status):
     message = status.get('message')
     lines = [
         f"state={status['state']} scale={status['scale']} "
+        f"sweeps={status.get('nsweeps', 1)} "
         f"epoch={status['epoch_progress']:.3f}/{status['epochs']} "
         f"complete={status['percent_complete']:.2f}%",
         f"step={status['optimizer_step']}/{status['total_optimizer_steps']} "
