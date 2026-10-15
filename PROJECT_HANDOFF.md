@@ -22,8 +22,10 @@ so it is weak generalization evidence. A separate uniform 64/16-scene control
 gave `+0.7980` and `+0.8602`, with correct radar outperforming no radar. See
 `TRAINVAL_RUN_PLAN.md` and the 2026-10-05 work-log entry. These are bounded
 held-out feature-loss probes, not all-frame training or downstream accuracy.
-The scaling trainer now provides all-frame streaming self-supervision; the
-combined hybrid model remains future implementation work.
+The scaling trainer provides all-frame streaming self-supervision. An isolated
+cluster path now implements the combined ten-sweep hybrid-teacher model and
+its two downstream protocols, but it has not yet produced a CUDA smoke or
+full-data result; see the 2026-10-16 work-log entry.
 
 The owner has adopted a staged full-data radar scaling study. The frozen order
 is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
@@ -161,11 +163,12 @@ loss at 10 sweeps with the radar-weighted dual teacher, but only a small
 no-radar penalty (+0.0196); multi-sweep is a useful input-density control, not
 proof of strong radar dependence (see the 2026-09-30 work log entry).
 
-The collaboration branch is `dd2414-mini-baseline`. Each completed,
-project-scoped change is pushed there so teammates can follow the work. Check
-the GitHub PR state before assuming that its commits are on `main`. Merge only
-after the bounded feature and its checks are complete and the team has reviewed
-the PR; the routine per-task push does not merge anything.
+The stable collaboration branch remains `dd2414-mini-baseline`. The isolated
+hybrid-teacher cluster implementation is developed on
+`experiment/hybrid-teacher-10sweep-cluster` so it can be tested and reviewed
+without changing the historical launchers. Check the GitHub branch/PR state
+before assuming either branch is on `main`; do not merge until the bounded
+feature and its CUDA checks are complete and the team has reviewed it.
 
 ## Data and pretrained weights
 
@@ -309,6 +312,59 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-16 — Isolated ten-sweep hybrid-teacher cluster protocol
+
+- Change: created the opt-in branch and added
+  `scripts/hybrid_teacher_full.py`,
+  `scripts/train_hybrid_teacher_pretrain.py`,
+  `scripts/train_hybrid_teacher_downstream.py`,
+  `scripts/summarize_hybrid_teacher_cluster.py`,
+  `scripts/test_hybrid_teacher_protocol.py`, and `cluster_experiment/`.
+  Historical Simple-BEV and full-size launchers are unchanged. Generated
+  cluster runs are ignored under `hybrid_teacher_cluster_runs/`.
+- Model/protocol: the student is the trainable Simple-BEV ResNet-101 camera
+  path plus the pinned BEVCar VoxelNet, ten radar sweeps, BEV fusion, and the
+  original decoder. Frozen DINOv2 supplies dense image distillation and
+  radar-soft-region-weighted fused-BEV distillation; the motion loss is a
+  separate auxiliary pretraining term. The same pretraining checkpoint feeds
+  independent end-to-end supervised fine-tuning and complete-backbone-frozen
+  `1x1` linear probing. Neither downstream run continues DINO or motion losses.
+- Metrics: both downstream paths report the original Simple-BEV mean of
+  per-frame binary Vehicle BEV IoU over the selected validation split. The
+  end-to-end path also reproduces Simple-BEV segmentation, center, offset, and
+  learned-uncertainty losses. Global IoU, precision, recall, and F1 are
+  explicitly auxiliary; no project-created penalty is a primary metric.
+- Reproduce static checks: `bash -n cluster_experiment/train.sh
+  cluster_experiment/submit_slurm.sh`; `$HOME/miniconda3/envs/bev/bin/python
+  -m py_compile scripts/hybrid_teacher_full.py
+  scripts/train_hybrid_teacher_pretrain.py
+  scripts/train_hybrid_teacher_downstream.py
+  scripts/summarize_hybrid_teacher_cluster.py
+  scripts/test_hybrid_teacher_protocol.py`; and `PYTHONPATH=scripts
+  MPLCONFIGDIR=/tmp/dd2414-mpl $HOME/miniconda3/envs/bev/bin/python -m
+  unittest scripts.test_hybrid_teacher_protocol scripts.test_fullsize_training
+  scripts.test_fullsize_linear_probe scripts.test_training_checkpoint`.
+- Actual result: shell parsing and Python compilation passed; all 20 CPU tests
+  passed. The new metric test proves the official per-frame mean differs from
+  globally aggregated IoU. The launchers provide atomic checkpoint/resume,
+  scheduled full validation, status JSON, JSONL metrics, TensorBoard, console
+  logs, signal-aware Slurm submission, a before/after frozen-backbone SHA-256
+  integrity check, and a matched final report.
+- Limitations: no real CUDA/data smoke or cluster job was run in this coding
+  task. The local `check` command reached the CUDA gate but this execution
+  environment exposed no NVIDIA device, so memory capacity, throughput, DINO
+  cache availability, ten-sweep
+  voxel capacity, and numerical stability remain unverified. The current
+  target mask uses radar returns from all ten aggregated sweeps rather than a
+  keyframe-only mask. The loader constructs nuScenes supervised targets during
+  pretraining even though no supervised target enters the pretraining loss.
+  Direct comparison to published Simple-BEV numbers still requires matched
+  resolution, augmentation, schedule, split, and evaluation code.
+- Next: on the target cluster run `bash cluster_experiment/train.sh check`,
+  then the four-sample real ten-sweep `smoke`. Review peak memory, voxel counts,
+  finite losses, frozen-probe integrity, and exact resume before submitting
+  `bash cluster_experiment/train.sh all`.
 
 ### 2026-10-09 — Five-sweep full-data support and real CUDA gates
 

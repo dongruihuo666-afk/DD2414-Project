@@ -63,6 +63,7 @@ fullsize_baseline/runs/
 fullsize_baseline/probes/
 fullsize_baseline/smoke/
 fullsize_baseline/teacher_overnight/
+hybrid_teacher_cluster_runs/
 .env
 .env.*
 *.pem
