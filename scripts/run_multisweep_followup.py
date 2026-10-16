@@ -42,18 +42,25 @@ def experiment_stages(args):
         '--batch-size',str(args.batch_size),'--num-workers',str(args.num_workers),
         '--precision','bf16']
     stages = []
-    for radar,checkpoint in [(False,'8x5_5e-4_rgb12_22:43:46'),(True,'8x5_5e-4_rad25_18:55:34')]:
-        directory = args.study_dir/('official_camera_radar_5sweep_112x192' if radar else 'official_camera_112x192')
-        command = [python,'scripts/eval_pretrained_baseline.py','--data-root',str(args.data_root),
-            '--manifest',str(ROOT/'configs/radar_scaling_manifest_seed125.json'),
-            '--checkpoint',str(ROOT/'checkpoints'/checkpoint/'model-000025000.pth'),
-            '--run-dir',str(directory),'--height','112','--width','192',
-            '--batch-size',str(args.batch_size),'--num-workers',str(args.num_workers)]
-        if radar:
-            command.append('--use-radar')
-        stages.append(dict(name=directory.name,directory=str(directory),command=command,
-                           requires=None,expected_summary=str(directory/'summary.json')))
-    for sweeps,depth in [(5,'none'),(10,'none'),(5,'radar'),(5,'radar-dav2')]:
+    if not getattr(args,'skip_official',False):
+        for radar,checkpoint in [(False,'8x5_5e-4_rgb12_22:43:46'),(True,'8x5_5e-4_rad25_18:55:34')]:
+            directory = args.study_dir/('official_camera_radar_5sweep_112x192' if radar else 'official_camera_112x192')
+            command = [python,'scripts/eval_pretrained_baseline.py','--data-root',str(args.data_root),
+                '--manifest',str(ROOT/'configs/radar_scaling_manifest_seed125.json'),
+                '--checkpoint',str(ROOT/'checkpoints'/checkpoint/'model-000025000.pth'),
+                '--run-dir',str(directory),'--height','112','--width','192',
+                '--batch-size',str(args.batch_size),'--num-workers',str(args.num_workers)]
+            if radar:
+                command.append('--use-radar')
+            stages.append(dict(name=directory.name,directory=str(directory),command=command,
+                               requires=None,expected_summary=str(directory/'summary.json')))
+    configurations = [(5,'none'),(10,'none'),(5,'radar'),(5,'radar-dav2')]
+    selected = getattr(args,'configurations',None)
+    if selected:
+        selected = set(selected)
+        configurations = [(sweeps,depth) for sweeps,depth in configurations
+            if f'{sweeps}-{depth}' in selected]
+    for sweeps,depth in configurations:
         label = f'double_dino_{sweeps}sweep_depth_{depth}'
         pretrain = args.study_dir/f'{label}_pretrain_{args.pretrain_epochs}epochs'
         for mode in ['pretrain','frozen-probe','finetune','unfrozen-probe','object-motion']:
@@ -133,6 +140,11 @@ def main():
     p.add_argument('--pretrain-epochs',type=int,default=1)
     p.add_argument('--downstream-epochs',type=int,default=1)
     p.add_argument('--legacy-study',type=Path)
+    p.add_argument('--configuration',dest='configurations',action='append',
+        choices=['5-none','10-none','5-radar','5-radar-dav2'],
+        help='Run only the selected configuration; repeat to select multiple configurations.')
+    p.add_argument('--skip-official',action='store_true',
+        help='Do not rerun the already-established low-resolution official checkpoints.')
     p.add_argument('--plan-only',action='store_true')
     args = p.parse_args()
     if min(args.batch_size,args.pretrain_epochs,args.downstream_epochs) < 1:

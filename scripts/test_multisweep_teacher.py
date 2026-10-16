@@ -196,6 +196,18 @@ class TeacherTest(unittest.TestCase):
             self.assertEqual(sum(t['command'][t['command'].index('--mode')+1] == mode
                 for t in stages if '--mode' in t['command']),4)
 
+    def test_queue_can_prioritize_only_depth_configurations(self):
+        args = SimpleNamespace(data_root=Path('/data'),bevcar_source=Path('/source'),
+            study_dir=Path('/output'),batch_size=4,num_workers=8,
+            pretrain_epochs=1,downstream_epochs=1,skip_official=True,
+            configurations=['5-radar','5-radar-dav2'])
+        stages = experiment_stages(args)
+        self.assertEqual(len(stages),10)
+        self.assertTrue(all('official_' not in stage['name'] for stage in stages))
+        self.assertTrue(all(stage['name'].startswith(
+            ('double_dino_5sweep_depth_radar_','double_dino_5sweep_depth_radar-dav2_'))
+            for stage in stages))
+
 
 if __name__ == '__main__':
     unittest.main()

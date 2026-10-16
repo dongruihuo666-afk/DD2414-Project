@@ -25,6 +25,19 @@ fi
 }
 "${PYTHON_BIN}" -c 'import torch; assert torch.cuda.is_available(); assert torch.cuda.is_bf16_supported(); print(torch.cuda.get_device_name(0))'
 mkdir -p "${STUDY_DIR}"
+QUEUE_ARGS=()
+if [[ "${SKIP_OFFICIAL:-0}" == "1" ]]; then
+    QUEUE_ARGS+=(--skip-official)
+fi
+if [[ -n "${CONFIGURATIONS:-}" ]]; then
+    IFS=',' read -r -a SELECTED_CONFIGURATIONS <<< "${CONFIGURATIONS}"
+    for configuration in "${SELECTED_CONFIGURATIONS[@]}"; do
+        QUEUE_ARGS+=(--configuration "${configuration}")
+    done
+fi
+if [[ "${INCLUDE_LEGACY:-1}" == "1" ]]; then
+    QUEUE_ARGS+=(--legacy-study "${REPO_ROOT}/fullsize_baseline/runs/meeting_followup_20261016")
+fi
 systemd-run --user --unit="${RUN_SERVICE}" --working-directory="${REPO_ROOT}" \
     --description='DD2414 baseline double DINO, 5/10 sweeps, depth and GT-object motion' \
     --property=Restart=on-failure --property=RestartSec=60 \
@@ -41,7 +54,7 @@ systemd-run --user --unit="${RUN_SERVICE}" --working-directory="${REPO_ROOT}" \
     --bevcar-source "${BEVCAR_SOURCE_DIR:-${REPO_ROOT}/external/BEVCar}" \
     --batch-size "${BATCH_SIZE:-4}" --num-workers "${NUM_WORKERS:-8}" \
     --pretrain-epochs "${PRETRAIN_EPOCHS:-1}" --downstream-epochs "${DOWNSTREAM_EPOCHS:-1}" \
-    --legacy-study "${REPO_ROOT}/fullsize_baseline/runs/meeting_followup_20261016"
+    "${QUEUE_ARGS[@]}"
 echo "Progress: ${STUDY_DIR}/pipeline.json"
 echo "Queue log: ${STUDY_DIR}/queue.log"
 echo "Results: ${STUDY_DIR}/REPORT.md"

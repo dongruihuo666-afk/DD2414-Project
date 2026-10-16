@@ -2203,3 +2203,38 @@ chat transcripts, secrets, or unreviewed generated data.
   extend epoch-matched training before claiming convergence or causal root causes.
 
 <!-- multisweep-runtime:end -->
+
+### 2026-10-16 — Depth-first queue reprioritization
+
+- Scope/rationale: the owner asked to pause the incomplete ten-sweep screen and
+  prioritize depth evidence for the next meeting, before replacing the
+  low-resolution/random-camera protocol with the formal high-resolution,
+  ImageNet-pretrained ResNet-101 experiment. The ten-sweep worker stopped
+  cooperatively at update 863 / 3,452 samples (12.27% of one epoch) and wrote a
+  resumable 483,343,930-byte `latest.pt`; this was not a crash or deletion.
+- Changed files: `scripts/run_multisweep_followup.py` accepts repeatable
+  `--configuration` selections and `--skip-official` while preserving its
+  original default plan; `scripts/start_multisweep_followup.sh` exposes those
+  options through `CONFIGURATIONS`, `SKIP_OFFICIAL`, and `INCLUDE_LEGACY`;
+  `scripts/test_multisweep_teacher.py` covers a depth-only two-configuration
+  plan. No model architecture, loss, checkpoint format, or official Simple-BEV
+  path changed.
+- Reproduce the depth-first plan: `STUDY_DIR=$PWD/fullsize_baseline/runs/
+  depth_priority_20261016 RUN_SERVICE=dd2414-depth-priority
+  CONFIGURATIONS=5-radar,5-radar-dav2 SKIP_OFFICIAL=1 INCLUDE_LEGACY=0 bash
+  scripts/start_multisweep_followup.sh`. This schedules, for each depth
+  treatment, full-data pretraining followed by frozen 1x1 probing, official-head
+  finetuning, same-head unfrozen probing, and the GT-location motion readout.
+- Tests: `PYTHONPATH=scripts .../envs/bev/bin/python -m unittest
+  scripts.test_multisweep_teacher` passes 15 tests; the selected plan contains
+  exactly ten depth stages and no redundant official-checkpoint evaluation.
+- Limitations: these priority runs intentionally retain the current 112x192,
+  randomly initialized trainable ResNet-101 and one-epoch screen so they remain
+  comparable to the completed no-depth five-sweep control. Sparse radar depth
+  is not dense ground truth, and Depth Anything V2 contributes only relative
+  inverse-depth shape. Results are meeting diagnostics, not the final fair
+  Simple-BEV comparison.
+- Next: after collecting the no-depth/radar-depth/radar-plus-DAV2 table and
+  masks, implement a separate opt-in 448x800 protocol initialized from
+  `ResNet101_Weights.DEFAULT`, rerun the double-DINO pretraining, and compare
+  matched end-to-end and frozen-probe results with official Simple-BEV metrics.
