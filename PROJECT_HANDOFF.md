@@ -2192,7 +2192,7 @@ chat transcripts, secrets, or unreviewed generated data.
 
 ### Multi-sweep double-distillation runtime
 
-- Queue: `running`; last stage: `double_dino_5sweep_depth_radar_frozen-probe_1epochs`.
+- Queue: `running`; last stage: `double_dino_5sweep_depth_radar_finetune_1epochs`.
 - Changed runtime files: the two compact `artifacts/multisweep_teacher_*` reports and this block.
 - Reproduce/continue: `bash scripts/start_multisweep_followup.sh` on the baseline branch.
 - Evidence: a stage is complete only after a zero exit code and its complete summary;
