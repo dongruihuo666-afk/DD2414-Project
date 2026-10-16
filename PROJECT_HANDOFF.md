@@ -2238,3 +2238,48 @@ chat transcripts, secrets, or unreviewed generated data.
   masks, implement a separate opt-in 448x800 protocol initialized from
   `ResNet101_Weights.DEFAULT`, rerun the double-DINO pretraining, and compare
   matched end-to-end and frozen-probe results with official Simple-BEV metrics.
+
+### 2026-10-16 — Meeting figures from the completed five-sweep experiments
+
+- Changed files: `scripts/render_multisweep_meeting.py`, a narrow `.gitignore`
+  allowlist for `artifacts/meeting_20261016/`, this handoff, and the generated
+  meeting artifacts in that directory. The CPU-only renderer reads existing
+  summaries, per-frame records, saved mask panels and training metrics. It
+  neither loads model checkpoints nor occupies the training GPU.
+- Deliverable: twelve English 16:9 PNG slides, `meeting_results.pdf`, a contact
+  sheet, English `SPEAKER_NOTES.md`, raw-fraction `metrics.csv`, and
+  `evidence.json` with timestamped source-file SHA-256 fingerprints. Four fixed
+  validation scenes directly compare GT, probability, prediction and error
+  masks for the frozen probe and end-to-end model. Additional slides explain
+  architecture, global IoU, precision/recall and missed vehicles, distributions
+  across 150 scenes, independent GT-velocity readout, pretraining trends,
+  preliminary depth trends, and the formal high-resolution experiment.
+- Reproduce: `MPLCONFIGDIR=$PWD/.cache/matplotlib
+  $HOME/miniconda3/envs/bev/bin/python scripts/render_multisweep_meeting.py`.
+  The output is a static snapshot. Regenerate after depth stages complete;
+  completed depth probe/finetuning summaries populate the depth comparison
+  table automatically, while incomplete results remain `Pending`.
+- Actual evidence checks: generation verifies all 6,019 frames for final
+  segmentation metrics; recomputes IoU/precision/recall/F1 from confusion
+  counts; checks unique, identical frame-token order and per-frame count sums;
+  verifies shared manifest hashes and all 150 paired validation scenes. It
+  successfully renders 12 slides. PDF metadata confirms twelve 16:9 pages;
+  the contact sheet and a full-size mask slide were visually inspected.
+- Key findings: frozen/same-head-unfrozen/end-to-end Vehicle IoU is
+  `10.448% / 25.182% / 30.020%`. The end-to-end model misses `60.145%` of valid
+  GT vehicle cells. Same-head supervised adaptation improves scene IoU in
+  all 150 validation scenes. Velocity EPE with matched/empty/wrong radar is
+  `1.323 / 2.323 / 2.044 m/s`; the benefit is concentrated in moving vehicles.
+- Correction: current saved official 448x800 summaries give `47.247%` camera
+  and `55.495%` camera+radar global Vehicle IoU, not the `47.56% / 55.81%`
+  previously mentioned in conversation. Figures use the saved summaries.
+- Limitations: one seed, random ResNet initialization, 112x192 student images,
+  one pretraining and one downstream epoch; low-resolution official-checkpoint
+  inference is not matched retraining. Velocity uses GT vehicle positions.
+  Depth curves are explicitly marked as a training snapshot at radar anchors;
+  independent dense depth GT and final depth-treatment segmentation results
+  are not yet available. None of these figures establishes a DINO benefit
+  over a same-architecture no-pretraining control.
+- Next: regenerate for the group meeting after depth validation is available;
+  retain the selected scenes and full-validation metrics, then execute the
+  separately planned ImageNet-initialized 448x800 matched experiment.

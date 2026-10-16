@@ -5,6 +5,13 @@ __pycache__
 .cache/
 /external/BEVCar/
 artifacts/*
+!artifacts/meeting_20261016/
+artifacts/meeting_20261016/*
+!artifacts/meeting_20261016/*.png
+!artifacts/meeting_20261016/meeting_results.pdf
+!artifacts/meeting_20261016/evidence.json
+!artifacts/meeting_20261016/metrics.csv
+!artifacts/meeting_20261016/SPEAKER_NOTES.md
 !artifacts/meeting_demo_comparison.png
 !artifacts/fullsize_experiment_overview.png
 !artifacts/fullsize_linear_probe_summary.png
