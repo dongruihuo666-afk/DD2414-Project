@@ -9,7 +9,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | Configuration | Status | Vehicle IoU (%) | Precision (%) | Recall (%) | F1 (%) |
 | --- | --- | ---: | ---: | ---: | ---: |
 | finish_existing_historical_single_sweep_finetuning | complete | 27.588 | 54.964 | 35.646 | 43.246 |
-| recover_legacy_five_sweep_frozen_probe | queued | pending | pending | pending | pending |
+| recover_legacy_five_sweep_frozen_probe | complete | 5.117 | 5.214 | 73.320 | 9.736 |
 | official_camera_112x192 | queued | pending | pending | pending | pending |
 | official_camera_radar_5sweep_112x192 | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_none_pretrain_1epochs | queued | pending | pending | pending | pending |

@@ -50,6 +50,34 @@
         "pid": 2252559,
         "returncode": 0,
         "finished_unix_time": 1792129677.096589
+      },
+      "recover_legacy_five_sweep_frozen_probe": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_fullsize_linear_probe.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
+          "--output-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
+          "--epochs",
+          "1",
+          "--batch-size",
+          "5",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792129683.0615032,
+        "pid": 2258342,
+        "returncode": 0,
+        "finished_unix_time": 1792131855.2414644
       }
     },
     "plan": [
@@ -860,41 +888,46 @@
       }
     ],
     "status": "running",
-    "current_stage": "finish_existing_historical_single_sweep_finetuning",
-    "updated_unix_time": 1792129667.0847042,
+    "current_stage": "recover_legacy_five_sweep_frozen_probe",
+    "updated_unix_time": 1792131845.2296937,
     "child_status": {
+      "experiment": "frozen_one_layer_vehicle_probe_v1",
+      "checkpoint": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
+      "checkpoint_sha256": "281d8c7cb2429f80cafb4e957e0a14bde70b0c5c066d66610a697bc41287e1db",
+      "backbone_epoch": 8,
+      "radar_velocity_mode": "full",
+      "nsweeps": 5,
+      "probe_epochs": 1,
+      "train_samples": 28130,
+      "val_samples": 6019,
       "state": "complete",
-      "updated_unix_time": 1792129665.8583736,
-      "epoch_progress": 3.0,
-      "epochs": 3,
-      "update": 16878,
-      "samples_seen": 84390,
-      "samples_per_second": 8.585873464219862,
-      "wall_seconds": 10530.83528088103,
-      "peak_allocated_gib": 17.61869525909424,
-      "eta_training_seconds": 0.0,
-      "latest": {
-        "loss": 1.668868899345398,
-        "gradient_norm": 111.67017364501953,
-        "segmentation": 0.33438992500305176,
-        "center": 0.07311655580997467,
-        "offset": 1.1154831647872925,
-        "uncertainty": 0.14587923884391785,
-        "seconds": 0.5843771998770535,
-        "learning_rates": {
-          "camera": 1.0000000000000002e-06,
-          "student": 1e-05
-        }
+      "updates": 5626,
+      "elapsed_seconds": 2137.9860234020744,
+      "final_validation": {
+        "mean_balanced_bce": 0.4741873959654054,
+        "samples": 6019,
+        "vehicle_iou": 0.05117061478878868,
+        "precision": 0.052141511842143315,
+        "recall": 0.7331974956845841,
+        "f1": 0.09735929461664104,
+        "tp": 2747739,
+        "fp": 49949985,
+        "fn": 999872,
+        "tn": 185772775
       },
       "gpu": {
-        "utilization_percent": 0.0,
-        "memory_used_mib": 19947.0,
+        "utilization_percent": 21.0,
+        "memory_used_mib": 1167.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 66.0,
-        "power_w": 116.13
+        "temperature_c": 64.0,
+        "power_w": 237.49
       }
     },
-    "idle_warning_seconds": 1.2126810550689697
+    "idle_warning_seconds": 0.15659570693969727,
+    "publication": {
+      "returncode": 0,
+      "message": "PUBLISHED 0940a5ef0284a7f2b244f7a7ae8596cc9bf7d120\n"
+    }
   },
   "results": [
     {
@@ -919,8 +952,19 @@
     },
     {
       "name": "recover_legacy_five_sweep_frozen_probe",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "mean_balanced_bce": 0.4741873959654054,
+        "samples": 6019,
+        "vehicle_iou": 0.05117061478878868,
+        "precision": 0.052141511842143315,
+        "recall": 0.7331974956845841,
+        "f1": 0.09735929461664104,
+        "tp": 2747739,
+        "fp": 49949985,
+        "fn": 999872,
+        "tn": 185772775
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch/summary.json"
     },
     {
