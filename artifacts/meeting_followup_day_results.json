@@ -26,10 +26,35 @@
         "pid": 2232125,
         "returncode": 0,
         "finished_unix_time": 1792115569.3737192
+      },
+      "official_camera_radar_5sweep": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rad25_18:55:34/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera_radar_5sweep",
+          "--batch-size",
+          "2",
+          "--num-workers",
+          "8",
+          "--use-radar"
+        ],
+        "started_unix_time": 1792115574.6640882,
+        "pid": 2235178,
+        "returncode": 0,
+        "finished_unix_time": 1792116175.2134943
       }
     },
-    "stage": "official_camera",
-    "updated_unix_time": 1792115569.3737266,
+    "stage": "official_camera_radar_5sweep",
+    "updated_unix_time": 1792116175.2135024,
     "paired_configuration": {
       "epochs": 3,
       "batch_size": 5,
@@ -41,8 +66,12 @@
       "state": "validating",
       "samples": 5800,
       "total": 6019,
-      "updated_unix_time": 1792115534.8646474,
-      "elapsed_seconds": 542.230939426925
+      "updated_unix_time": 1792116149.403999,
+      "elapsed_seconds": 550.9143081700895
+    },
+    "publication": {
+      "returncode": 0,
+      "message": "PUBLISHED ea64598f9cfeff2edc8896612cbe7422bd97c656\n"
     }
   },
   "results": [
@@ -65,6 +94,26 @@
         "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
       },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera/summary.json"
+    },
+    {
+      "name": "official_camera_radar_5sweep",
+      "status": "complete",
+      "metrics": {
+        "vehicle_iou": 0.5549537637942829,
+        "precision": 0.7125872013241623,
+        "recall": 0.7149930982698044,
+        "f1": 0.713788122471405,
+        "tp": 2679516,
+        "fp": 1080748,
+        "fn": 1068095,
+        "tn": 234642012,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.5529006273237207,
+        "predicted_positive_fraction": 0.015702418567681595,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera_radar_5sweep/summary.json"
     },
     {
       "name": "Historical frozen 1x1: velocity_full_epoch008",
