@@ -17,7 +17,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | double_dino_5sweep_depth_none_finetune_1epochs | complete | 30.020 | 54.886 | 39.855 | 46.178 |
 | double_dino_5sweep_depth_none_unfrozen-probe_1epochs | complete | 25.182 | 52.070 | 32.780 | 40.232 |
 | double_dino_5sweep_depth_none_object-motion_1epochs | complete | pending | pending | pending | pending |
-| double_dino_10sweep_depth_none_pretrain_1epochs | queued | pending | pending | pending | pending |
+| double_dino_10sweep_depth_none_pretrain_1epochs | partial | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_frozen-probe_1epochs | queued | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_finetune_1epochs | queued | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_unfrozen-probe_1epochs | queued | pending | pending | pending | pending |

@@ -315,6 +315,40 @@
         "pid": 2272850,
         "returncode": 0,
         "finished_unix_time": 1792151084.1562402
+      },
+      "double_dino_10sweep_depth_none_pretrain_1epochs": {
+        "status": "partial",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs",
+          "--mode",
+          "pretrain",
+          "--nsweeps",
+          "10",
+          "--depth-mode",
+          "none",
+          "--epochs",
+          "1"
+        ],
+        "started_unix_time": 1792151089.862957,
+        "pid": 2278501,
+        "returncode": 0,
+        "finished_unix_time": 1792151740.5465853
       }
     },
     "plan": [
@@ -1125,45 +1159,60 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_none_object-motion_1epochs",
-    "updated_unix_time": 1792151074.0853043,
+    "current_stage": "double_dino_10sweep_depth_none_pretrain_1epochs",
+    "updated_unix_time": 1792151730.5350432,
     "child_status": {
-      "state": "validating_motion",
-      "mode": "object-motion",
-      "nsweeps": 5,
+      "state": "partial",
+      "mode": "pretrain",
+      "nsweeps": 10,
       "depth_mode": "none",
-      "updated_unix_time": 1792151073.0798392,
-      "epoch_progress": 1.0,
+      "updated_unix_time": 1792151728.5067232,
+      "epoch_progress": 0.12271596160682545,
       "epochs": 1,
-      "update": 7033,
-      "samples_seen": 28130,
-      "samples_per_second": 15.38117425447759,
+      "update": 863,
+      "samples_seen": 3452,
+      "samples_per_second": 5.844997990178999,
       "latest": {
-        "loss": 1.5070488452911377,
-        "gradient_norm": 3.500325918197632,
+        "loss": 0.5904787182807922,
+        "gradient_norm": 24.713497161865234,
         "learning_rates": {
-          "readout": 0.0001
+          "camera": 0.00010836177474402732,
+          "student": 0.00010836177474402732
         },
-        "object_velocity_smooth_l1": 1.5070488452911377,
-        "training_objects": 14
+        "image": 0.5092548131942749,
+        "bev": 0.3512464761734009,
+        "radar_motion_auxiliary": 0.4152611494064331,
+        "bev_mask_cells": 67782,
+        "radar_points_per_sample": [
+          3057,
+          3521,
+          3026,
+          3241
+        ],
+        "occupied_voxels_per_sample": [
+          713,
+          800,
+          446,
+          1211
+        ],
+        "motion_auxiliary_covered_cells": 31
       },
-      "wall_seconds": 3137.9365410630126,
-      "peak_allocated_gib": 13.179093360900879,
-      "eta_training_seconds": 0.0,
+      "wall_seconds": 613.8127705547959,
+      "peak_allocated_gib": 14.390745162963867,
+      "eta_training_seconds": 4222.07159719558,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 92.0,
-        "memory_used_mib": 14939.0,
+        "utilization_percent": 4.0,
+        "memory_used_mib": 16025.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 74.0,
-        "power_w": 289.4
-      },
-      "validation_samples": 6019
+        "temperature_c": 67.0,
+        "power_w": 119.08
+      }
     },
-    "idle_warning_seconds": 0.9893810749053955,
+    "idle_warning_seconds": 2.012789249420166,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 04c7c8cafff38cc4ea9b0ab7c1cd11f0ea1f923b\n"
+      "message": "PUBLISHED 072d940647ce931109af860e6d968bcfb45fdad7\n"
     }
   },
   "results": [
@@ -1428,7 +1477,7 @@
     },
     {
       "name": "double_dino_10sweep_depth_none_pretrain_1epochs",
-      "status": "queued",
+      "status": "partial",
       "final_validation": {},
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/summary.json"
     },
