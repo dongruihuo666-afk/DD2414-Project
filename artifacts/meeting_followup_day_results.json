@@ -2,11 +2,70 @@
   "pipeline": {
     "started_unix_time": 1792114816.1581552,
     "deadline_unix_time": 1792201216.1581552,
-    "stages": {},
-    "stage": "throughput_pilot",
-    "updated_unix_time": 1792114816.1582155
+    "stages": {
+      "official_camera": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera",
+          "--batch-size",
+          "2",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792114968.8415852,
+        "pid": 2232125,
+        "returncode": 0,
+        "finished_unix_time": 1792115569.3737192
+      }
+    },
+    "stage": "official_camera",
+    "updated_unix_time": 1792115569.3737266,
+    "paired_configuration": {
+      "epochs": 3,
+      "batch_size": 5,
+      "accumulation": 1,
+      "num_workers": 8,
+      "measured_samples_per_second": 8.358357280268834
+    },
+    "child_status": {
+      "state": "validating",
+      "samples": 5800,
+      "total": 6019,
+      "updated_unix_time": 1792115534.8646474,
+      "elapsed_seconds": 542.230939426925
+    }
   },
   "results": [
+    {
+      "name": "official_camera",
+      "status": "complete",
+      "metrics": {
+        "vehicle_iou": 0.4724727123840339,
+        "precision": 0.6526082951546262,
+        "recall": 0.6312288014951392,
+        "f1": 0.641740534015151,
+        "tp": 2365600,
+        "fp": 1259239,
+        "fn": 1382011,
+        "tn": 234463521,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.46421547999889873,
+        "predicted_positive_fraction": 0.015136899754500317,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera/summary.json"
+    },
     {
       "name": "Historical frozen 1x1: velocity_full_epoch008",
       "status": "complete",

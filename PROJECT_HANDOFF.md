@@ -2047,7 +2047,7 @@ chat transcripts, secrets, or unreviewed generated data.
 
 ### 2026-10-16 — Unattended baseline follow-up runtime
 
-- Stage: `throughput_pilot`; queue state: `running`.
+- Stage: `official_camera`; queue state: `running`.
 - Generated files: `artifacts/meeting_followup_day_results.json` and
   `artifacts/meeting_followup_day_report.md`, plus this runtime handoff block.
 - Reproduce: `python scripts/run_baseline_followup_day.py --study-dir

@@ -6,6 +6,7 @@ Different resolution, heads, supervision, and initialization prevent attribution
 
 | Experiment | Status | Vehicle IoU (%) | Precision (%) | Recall (%) | F1 (%) |
 | --- | --- | ---: | ---: | ---: | ---: |
+| official_camera | complete | 47.247 | 65.261 | 63.123 | 64.174 |
 | Historical frozen 1x1: velocity_full_epoch008 | complete | 4.962 | 5.074 | 69.185 | 9.455 |
 | Historical frozen 1x1: velocity_zero_epoch008 | complete | 4.848 | 4.955 | 69.271 | 9.248 |
 
