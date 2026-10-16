@@ -2187,3 +2187,19 @@ chat transcripts, secrets, or unreviewed generated data.
   SSL/sparsity was the proven cause of low IoU or that short-budget training
   establishes a capability ceiling. Continue the persistent queue, review
   full-val masks and motion errors, then run longer matched epochs/seeds.
+
+<!-- multisweep-runtime:start -->
+
+### Multi-sweep double-distillation runtime
+
+- Queue: `running`; last stage: `finish_existing_historical_single_sweep_finetuning`.
+- Changed runtime files: the two compact `artifacts/multisweep_teacher_*` reports and this block.
+- Reproduce/continue: `bash scripts/start_multisweep_followup.sh` on the baseline branch.
+- Evidence: a stage is complete only after a zero exit code and its complete summary;
+  actual full-split metrics and missing/failed stages are listed in the JSON/Markdown.
+- Limitations: one seed, short epoch budget, legacy/new objective differences,
+  low image resolution, radar-derived depth anchors and oracle GT vehicle locations.
+- Next: review full-val masks, paired 5/10 sweeps, frozen/unfrozen probes and object velocity errors;
+  extend epoch-matched training before claiming convergence or causal root causes.
+
+<!-- multisweep-runtime:end -->
