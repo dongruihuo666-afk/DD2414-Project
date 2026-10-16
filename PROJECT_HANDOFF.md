@@ -2087,7 +2087,7 @@ chat transcripts, secrets, or unreviewed generated data.
 
 ### 2026-10-16 — Unattended baseline follow-up runtime
 
-- Stage: `finetune_1sweep_velocity_full_3epochs`; queue state: `running`.
+- Stage: `finished`; queue state: `finished_with_partial_or_failed_stages`.
 - Generated files: `artifacts/meeting_followup_day_results.json` and
   `artifacts/meeting_followup_day_report.md`, plus this runtime handoff block.
 - Reproduce: `python scripts/run_baseline_followup_day.py --study-dir

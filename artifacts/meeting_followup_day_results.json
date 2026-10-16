@@ -109,10 +109,14 @@
         "pid": 2242752,
         "returncode": 0,
         "finished_unix_time": 1792122081.1377969
+      },
+      "finetune_1sweep_velocity_zero_3epochs": {
+        "status": "deferred",
+        "reason": "deadline or stop"
       }
     },
-    "stage": "finetune_1sweep_velocity_full_3epochs",
-    "updated_unix_time": 1792122081.1377995,
+    "stage": "finished",
+    "updated_unix_time": 1792122086.8130417,
     "paired_configuration": {
       "epochs": 3,
       "batch_size": 5,
@@ -120,42 +124,13 @@
       "num_workers": 8,
       "measured_samples_per_second": 8.358357280268834
     },
-    "child_status": {
-      "state": "running",
-      "updated_unix_time": 1792122071.5657818,
-      "epoch_progress": 1.1464628510487025,
-      "epochs": 3,
-      "update": 6450,
-      "samples_seen": 32250,
-      "samples_per_second": 8.646906577860847,
-      "wall_seconds": 4057.258021506015,
-      "peak_allocated_gib": 17.64524507522583,
-      "eta_training_seconds": 6029.902084694303,
-      "latest": {
-        "loss": 3.425355911254883,
-        "gradient_norm": 143.11636352539062,
-        "segmentation": 0.8198933005332947,
-        "center": 0.06973382085561752,
-        "offset": 2.457505464553833,
-        "uncertainty": 0.07822313904762268,
-        "seconds": 0.5722717770840973,
-        "learning_rates": {
-          "camera": 7.839604249133945e-06,
-          "student": 7.839604249133945e-05
-        }
-      },
-      "gpu": {
-        "utilization_percent": 99.0,
-        "memory_used_mib": 20745.0,
-        "memory_total_mib": 24564.0,
-        "temperature_c": 76.0,
-        "power_w": 309.35
-      }
-    },
+    "child_status": {},
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 68271a08bfd9e9aae45507b306e3b100446fef22\n"
-    }
+      "message": "PUBLISHED caa9dff0191e6c3a10148890d034f9bea3e3ea06\n"
+    },
+    "status": "finished_with_partial_or_failed_stages",
+    "finished_unix_time": 1792122086.813039
   },
   "results": [
     {
