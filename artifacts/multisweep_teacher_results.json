@@ -1,142 +1,8 @@
 {
   "pipeline": {
-    "started_unix_time": 1792123170.384,
+    "started_unix_time": 1792151893.2083766,
     "stages": {
-      "finish_existing_historical_single_sweep_finetuning": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_baseline_downstream.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_seed125/checkpoints/epoch008.pt",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs",
-          "--mode",
-          "finetune",
-          "--epochs",
-          "3",
-          "--batch-size",
-          "5",
-          "--accumulation",
-          "1",
-          "--num-workers",
-          "8",
-          "--seed",
-          "125",
-          "--precision",
-          "bf16",
-          "--camera-lr",
-          "1e-05",
-          "--learning-rate",
-          "0.0001",
-          "--probe-lr",
-          "0.001",
-          "--weight-decay",
-          "1e-05",
-          "--train-samples",
-          "28130",
-          "--val-samples",
-          "6019",
-          "--resume"
-        ],
-        "started_unix_time": 1792123170.38487,
-        "pid": 2252559,
-        "returncode": 0,
-        "finished_unix_time": 1792129677.096589
-      },
-      "recover_legacy_five_sweep_frozen_probe": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_fullsize_linear_probe.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
-          "--output-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
-          "--epochs",
-          "1",
-          "--batch-size",
-          "5",
-          "--num-workers",
-          "8"
-        ],
-        "started_unix_time": 1792129683.0615032,
-        "pid": 2258342,
-        "returncode": 0,
-        "finished_unix_time": 1792131855.2414644
-      },
-      "official_camera_112x192": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/eval_pretrained_baseline.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192",
-          "--height",
-          "112",
-          "--width",
-          "192",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8"
-        ],
-        "started_unix_time": 1792131862.6446419,
-        "pid": 2259648,
-        "returncode": 0,
-        "finished_unix_time": 1792132102.8835142
-      },
-      "official_camera_radar_5sweep_112x192": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/eval_pretrained_baseline.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rad25_18:55:34/model-000025000.pth",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192",
-          "--height",
-          "112",
-          "--width",
-          "192",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--use-radar"
-        ],
-        "started_unix_time": 1792132109.0534546,
-        "pid": 2259856,
-        "returncode": 0,
-        "finished_unix_time": 1792132349.299775
-      },
-      "double_dino_5sweep_depth_none_pretrain_1epochs": {
+      "double_dino_5sweep_depth_radar_pretrain_1epochs": {
         "status": "complete",
         "attempts": 1,
         "command": [
@@ -155,671 +21,26 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs",
           "--mode",
           "pretrain",
           "--nsweeps",
           "5",
           "--depth-mode",
-          "none",
+          "radar",
           "--epochs",
           "1"
         ],
-        "started_unix_time": 1792132354.610011,
-        "pid": 2260050,
+        "started_unix_time": 1792151893.2094262,
+        "pid": 2279857,
         "returncode": 0,
-        "finished_unix_time": 1792137040.1045225
-      },
-      "double_dino_5sweep_depth_none_frozen-probe_1epochs": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs",
-          "--mode",
-          "frozen-probe",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "started_unix_time": 1792137046.1776474,
-        "pid": 2262835,
-        "returncode": 0,
-        "finished_unix_time": 1792139268.4775734
-      },
-      "double_dino_5sweep_depth_none_finetune_1epochs": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_finetune_1epochs",
-          "--mode",
-          "finetune",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt",
-          "--learning-rate",
-          "1e-4"
-        ],
-        "started_unix_time": 1792139278.7233517,
-        "pid": 2264303,
-        "returncode": 0,
-        "finished_unix_time": 1792143693.8321707
-      },
-      "double_dino_5sweep_depth_none_unfrozen-probe_1epochs": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-          "--mode",
-          "unfrozen-probe",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "started_unix_time": 1792143699.8599818,
-        "pid": 2267713,
-        "returncode": 0,
-        "finished_unix_time": 1792147904.9148343
-      },
-      "double_dino_5sweep_depth_none_object-motion_1epochs": {
-        "status": "complete",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs",
-          "--mode",
-          "object-motion",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "started_unix_time": 1792147910.7737515,
-        "pid": 2272850,
-        "returncode": 0,
-        "finished_unix_time": 1792151084.1562402
-      },
-      "double_dino_10sweep_depth_none_pretrain_1epochs": {
-        "status": "partial",
-        "attempts": 1,
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs",
-          "--mode",
-          "pretrain",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1"
-        ],
-        "started_unix_time": 1792151089.862957,
-        "pid": 2278501,
-        "returncode": 0,
-        "finished_unix_time": 1792151740.5465853
+        "finished_unix_time": 1792156448.0771673
       }
     },
     "plan": [
       {
-        "name": "finish_existing_historical_single_sweep_finetuning",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_baseline_downstream.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_seed125/checkpoints/epoch008.pt",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs",
-          "--mode",
-          "finetune",
-          "--epochs",
-          "3",
-          "--batch-size",
-          "5",
-          "--accumulation",
-          "1",
-          "--num-workers",
-          "8",
-          "--seed",
-          "125",
-          "--precision",
-          "bf16",
-          "--camera-lr",
-          "1e-05",
-          "--learning-rate",
-          "0.0001",
-          "--probe-lr",
-          "0.001",
-          "--weight-decay",
-          "1e-05",
-          "--train-samples",
-          "28130",
-          "--val-samples",
-          "6019"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs/summary.json"
-      },
-      {
-        "name": "recover_legacy_five_sweep_frozen_probe",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_fullsize_linear_probe.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
-          "--output-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
-          "--epochs",
-          "1",
-          "--batch-size",
-          "5",
-          "--num-workers",
-          "8"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch/summary.json"
-      },
-      {
-        "name": "official_camera_112x192",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/eval_pretrained_baseline.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192",
-          "--height",
-          "112",
-          "--width",
-          "192",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192/summary.json"
-      },
-      {
-        "name": "official_camera_radar_5sweep_112x192",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/eval_pretrained_baseline.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--checkpoint",
-          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rad25_18:55:34/model-000025000.pth",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192",
-          "--height",
-          "112",
-          "--width",
-          "192",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--use-radar"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192/summary.json"
-      },
-      {
-        "name": "double_dino_5sweep_depth_none_pretrain_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs",
-          "--mode",
-          "pretrain",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_5sweep_depth_none_frozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs",
-          "--mode",
-          "frozen-probe",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_5sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_5sweep_depth_none_finetune_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_finetune_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_finetune_1epochs",
-          "--mode",
-          "finetune",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt",
-          "--learning-rate",
-          "1e-4"
-        ],
-        "requires": "double_dino_5sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_finetune_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-          "--mode",
-          "unfrozen-probe",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_5sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_5sweep_depth_none_object-motion_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs",
-          "--mode",
-          "object-motion",
-          "--nsweeps",
-          "5",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_5sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_10sweep_depth_none_pretrain_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs",
-          "--mode",
-          "pretrain",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1"
-        ],
-        "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_10sweep_depth_none_frozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_frozen-probe_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_frozen-probe_1epochs",
-          "--mode",
-          "frozen-probe",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_10sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_frozen-probe_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_10sweep_depth_none_finetune_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_finetune_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_finetune_1epochs",
-          "--mode",
-          "finetune",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt",
-          "--learning-rate",
-          "1e-4"
-        ],
-        "requires": "double_dino_10sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_finetune_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_10sweep_depth_none_unfrozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_unfrozen-probe_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_unfrozen-probe_1epochs",
-          "--mode",
-          "unfrozen-probe",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_10sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_unfrozen-probe_1epochs/summary.json"
-      },
-      {
-        "name": "double_dino_10sweep_depth_none_object-motion_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_object-motion_1epochs",
-        "command": [
-          "/home/students2026/miniconda3/envs/bev/bin/python",
-          "scripts/train_multisweep_teacher.py",
-          "--data-root",
-          "/home/students2026/datasets/nuscenes",
-          "--bevcar-source",
-          "/home/students2026/dd2414/external/BEVCar",
-          "--manifest",
-          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
-          "--batch-size",
-          "4",
-          "--num-workers",
-          "8",
-          "--precision",
-          "bf16",
-          "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_object-motion_1epochs",
-          "--mode",
-          "object-motion",
-          "--nsweeps",
-          "10",
-          "--depth-mode",
-          "none",
-          "--epochs",
-          "1",
-          "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
-        ],
-        "requires": "double_dino_10sweep_depth_none_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_object-motion_1epochs/summary.json"
-      },
-      {
         "name": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -836,7 +57,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs",
           "--mode",
           "pretrain",
           "--nsweeps",
@@ -847,11 +68,11 @@
           "1"
         ],
         "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar_frozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -868,7 +89,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs",
           "--mode",
           "frozen-probe",
           "--nsweeps",
@@ -878,14 +99,14 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar_finetune_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_finetune_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_finetune_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -902,7 +123,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_finetune_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_finetune_1epochs",
           "--mode",
           "finetune",
           "--nsweeps",
@@ -912,16 +133,16 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt",
           "--learning-rate",
           "1e-4"
         ],
         "requires": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_finetune_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_finetune_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -938,7 +159,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
           "--mode",
           "unfrozen-probe",
           "--nsweeps",
@@ -948,14 +169,14 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar_object-motion_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -972,7 +193,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs",
           "--mode",
           "object-motion",
           "--nsweeps",
@@ -982,14 +203,14 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -1006,7 +227,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
           "--mode",
           "pretrain",
           "--nsweeps",
@@ -1017,11 +238,11 @@
           "1"
         ],
         "requires": null,
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -1038,7 +259,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
           "--mode",
           "frozen-probe",
           "--nsweeps",
@@ -1048,14 +269,14 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -1072,7 +293,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
           "--mode",
           "finetune",
           "--nsweeps",
@@ -1082,16 +303,16 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt",
           "--learning-rate",
           "1e-4"
         ],
         "requires": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -1108,7 +329,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
           "--mode",
           "unfrozen-probe",
           "--nsweeps",
@@ -1118,14 +339,14 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs/summary.json"
       },
       {
         "name": "double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
-        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
+        "directory": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
           "scripts/train_multisweep_teacher.py",
@@ -1142,7 +363,7 @@
           "--precision",
           "bf16",
           "--run-dir",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
           "--mode",
           "object-motion",
           "--nsweeps",
@@ -1152,418 +373,141 @@
           "--epochs",
           "1",
           "--checkpoint",
-          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
         ],
         "requires": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
+        "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
       }
     ],
-    "status": "partial",
-    "current_stage": "double_dino_10sweep_depth_none_pretrain_1epochs",
-    "updated_unix_time": 1792151746.6185021,
+    "status": "running",
+    "current_stage": "double_dino_5sweep_depth_radar_pretrain_1epochs",
+    "updated_unix_time": 1792156438.0353112,
     "child_status": {
-      "state": "partial",
+      "state": "validating_pretrain",
       "mode": "pretrain",
-      "nsweeps": 10,
-      "depth_mode": "none",
-      "updated_unix_time": 1792151728.5067232,
-      "epoch_progress": 0.12271596160682545,
+      "nsweeps": 5,
+      "depth_mode": "radar",
+      "updated_unix_time": 1792156431.905786,
+      "epoch_progress": 1.0,
       "epochs": 1,
-      "update": 863,
-      "samples_seen": 3452,
-      "samples_per_second": 5.844997990178999,
+      "update": 7033,
+      "samples_seen": 28130,
+      "samples_per_second": 7.235670082577559,
       "latest": {
-        "loss": 0.5904787182807922,
-        "gradient_norm": 24.713497161865234,
+        "loss": 0.3939635455608368,
+        "gradient_norm": 6.386415958404541,
         "learning_rates": {
-          "camera": 0.00010836177474402732,
-          "student": 0.00010836177474402732
+          "camera": 2e-05,
+          "student": 2e-05
         },
-        "image": 0.5092548131942749,
-        "bev": 0.3512464761734009,
-        "radar_motion_auxiliary": 0.4152611494064331,
-        "bev_mask_cells": 67782,
+        "image": 0.4293476641178131,
+        "bev": 0.2618759870529175,
+        "radar_motion_auxiliary": 0.1798020452260971,
+        "radar_depth": 0.0434609055519104,
+        "bev_mask_cells": 37036,
         "radar_points_per_sample": [
-          3057,
-          3521,
-          3026,
-          3241
+          2320,
+          2041
         ],
         "occupied_voxels_per_sample": [
-          713,
-          800,
-          446,
-          1211
+          633,
+          591
         ],
-        "motion_auxiliary_covered_cells": 31
+        "motion_auxiliary_covered_cells": 58,
+        "depth_anchors": 1774,
+        "depth_mae_m": 12.894801139831543,
+        "depth_rmse_m": 17.493675231933594,
+        "depth_abs_rel": 0.23859162628650665
       },
-      "wall_seconds": 613.8127705547959,
-      "peak_allocated_gib": 14.390745162963867,
-      "eta_training_seconds": 4222.07159719558,
+      "wall_seconds": 4514.1711851109285,
+      "peak_allocated_gib": 18.18388080596924,
+      "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 4.0,
-        "memory_used_mib": 16025.0,
+        "utilization_percent": 51.0,
+        "memory_used_mib": 19793.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 67.0,
-        "power_w": 119.08
-      }
+        "temperature_c": 68.0,
+        "power_w": 215.74
+      },
+      "validation_samples": 6019
     },
-    "idle_warning_seconds": 2.012789249420166,
-    "publication": {
-      "returncode": 0,
-      "message": "PUBLISHED 1ccfdee5e5062ff0a50d7f7d9280cfdd00edc7c9\n"
-    }
+    "idle_warning_seconds": 6.1166746616363525
   },
   "results": [
     {
-      "name": "finish_existing_historical_single_sweep_finetuning",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.2758820941850451,
-        "precision": 0.5496433342782976,
-        "recall": 0.3564585545298058,
-        "f1": 0.4324570357126324,
-        "tp": 1335868,
-        "fp": 1094559,
-        "fn": 2411743,
-        "tn": 234628201,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.2738077420354092,
-        "predicted_positive_fraction": 0.01014917624193266,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs/summary.json"
-    },
-    {
-      "name": "recover_legacy_five_sweep_frozen_probe",
-      "status": "complete",
-      "final_validation": {
-        "mean_balanced_bce": 0.4741873959654054,
-        "samples": 6019,
-        "vehicle_iou": 0.05117061478878868,
-        "precision": 0.052141511842143315,
-        "recall": 0.7331974956845841,
-        "f1": 0.09735929461664104,
-        "tp": 2747739,
-        "fp": 49949985,
-        "fn": 999872,
-        "tn": 185772775
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch/summary.json"
-    },
-    {
-      "name": "official_camera_112x192",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.12444639342941648,
-        "precision": 0.5508476375036349,
-        "recall": 0.13850023388233196,
-        "f1": 0.22134695643403868,
-        "tp": 519045,
-        "fp": 423221,
-        "fn": 3228566,
-        "tn": 235299539,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.13094360259322474,
-        "predicted_positive_fraction": 0.003934791582212064,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192/summary.json"
-    },
-    {
-      "name": "official_camera_radar_5sweep_112x192",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.22861643453087774,
-        "precision": 0.7122456648140295,
-        "recall": 0.2518809983213306,
-        "f1": 0.3721526557931325,
-        "tp": 943952,
-        "fp": 381366,
-        "fn": 2803659,
-        "tn": 235341394,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.23966341316114897,
-        "predicted_positive_fraction": 0.005534371515213463,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_none_pretrain_1epochs",
+      "name": "double_dino_5sweep_depth_radar_pretrain_1epochs",
       "status": "complete",
       "final_validation": {
         "samples": 6019,
         "losses": {
-          "loss": 0.4489620974797073,
-          "image": 0.4241214593020482,
-          "bev": 0.27636705172341175,
-          "radar_motion_auxiliary": 0.28608831842118154
+          "loss": 0.45226471998759293,
+          "image": 0.43131275270285846,
+          "bev": 0.27844933451242,
+          "radar_motion_auxiliary": 0.2692986706831582,
+          "radar_depth": 0.04296681042844165
         },
-        "depth_anchors": 0,
-        "depth_mae_m": null,
-        "depth_rmse_m": null,
-        "depth_abs_rel": null,
+        "depth_anchors": 4804252,
+        "depth_mae_m": 11.130043371519816,
+        "depth_rmse_m": 15.415260793991154,
+        "depth_abs_rel": 0.2372074725940623,
         "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
       },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_none_frozen-probe_1epochs",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.10448026069850393,
-        "precision": 0.39947454420364636,
-        "recall": 0.12394802982486709,
-        "f1": 0.18919353186525528,
-        "tp": 464509,
-        "fp": 698291,
-        "fn": 3283102,
-        "tn": 235024469,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.10449292400531315,
-        "predicted_positive_fraction": 0.004855715532340325,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_none_finetune_1epochs",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.3002024809849974,
-        "precision": 0.5488598492685198,
-        "recall": 0.3985450997982448,
-        "f1": 0.46177804668942385,
-        "tp": 1493592,
-        "fp": 1227671,
-        "fn": 2254019,
-        "tn": 234495089,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.2952266372768124,
-        "predicted_positive_fraction": 0.011363673044963045,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_finetune_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-      "status": "complete",
-      "final_validation": {
-        "vehicle_iou": 0.251816064509596,
-        "precision": 0.5206984744343132,
-        "recall": 0.32779842945279003,
-        "f1": 0.4023211902273293,
-        "tp": 1228461,
-        "fp": 1130795,
-        "fn": 2519150,
-        "tn": 234591965,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.24696597214225371,
-        "predicted_positive_fraction": 0.00985197454761533,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_none_object-motion_1epochs",
-      "status": "complete",
-      "final_validation": {
-        "samples": 6019,
-        "metrics": {
-          "matched": {
-            "all": {
-              "objects": 63002,
-              "velocity_epe_mps": 1.3229922744758034,
-              "velocity_rmse_mps": 2.4932025567210356,
-              "speed_mae_mps": 1.1574223621584663
-            },
-            "moving": {
-              "objects": 16384,
-              "velocity_epe_mps": 3.5424268135926127,
-              "velocity_rmse_mps": 4.7266928629967815,
-              "speed_mae_mps": 3.1175737461508675
-            },
-            "stationary": {
-              "objects": 46618,
-              "velocity_epe_mps": 0.5429670591321634,
-              "velocity_rmse_mps": 0.7407379606304554,
-              "speed_mae_mps": 0.4685227895613691
-            }
-          },
-          "zero_velocity": {
-            "all": {
-              "objects": 63002,
-              "velocity_epe_mps": 2.0258918166829165,
-              "velocity_rmse_mps": 3.752999218381909,
-              "speed_mae_mps": 1.8664822649038197
-            },
-            "moving": {
-              "objects": 16384,
-              "velocity_epe_mps": 6.430499314448753,
-              "velocity_rmse_mps": 7.290256567662396,
-              "speed_mae_mps": 6.044659324961515
-            },
-            "stationary": {
-              "objects": 46618,
-              "velocity_epe_mps": 0.47788269481163403,
-              "velocity_rmse_mps": 0.5968934292701075,
-              "speed_mae_mps": 0.39805262502254724
-            }
-          },
-          "empty": {
-            "all": {
-              "objects": 63002,
-              "velocity_epe_mps": 2.3234231857950003,
-              "velocity_rmse_mps": 4.101855755148232,
-              "speed_mae_mps": 1.9396276350973194
-            },
-            "moving": {
-              "objects": 16384,
-              "velocity_epe_mps": 7.085499236600299,
-              "velocity_rmse_mps": 7.922666529110663,
-              "speed_mae_mps": 5.851460280418124
-            },
-            "stationary": {
-              "objects": 46618,
-              "velocity_epe_mps": 0.6497809442489451,
-              "velocity_rmse_mps": 0.8235907787669672,
-              "speed_mae_mps": 0.5648053333911985
-            }
-          },
-          "wrong_scene": {
-            "all": {
-              "objects": 63002,
-              "velocity_epe_mps": 2.044355928842455,
-              "velocity_rmse_mps": 3.8114501541863097,
-              "speed_mae_mps": 1.8829509117501129
-            },
-            "moving": {
-              "objects": 16384,
-              "velocity_epe_mps": 6.465429330373752,
-              "velocity_rmse_mps": 7.360705973902141,
-              "speed_mae_mps": 6.048855678786808
-            },
-            "stationary": {
-              "objects": 46618,
-              "velocity_epe_mps": 0.49055982839437123,
-              "velocity_rmse_mps": 0.7688128696260066,
-              "speed_mae_mps": 0.4188343966029789
-            }
-          }
-        },
-        "baselines": {
-          "zero_prediction": {
-            "objects": 63002,
-            "velocity_epe_mps": 1.8083585922993164
-          },
-          "train_mean": {
-            "objects": 63002,
-            "velocity_epe_mps": 1.8354531053397605
-          }
-        },
-        "protocol": "Supervised linear readout of frozen BEV features at GT box locations; not detection/mAVE/NDS",
-        "targets": "nuScenes box_velocity from temporal GT annotations; camera-XZ m/s; finite visible vehicles in ROI",
-        "wrong_scene_map": "full validation cross-scene bijection; fixed camera, calibration and GT targets"
-      },
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_10sweep_depth_none_pretrain_1epochs",
-      "status": "partial",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_pretrain_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_10sweep_depth_none_frozen-probe_1epochs",
-      "status": "queued",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_frozen-probe_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_10sweep_depth_none_finetune_1epochs",
-      "status": "queued",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_finetune_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_10sweep_depth_none_unfrozen-probe_1epochs",
-      "status": "queued",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_unfrozen-probe_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_10sweep_depth_none_object-motion_1epochs",
-      "status": "queued",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_10sweep_depth_none_object-motion_1epochs/summary.json"
-    },
-    {
-      "name": "double_dino_5sweep_depth_radar_pretrain_1epochs",
-      "status": "queued",
-      "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_pretrain_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar_frozen-probe_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_frozen-probe_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar_finetune_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_finetune_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_finetune_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar_unfrozen-probe_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_unfrozen-probe_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar_object-motion_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar_object-motion_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_finetune_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs/summary.json"
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
       "status": "queued",
       "final_validation": {},
-      "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
     }
   ]
 }
