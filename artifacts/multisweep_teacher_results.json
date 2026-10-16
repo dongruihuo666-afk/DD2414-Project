@@ -1158,9 +1158,9 @@
         "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
       }
     ],
-    "status": "running",
+    "status": "partial",
     "current_stage": "double_dino_10sweep_depth_none_pretrain_1epochs",
-    "updated_unix_time": 1792151730.5350432,
+    "updated_unix_time": 1792151746.6185021,
     "child_status": {
       "state": "partial",
       "mode": "pretrain",
@@ -1212,7 +1212,7 @@
     "idle_warning_seconds": 2.012789249420166,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 072d940647ce931109af860e6d968bcfb45fdad7\n"
+      "message": "PUBLISHED 1ccfdee5e5062ff0a50d7f7d9280cfdd00edc7c9\n"
     }
   },
   "results": [
