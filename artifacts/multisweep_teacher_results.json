@@ -3,7 +3,7 @@
     "started_unix_time": 1792123170.384,
     "stages": {
       "finish_existing_historical_single_sweep_finetuning": {
-        "status": "running",
+        "status": "complete",
         "attempts": 1,
         "command": [
           "/home/students2026/miniconda3/envs/bev/bin/python",
@@ -47,7 +47,9 @@
           "--resume"
         ],
         "started_unix_time": 1792123170.38487,
-        "pid": 2252559
+        "pid": 2252559,
+        "returncode": 0,
+        "finished_unix_time": 1792129677.096589
       }
     },
     "plan": [
@@ -859,57 +861,57 @@
     ],
     "status": "running",
     "current_stage": "finish_existing_historical_single_sweep_finetuning",
-    "updated_unix_time": 1792123210.4292262,
+    "updated_unix_time": 1792129667.0847042,
     "child_status": {
-      "state": "running",
-      "updated_unix_time": 1792123194.811214,
-      "epoch_progress": 1.1466405972271596,
+      "state": "complete",
+      "updated_unix_time": 1792129665.8583736,
+      "epoch_progress": 3.0,
       "epochs": 3,
-      "update": 6451,
-      "samples_seen": 32255,
-      "samples_per_second": 8.646907188862437,
-      "wall_seconds": 4059.7881252309307,
-      "peak_allocated_gib": 0.4929680824279785,
-      "eta_training_seconds": 6029.323417181113,
+      "update": 16878,
+      "samples_seen": 84390,
+      "samples_per_second": 8.585873464219862,
+      "wall_seconds": 10530.83528088103,
+      "peak_allocated_gib": 17.61869525909424,
+      "eta_training_seconds": 0.0,
       "latest": {
-        "loss": 2.4928174018859863,
-        "gradient_norm": 104.89241790771484,
-        "segmentation": 0.7013881802558899,
-        "center": 0.05854032188653946,
-        "offset": 1.654660701751709,
-        "uncertainty": 0.07822826504707336,
-        "seconds": 0.5779778901487589,
+        "loss": 1.668868899345398,
+        "gradient_norm": 111.67017364501953,
+        "segmentation": 0.33438992500305176,
+        "center": 0.07311655580997467,
+        "offset": 1.1154831647872925,
+        "uncertainty": 0.14587923884391785,
+        "seconds": 0.5843771998770535,
         "learning_rates": {
-          "camera": 7.838823627713174e-06,
-          "student": 7.838823627713174e-05
+          "camera": 1.0000000000000002e-06,
+          "student": 1e-05
         }
       },
       "gpu": {
-        "utilization_percent": 19.0,
-        "memory_used_mib": 1339.0,
+        "utilization_percent": 0.0,
+        "memory_used_mib": 19947.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 47.0,
-        "power_w": 54.04
+        "temperature_c": 66.0,
+        "power_w": 116.13
       }
     },
-    "idle_warning_seconds": 15.606605768203735
+    "idle_warning_seconds": 1.2126810550689697
   },
   "results": [
     {
       "name": "finish_existing_historical_single_sweep_finetuning",
-      "status": "partial",
+      "status": "complete",
       "final_validation": {
-        "vehicle_iou": 0.23108981144554852,
-        "precision": 0.5368224738751177,
-        "recall": 0.2886412170313301,
-        "f1": 0.37542315645387775,
-        "tp": 1081715,
-        "fp": 933318,
-        "fn": 2665896,
-        "tn": 234789442,
+        "vehicle_iou": 0.2758820941850451,
+        "precision": 0.5496433342782976,
+        "recall": 0.3564585545298058,
+        "f1": 0.4324570357126324,
+        "tp": 1335868,
+        "fp": 1094559,
+        "fn": 2411743,
+        "tn": 234628201,
         "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.22399228195274773,
-        "predicted_positive_fraction": 0.008414539934879877,
+        "mean_per_frame_iou_auxiliary": 0.2738077420354092,
+        "predicted_positive_fraction": 0.01014917624193266,
         "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
         "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
       },
