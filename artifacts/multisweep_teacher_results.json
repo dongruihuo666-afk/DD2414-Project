@@ -106,6 +106,35 @@
         "pid": 2259648,
         "returncode": 0,
         "finished_unix_time": 1792132102.8835142
+      },
+      "official_camera_radar_5sweep_112x192": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rad25_18:55:34/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192",
+          "--height",
+          "112",
+          "--width",
+          "192",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--use-radar"
+        ],
+        "started_unix_time": 1792132109.0534546,
+        "pid": 2259856,
+        "returncode": 0,
+        "finished_unix_time": 1792132349.299775
       }
     },
     "plan": [
@@ -916,51 +945,19 @@
       }
     ],
     "status": "running",
-    "current_stage": "official_camera_112x192",
-    "updated_unix_time": 1792132092.8688743,
+    "current_stage": "official_camera_radar_5sweep_112x192",
+    "updated_unix_time": 1792132339.2891748,
     "child_status": {
-      "state": "complete",
-      "status": "complete",
-      "config": {
-        "experiment": "official_pretrained_reference",
-        "checkpoint": "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
-        "checkpoint_sha256": "ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e",
-        "source_code_commit": "ea906d1d7c01d3b1baf8b31239203d7b9e89cd17",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc",
-        "use_radar": false,
-        "nsweeps": 1,
-        "image_resolution": [
-          112,
-          192
-        ],
-        "batch_size": 4,
-        "rotate_radar_velocity": false,
-        "precision": "float32",
-        "camera_reference": "CAM_FRONT",
-        "supervised_training_in_this_run": false
-      },
-      "final_validation": {
-        "vehicle_iou": 0.12444639342941648,
-        "precision": 0.5508476375036349,
-        "recall": 0.13850023388233196,
-        "f1": 0.22134695643403868,
-        "tp": 519045,
-        "fp": 423221,
-        "fn": 3228566,
-        "tn": 235299539,
-        "samples": 6019,
-        "mean_per_frame_iou_auxiliary": 0.13094360259322474,
-        "predicted_positive_fraction": 0.003934791582212064,
-        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
-        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
-      },
-      "elapsed_seconds": 198.18816094705835,
-      "peak_allocated_gib": 13.093381881713867
+      "state": "validating",
+      "samples": 5600,
+      "total": 6019,
+      "updated_unix_time": 1792132327.2698138,
+      "elapsed_seconds": 193.59479598980397
     },
-    "idle_warning_seconds": 3.2912611961364746,
+    "idle_warning_seconds": 12.019361019134521,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED ea906d1d7c01d3b1baf8b31239203d7b9e89cd17\n"
+      "message": "PUBLISHED 2471368097ca4feeec385c10a76735a35f873c86\n"
     }
   },
   "results": [
@@ -1023,8 +1020,22 @@
     },
     {
       "name": "official_camera_radar_5sweep_112x192",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "vehicle_iou": 0.22861643453087774,
+        "precision": 0.7122456648140295,
+        "recall": 0.2518809983213306,
+        "f1": 0.3721526557931325,
+        "tp": 943952,
+        "fp": 381366,
+        "fn": 2803659,
+        "tn": 235341394,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.23966341316114897,
+        "predicted_positive_fraction": 0.005534371515213463,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_radar_5sweep_112x192/summary.json"
     },
     {

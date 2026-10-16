@@ -11,7 +11,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | finish_existing_historical_single_sweep_finetuning | complete | 27.588 | 54.964 | 35.646 | 43.246 |
 | recover_legacy_five_sweep_frozen_probe | complete | 5.117 | 5.214 | 73.320 | 9.736 |
 | official_camera_112x192 | complete | 12.445 | 55.085 | 13.850 | 22.135 |
-| official_camera_radar_5sweep_112x192 | queued | pending | pending | pending | pending |
+| official_camera_radar_5sweep_112x192 | complete | 22.862 | 71.225 | 25.188 | 37.215 |
 | double_dino_5sweep_depth_none_pretrain_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_none_frozen-probe_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_none_finetune_1epochs | queued | pending | pending | pending | pending |
