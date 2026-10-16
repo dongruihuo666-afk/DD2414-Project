@@ -16,7 +16,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | double_dino_5sweep_depth_none_frozen-probe_1epochs | complete | 10.448 | 39.947 | 12.395 | 18.919 |
 | double_dino_5sweep_depth_none_finetune_1epochs | complete | 30.020 | 54.886 | 39.855 | 46.178 |
 | double_dino_5sweep_depth_none_unfrozen-probe_1epochs | complete | 25.182 | 52.070 | 32.780 | 40.232 |
-| double_dino_5sweep_depth_none_object-motion_1epochs | queued | pending | pending | pending | pending |
+| double_dino_5sweep_depth_none_object-motion_1epochs | complete | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_pretrain_1epochs | queued | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_frozen-probe_1epochs | queued | pending | pending | pending | pending |
 | double_dino_10sweep_depth_none_finetune_1epochs | queued | pending | pending | pending | pending |
@@ -32,6 +32,18 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | double_dino_5sweep_depth_radar-dav2_finetune_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_radar-dav2_object-motion_1epochs | queued | pending | pending | pending | pending |
+
+Object velocity, double_dino_5sweep_depth_none_object-motion_1epochs:
+
+| Radar input | Objects | Velocity EPE (m/s) | Moving EPE (m/s) |
+| --- | ---: | ---: | ---: |
+| matched | 63002 | 1.3229922744758034 | 3.5424268135926127 |
+| zero_velocity | 63002 | 2.0258918166829165 | 6.430499314448753 |
+| empty | 63002 | 2.3234231857950003 | 7.085499236600299 |
+| wrong_scene | 63002 | 2.044355928842455 | 6.465429330373752 |
+
+GT box positions are supplied; this is not detection or nuScenes NDS.
+
 
 ## Monitoring and reliability
 

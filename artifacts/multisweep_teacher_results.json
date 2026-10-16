@@ -279,6 +279,42 @@
         "pid": 2267713,
         "returncode": 0,
         "finished_unix_time": 1792147904.9148343
+      },
+      "double_dino_5sweep_depth_none_object-motion_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs",
+          "--mode",
+          "object-motion",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "none",
+          "--epochs",
+          "1",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
+        ],
+        "started_unix_time": 1792147910.7737515,
+        "pid": 2272850,
+        "returncode": 0,
+        "finished_unix_time": 1792151084.1562402
       }
     },
     "plan": [
@@ -1089,45 +1125,45 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-    "updated_unix_time": 1792147894.9030282,
+    "current_stage": "double_dino_5sweep_depth_none_object-motion_1epochs",
+    "updated_unix_time": 1792151074.0853043,
     "child_status": {
-      "state": "complete",
-      "mode": "unfrozen-probe",
+      "state": "validating_motion",
+      "mode": "object-motion",
       "nsweeps": 5,
       "depth_mode": "none",
-      "updated_unix_time": 1792147891.0166426,
+      "updated_unix_time": 1792151073.0798392,
       "epoch_progress": 1.0,
       "epochs": 1,
       "update": 7033,
       "samples_seen": 28130,
-      "samples_per_second": 7.699260400142887,
+      "samples_per_second": 15.38117425447759,
       "latest": {
-        "loss": 0.08843135088682175,
-        "gradient_norm": 1.647315502166748,
+        "loss": 1.5070488452911377,
+        "gradient_norm": 3.500325918197632,
         "learning_rates": {
-          "camera": 1.0000000000000002e-06,
-          "readout": 0.0001,
-          "student": 2e-05
+          "readout": 0.0001
         },
-        "segmentation_bce": 0.08843135088682175
+        "object_velocity_smooth_l1": 1.5070488452911377,
+        "training_objects": 14
       },
-      "wall_seconds": 4166.986890939996,
-      "peak_allocated_gib": 14.183149337768555,
+      "wall_seconds": 3137.9365410630126,
+      "peak_allocated_gib": 13.179093360900879,
       "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 0.0,
-        "memory_used_mib": 15591.0,
+        "utilization_percent": 92.0,
+        "memory_used_mib": 14939.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 61.0,
-        "power_w": 112.25
-      }
+        "temperature_c": 74.0,
+        "power_w": 289.4
+      },
+      "validation_samples": 6019
     },
-    "idle_warning_seconds": 3.8707594871520996,
+    "idle_warning_seconds": 0.9893810749053955,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 53943786090dab2af9c180b2136f6ac341496a18\n"
+      "message": "PUBLISHED 04c7c8cafff38cc4ea9b0ab7c1cd11f0ea1f923b\n"
     }
   },
   "results": [
@@ -1289,8 +1325,105 @@
     },
     {
       "name": "double_dino_5sweep_depth_none_object-motion_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "samples": 6019,
+        "metrics": {
+          "matched": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.3229922744758034,
+              "velocity_rmse_mps": 2.4932025567210356,
+              "speed_mae_mps": 1.1574223621584663
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 3.5424268135926127,
+              "velocity_rmse_mps": 4.7266928629967815,
+              "speed_mae_mps": 3.1175737461508675
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.5429670591321634,
+              "velocity_rmse_mps": 0.7407379606304554,
+              "speed_mae_mps": 0.4685227895613691
+            }
+          },
+          "zero_velocity": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.0258918166829165,
+              "velocity_rmse_mps": 3.752999218381909,
+              "speed_mae_mps": 1.8664822649038197
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 6.430499314448753,
+              "velocity_rmse_mps": 7.290256567662396,
+              "speed_mae_mps": 6.044659324961515
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.47788269481163403,
+              "velocity_rmse_mps": 0.5968934292701075,
+              "speed_mae_mps": 0.39805262502254724
+            }
+          },
+          "empty": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.3234231857950003,
+              "velocity_rmse_mps": 4.101855755148232,
+              "speed_mae_mps": 1.9396276350973194
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 7.085499236600299,
+              "velocity_rmse_mps": 7.922666529110663,
+              "speed_mae_mps": 5.851460280418124
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.6497809442489451,
+              "velocity_rmse_mps": 0.8235907787669672,
+              "speed_mae_mps": 0.5648053333911985
+            }
+          },
+          "wrong_scene": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.044355928842455,
+              "velocity_rmse_mps": 3.8114501541863097,
+              "speed_mae_mps": 1.8829509117501129
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 6.465429330373752,
+              "velocity_rmse_mps": 7.360705973902141,
+              "speed_mae_mps": 6.048855678786808
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.49055982839437123,
+              "velocity_rmse_mps": 0.7688128696260066,
+              "speed_mae_mps": 0.4188343966029789
+            }
+          }
+        },
+        "baselines": {
+          "zero_prediction": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8083585922993164
+          },
+          "train_mean": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8354531053397605
+          }
+        },
+        "protocol": "Supervised linear readout of frozen BEV features at GT box locations; not detection/mAVE/NDS",
+        "targets": "nuScenes box_velocity from temporal GT annotations; camera-XZ m/s; finite visible vehicles in ROI",
+        "wrong_scene_map": "full validation cross-scene bijection; fixed camera, calibration and GT targets"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_object-motion_1epochs/summary.json"
     },
     {
