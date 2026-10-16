@@ -1,0 +1,45 @@
+{
+  "pipeline": {
+    "started_unix_time": 1792114816.1581552,
+    "deadline_unix_time": 1792201216.1581552,
+    "stages": {},
+    "stage": "throughput_pilot",
+    "updated_unix_time": 1792114816.1582155
+  },
+  "results": [
+    {
+      "name": "Historical frozen 1x1: velocity_full_epoch008",
+      "status": "complete",
+      "metrics": {
+        "mean_balanced_bce": 0.5043889948261756,
+        "samples": 6019,
+        "vehicle_iou": 0.049621359500155116,
+        "precision": 0.05074284318609551,
+        "recall": 0.6918503547993642,
+        "f1": 0.09455097126412429,
+        "tp": 2592786,
+        "fp": 48503799,
+        "fn": 1154825,
+        "tn": 187218961
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_full_epoch008/summary.json"
+    },
+    {
+      "name": "Historical frozen 1x1: velocity_zero_epoch008",
+      "status": "complete",
+      "metrics": {
+        "mean_balanced_bce": 0.515254666389748,
+        "samples": 6019,
+        "vehicle_iou": 0.048484281855805826,
+        "precision": 0.049549972985419154,
+        "recall": 0.6927149055758455,
+        "f1": 0.09248451826094936,
+        "tp": 2596026,
+        "fp": 49796051,
+        "fn": 1151585,
+        "tn": 185926709
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_zero_epoch008/summary.json"
+    }
+  ]
+}

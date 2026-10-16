@@ -2042,3 +2042,20 @@ chat transcripts, secrets, or unreviewed generated data.
   name/email are unset. Existing staged mini work remains preserved.
 - Next: choose between a matched 1/5/10-sweep broad-scene comparison and the
   streaming/checkpoint implementation required for all 28,130 train frames.
+
+<!-- baseline-followup-runtime:start -->
+
+### 2026-10-16 — Unattended baseline follow-up runtime
+
+- Stage: `throughput_pilot`; queue state: `running`.
+- Generated files: `artifacts/meeting_followup_day_results.json` and
+  `artifacts/meeting_followup_day_report.md`, plus this runtime handoff block.
+- Reproduce: `python scripts/run_baseline_followup_day.py --study-dir
+  fullsize_baseline/runs/meeting_followup_20261016` (requires the documented local CUDA environment).
+- Tests/evidence: completed stages require exit code zero and a complete
+  summary; exact metrics, frame counts, configurations, and failures are in the JSON.
+- Limitations: one seed; different official/legacy input resolutions;
+  CUDA backward is not guaranteed bitwise deterministic when unfreezing camera projection.
+- Next: let the queue continue, then review full-val masks and the matched-epoch comparison.
+
+<!-- baseline-followup-runtime:end -->
