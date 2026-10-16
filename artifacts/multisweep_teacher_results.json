@@ -169,6 +169,42 @@
         "pid": 2260050,
         "returncode": 0,
         "finished_unix_time": 1792137040.1045225
+      },
+      "double_dino_5sweep_depth_none_frozen-probe_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs",
+          "--mode",
+          "frozen-probe",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "none",
+          "--epochs",
+          "1",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
+        ],
+        "started_unix_time": 1792137046.1776474,
+        "pid": 2262835,
+        "returncode": 0,
+        "finished_unix_time": 1792139268.4775734
       }
     },
     "plan": [
@@ -979,57 +1015,44 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_none_pretrain_1epochs",
-    "updated_unix_time": 1792137029.9600012,
+    "current_stage": "double_dino_5sweep_depth_none_frozen-probe_1epochs",
+    "updated_unix_time": 1792139258.4043274,
     "child_status": {
-      "state": "validating_pretrain",
-      "mode": "pretrain",
+      "state": "validating_segmentation",
+      "mode": "frozen-probe",
       "nsweeps": 5,
       "depth_mode": "none",
-      "updated_unix_time": 1792137019.1215942,
+      "updated_unix_time": 1792139256.1962345,
       "epoch_progress": 1.0,
       "epochs": 1,
       "update": 7033,
       "samples_seen": 28130,
-      "samples_per_second": 6.947809756625964,
+      "samples_per_second": 15.927184270193619,
       "latest": {
-        "loss": 0.3610847592353821,
-        "gradient_norm": 6.845476150512695,
+        "loss": 0.1338472217321396,
+        "gradient_norm": 0.2271280586719513,
         "learning_rates": {
-          "camera": 2e-05,
-          "student": 2e-05
+          "readout": 0.0001
         },
-        "image": 0.42137256264686584,
-        "bev": 0.25686946511268616,
-        "radar_motion_auxiliary": 0.14262929558753967,
-        "bev_mask_cells": 37036,
-        "radar_points_per_sample": [
-          2320,
-          2041
-        ],
-        "occupied_voxels_per_sample": [
-          633,
-          591
-        ],
-        "motion_auxiliary_covered_cells": 58
+        "segmentation_bce": 0.1338472217321396
       },
-      "wall_seconds": 4640.456076778937,
-      "peak_allocated_gib": 14.389086723327637,
+      "wall_seconds": 2185.56548481388,
+      "peak_allocated_gib": 13.101444244384766,
       "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 63.0,
-        "memory_used_mib": 15739.0,
+        "utilization_percent": 58.0,
+        "memory_used_mib": 14525.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 68.0,
-        "power_w": 217.74
+        "temperature_c": 67.0,
+        "power_w": 208.22
       },
       "validation_samples": 6019
     },
-    "idle_warning_seconds": 10.825668573379517,
+    "idle_warning_seconds": 2.1947712898254395,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED c2dd1a1dd5cf18e3206ebeb7a86e73436957542e\n"
+      "message": "PUBLISHED 33d8f50ed9ed8a5132e414cb33665198734c0ca3\n"
     }
   },
   "results": [
@@ -1131,8 +1154,22 @@
     },
     {
       "name": "double_dino_5sweep_depth_none_frozen-probe_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "vehicle_iou": 0.10448026069850393,
+        "precision": 0.39947454420364636,
+        "recall": 0.12394802982486709,
+        "f1": 0.18919353186525528,
+        "tp": 464509,
+        "fp": 698291,
+        "fn": 3283102,
+        "tn": 235024469,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.10449292400531315,
+        "predicted_positive_fraction": 0.004855715532340325,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_frozen-probe_1epochs/summary.json"
     },
     {
