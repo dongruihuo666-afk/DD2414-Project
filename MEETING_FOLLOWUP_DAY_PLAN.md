@@ -5,6 +5,14 @@ Status: execution approved. The opt-in implementation and CUDA gates are now
 prepared; see the 2026-10-16 execution entry in `PROJECT_HANDOFF.md` and the
 live queue status below for actual progress.
 
+**Execution update:** the owner's later request supersedes the pending queue
+order with `MULTISWEEP_TEACHER_DAY_PLAN.md`: local double distillation, matched
+five/ten sweeps, actual depth-supervised lifting and GT-object motion readouts.
+The already-started historical finetuning is checkpointed and will be resumed;
+no new single-sweep jobs are added. The replacement queue has no idle/elapsed
+termination rule. The older timed queue below is historical, not the launcher
+to use for this expanded study.
+
 ## Meeting priorities and scope
 
 First establish how the official pretrained Simple-BEV models perform in our
@@ -39,10 +47,11 @@ validation. Five-sweep pretraining took 8.86 plus 2.80 hours. The raw-velocity
 frozen probe took 1,422 seconds (23.7 minutes) for one full train epoch and full
 validation. These rates do not predict unfrozen-camera backward cost.
 
-Official RGB/radar weights were not found in the expected local `checkpoints/`
-tree. Acquisition and strict loading are prerequisites. This execution
-environment currently cannot communicate with an NVIDIA driver; verify actual
-host GPU access before starting the timed queue.
+At the initial planning inspection, official RGB/radar weights were absent
+and the sandbox could not see CUDA. Both weights have since been downloaded
+and strict-loaded on the actual RTX 3090 Ti. Full-val official references are
+complete: 47.247% RGB and 55.495% RGB+radar at 448x800. This is verified host
+execution, not a CPU-only CUDA claim.
 
 ## Evaluation contract
 

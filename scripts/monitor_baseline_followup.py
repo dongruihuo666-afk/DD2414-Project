@@ -17,9 +17,14 @@ if state.get('stage') == 'throughput_pilot':
     pilot_status = args.study_dir/'pilot/status.json'
     if pilot_status.is_file():
         child = json.loads(pilot_status.read_text())
-print(f"Queue: {state.get('status','running')} | Stage: {state.get('stage')}")
-print('Locked paired configuration:', json.dumps(state.get('paired_configuration',{})))
+print(f"Queue: {state.get('status','running')} | Stage: {state.get('current_stage',state.get('stage'))}")
+if 'paired_configuration' in state:
+    print('Locked paired configuration:', json.dumps(state['paired_configuration']))
+elif 'plan' in state:
+    print(f'Planned stages: {len(state["plan"])}; no idle or wall-time kill rule')
 print('Current child:', json.dumps(child, indent=2))
-for name, stage in state.get('stages',{}).items():
+stages = ([(task['name'],state.get('stages',{}).get(task['name'],{'status':'queued'}))
+           for task in state['plan']] if 'plan' in state else state.get('stages',{}).items())
+for name, stage in stages:
     print(f"{stage.get('status','unknown'):10s} {name}")
-print('Results:', args.study_dir/'comparison/REPORT.md')
+print('Results:', args.study_dir/('REPORT.md' if 'plan' in state else 'comparison/REPORT.md'))

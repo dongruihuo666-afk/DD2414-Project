@@ -26,9 +26,13 @@ The scaling trainer provides all-frame streaming self-supervision. The
 combined Hybrid Teacher implementation and RPL deployment live separately on
 `experiment/hybrid-teacher-10sweep-cluster`; that branch is outside the current
 baseline work scope. The baseline meeting follow-up is specified in
-`MEETING_FOLLOWUP_DAY_PLAN.md`: official pretrained references, supervised
-unfrozen downstream evaluation, and the missing five-sweep frozen probe first;
-depth supervision and independent object-motion evaluation follow.
+`MEETING_FOLLOWUP_DAY_PLAN.md`. The owner's expanded follow-up now supersedes
+its pending order: see `MULTISWEEP_TEACHER_DAY_PLAN.md` for local double-DINO
+pretraining, controlled five/ten-sweep inputs, actual depth-aware lifting,
+frozen/unfrozen downstream comparisons and independent GT-object motion
+readouts. The replacement queue has no idle, elapsed-time or 24-hour kill rule.
+The old timed service was explicitly checkpoint-paused for engineering tests;
+its already-started historical finetuning remains resumable in the new queue.
 
 The owner has adopted a staged full-data radar scaling study. The frozen order
 is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
@@ -2096,6 +2100,90 @@ chat transcripts, secrets, or unreviewed generated data.
   summary; exact metrics, frame counts, configurations, and failures are in the JSON.
 - Limitations: one seed; different official/legacy input resolutions;
   CUDA backward is not guaranteed bitwise deterministic when unfreezing camera projection.
-- Next: let the queue continue, then review full-val masks and the matched-epoch comparison.
+- Next: the old timed queue is superseded by `MULTISWEEP_TEACHER_DAY_PLAN.md`;
+  resume its saved historical finetuning in the replacement queue, not this launcher.
 
 <!-- baseline-followup-runtime:end -->
+
+### 2026-10-16 — Baseline double distillation, depth lifting and vehicle readout
+
+- Scope/rationale: the owner requested actual local camera DINO SSL plus
+  radar-masked fused-BEV DINO, future training at five/ten sweeps, depth
+  supervision, frozen/unfrozen downstream comparisons and independent
+  vehicle-motion evaluation. The cluster branch remains at `33f2d86` and is
+  neither merged nor edited; original Simple-BEV and legacy training files
+  remain unchanged. The unrelated staged `DD2414_Project_Plan.pdf` is excluded.
+- Changed files: new `scripts/multisweep_teacher.py`,
+  `scripts/train_multisweep_teacher.py`, `scripts/run_multisweep_followup.py`,
+  `scripts/start_multisweep_followup.sh`,
+  `scripts/check_multisweep_teacher_cuda.py`,
+  `scripts/test_multisweep_teacher.py`,
+  `scripts/publish_multisweep_followup.py`, and
+  `MULTISWEEP_TEACHER_DAY_PLAN.md`; update the existing monitor, old plan and
+  this handoff. The new path is opt-in and uses the installed workstation
+  environment, not a cluster environment replacement.
+- Implementation: trainable ResNet-101, pinned BEVCar VoxelNet, dense image
+  and radar-soft-masked BEV DINO losses (0.2/0.8), retained radar-motion
+  reconstruction auxiliary (0.5), optional metric radar-depth loss (0.2),
+  and optional frozen Depth Anything V2 relative inverse-depth shape loss
+  (0.05). Depth predictions actually weight voxel lifting; no GT depth is
+  supplied during inference. Both five/ten-sweep treatments keep target radar
+  age <=0.1 seconds while all sweeps enter the encoder. The common input
+  occupied-voxel guard is 7,000, avoiding the legacy 3,500 guard rejecting a
+  dense ten-sweep frame without changing VoxelNet parameters or discarding
+  points. Original legacy preprocessing is untouched.
+- Evaluation: official global valid-cell Vehicle IoU, precision, recall and
+  F1; identical frozen/unfrozen 1x1 head comparisons plus full official-decoder
+  finetuning; fixed-token GT/prediction/error PNGs and complete per-frame
+  records. A separate frozen supervised linear readout pools GT oriented
+  vehicle ROIs and predicts temporal annotation `box_velocity` in camera XZ
+  m/s. Matched/velocity-zeroed/empty/wrong-scene inputs use fixed GT locations
+  and targets; report EPE/RMSE/speed MAE and moving/stationary groups, plus
+  zero and train-mean baselines. This is not detection mAVE/NDS.
+- Actual gates: 57 CPU tests pass with `PYTHONPATH=scripts .../envs/bev/bin/python
+  -m unittest discover -s scripts -p 'test_*.py'`; new Python modules compile,
+  launcher passes `bash -n`, and `git diff --check` passes. Ten real CUDA
+  engineering cases pass at batch four: four pretrain variants, a real
+  save/restart, all downstream modes, depth finetuning and frozen depth probe.
+  The same 55 GT vehicles in four validation frames were evaluated in every
+  motion mode. Largest observed allocated memory is 18.275 GiB. A batch-five
+  depth engineering run actually OOMed; its failed output remains local.
+  These 8-train/4-val smokes are not model-quality evidence. Checks live at
+  `fullsize_baseline/smoke/multisweep_teacher_20261016/validated_batch4_motion_aux/checks.json`.
+- Final-source throughput/resume gate: the heaviest radar+DAV2-depth,
+  double-DINO, motion-auxiliary configuration processed 400 full-manifest
+  frames in 100 updates at 6.632 samples/s including input wait (excluding
+  checkpoint/validation overhead), peak allocated 18.276 GiB. Live GPU
+  utilization reached 94–100% during computation. A fresh process restored
+  update 100 and continued to update 101 / sampler cursor 404 with finite
+  losses. The pilot is intentionally partial, not a full-data quality result;
+  see `fullsize_baseline/smoke/multisweep_teacher_20261016/full_manifest_depth_throughput`.
+  Lock all new scientific treatments to physical batch four and eight workers.
+- Safe migration: stopped the CPU-only recovery watcher and explicitly
+  signalled the old queue to checkpoint its existing historical finetuning.
+  It saved update 6,451 / 32,255 exposures (epoch 1.1466 of three), with its
+  completed epoch-one full-val IoU 23.109% preserved. This was an intentional
+  checkpointed migration, not a timeout or a training crash. The replacement
+  queue resumes that exact job and recovers the legacy five-sweep probe;
+  the pending new one-sweep velocity-zeroed job is deferred under the owner's
+  multi-sweep priority.
+- Reproduce: `bash scripts/start_multisweep_followup.sh`; inspect
+  `fullsize_baseline/runs/multisweep_teacher_20261016/pipeline.json`, `REPORT.md`
+  and `queue.log`, or use `scripts/monitor_baseline_followup.py --study-dir`
+  with that path. The service is `dd2414-multisweep-teacher.service`.
+  The new trainer saves an initial checkpoint and every 250 successful
+  updates, epoch boundaries and requested stop, including optimizer/scaler,
+  acknowledged sampler and RNG. No idle, elapsed-time or 24-hour kill rule;
+  stale status warns only. Real failures retry from durable state at most
+  three times, then independent configurations continue. Git publication
+  failures are nonfatal. There is no silent sample/batch/epoch reduction.
+- Limits/next: this first screen uses all 28,130/6,019 frames but one
+  pretraining epoch and one downstream epoch per configuration, one seed and
+  112x192 cameras. Official 448x800 scores are references; the new queue also
+  evaluates official weights at 112x192. Short probes can underfit, radar
+  depth is not dense GT, and object locations are supplied. Depth loss and
+  lifting change together. Historical single-sweep results are not a strict
+  three-way sweep ablation under the new objectives. Do not claim that camera
+  SSL/sparsity was the proven cause of low IoU or that short-budget training
+  establishes a capability ceiling. Continue the persistent queue, review
+  full-val masks and motion errors, then run longer matched epochs/seeds.
