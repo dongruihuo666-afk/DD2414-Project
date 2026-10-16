@@ -181,6 +181,40 @@
         "pid": 2302514,
         "returncode": 0,
         "finished_unix_time": 1792170377.707724
+      },
+      "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
+          "--mode",
+          "pretrain",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "radar-dav2",
+          "--epochs",
+          "1"
+        ],
+        "started_unix_time": 1792170383.3514082,
+        "pid": 2314103,
+        "returncode": 0,
+        "finished_unix_time": 1792175148.2878556
       }
     },
     "plan": [
@@ -526,44 +560,62 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_radar_object-motion_1epochs",
-    "updated_unix_time": 1792170367.695255,
+    "current_stage": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
+    "updated_unix_time": 1792175138.27588,
     "child_status": {
       "state": "complete",
-      "mode": "object-motion",
+      "mode": "pretrain",
       "nsweeps": 5,
-      "depth_mode": "radar",
-      "updated_unix_time": 1792170363.4752886,
+      "depth_mode": "radar-dav2",
+      "updated_unix_time": 1792175137.0667233,
       "epoch_progress": 1.0,
       "epochs": 1,
       "update": 7033,
       "samples_seen": 28130,
-      "samples_per_second": 14.359671408666685,
+      "samples_per_second": 6.9583628172929615,
       "latest": {
-        "loss": 1.5027028322219849,
-        "gradient_norm": 3.536396026611328,
+        "loss": 0.3878324031829834,
+        "gradient_norm": 4.588746547698975,
         "learning_rates": {
-          "readout": 0.0001
+          "camera": 2e-05,
+          "student": 2e-05
         },
-        "object_velocity_smooth_l1": 1.5027028322219849,
-        "training_objects": 14
+        "image": 0.4264311194419861,
+        "bev": 0.2581530213356018,
+        "radar_motion_auxiliary": 0.11792606860399246,
+        "radar_depth": 0.038910504430532455,
+        "relative_depth": 0.5855727195739746,
+        "bev_mask_cells": 37036,
+        "radar_points_per_sample": [
+          2320,
+          2041
+        ],
+        "occupied_voxels_per_sample": [
+          633,
+          591
+        ],
+        "motion_auxiliary_covered_cells": 58,
+        "depth_anchors": 1774,
+        "depth_mae_m": 12.156657218933105,
+        "depth_rmse_m": 16.67142105102539,
+        "depth_abs_rel": 0.22319813072681427
       },
-      "wall_seconds": 3370.799530517077,
-      "peak_allocated_gib": 13.179123401641846,
+      "wall_seconds": 4725.06863551517,
+      "peak_allocated_gib": 18.276220321655273,
       "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 9.0,
-        "memory_used_mib": 14715.0,
+        "utilization_percent": 0.0,
+        "memory_used_mib": 19889.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 66.0,
-        "power_w": 115.34
+        "temperature_c": 63.0,
+        "power_w": 113.2
       }
     },
-    "idle_warning_seconds": 4.206804275512695,
+    "idle_warning_seconds": 1.1957130432128906,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 7ea8100e57ebce8f79bd7ec2281092afe2083c09\n"
+      "message": "PUBLISHED 527cf781947fbf8844ab73490b9893896ca4798d\n"
     }
   },
   "results": [
@@ -752,8 +804,23 @@
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_pretrain_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "samples": 6019,
+        "losses": {
+          "loss": 0.4874821722774851,
+          "image": 0.4280841755973954,
+          "bev": 0.2758336035461397,
+          "radar_motion_auxiliary": 0.28373692582034454,
+          "radar_depth": 0.042744205918018856,
+          "relative_depth": 0.6156229119519495
+        },
+        "depth_anchors": 4804252,
+        "depth_mae_m": 11.048962413549807,
+        "depth_rmse_m": 15.287777243625024,
+        "depth_abs_rel": 0.2348751560639955,
+        "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/summary.json"
     },
     {
