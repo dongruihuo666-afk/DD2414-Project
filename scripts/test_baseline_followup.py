@@ -1,6 +1,7 @@
 """Meaningful CPU checks for the legacy downstream protocols."""
 
 import tempfile
+import os
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,7 +16,7 @@ from train_baseline_downstream import parameter_groups
 from train_fullsize_linear_probe import metrics_from_counts
 from train_nuscenes import SimpleLoss, balanced_mse_loss
 from fullsize_training import AcknowledgedShuffleSampler
-from run_baseline_followup_day import choose_epochs
+from run_baseline_followup_day import choose_epochs, latest_progress_time
 from report_baseline_followup import paired_scene_interval
 from training_checkpoint import load_training_checkpoint, save_training_checkpoint
 import utils.basic
@@ -46,6 +47,22 @@ class Backbone(nn.Module):
 
 
 class BaselineFollowupTest(unittest.TestCase):
+    def test_legacy_status_file_is_a_progress_heartbeat(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'status.json'
+            path.write_text('{"updates": 5600}')
+            os.utime(path, (2000,2000))
+            self.assertEqual(latest_progress_time({}, directory, 1000), 2000)
+            # A previous attempt's file must not predate the new attempt floor.
+            self.assertEqual(latest_progress_time({}, directory, 3000), 3000)
+
+    def test_recent_log_prevents_a_false_stall_with_stale_json_timestamp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'console.log'
+            path.write_text('validation=200/6019\n')
+            os.utime(path, (2500,2500))
+            self.assertEqual(latest_progress_time({'updated_unix_time':1200}, directory, 1000), 2500)
+
     def test_scene_bootstrap_same_predictions_has_zero_difference(self):
         counts = {'scene1':[3,2,1], 'scene2':[1,2,3]}
         self.assertEqual(paired_scene_interval(counts, counts, draws=100), [0.,0.])

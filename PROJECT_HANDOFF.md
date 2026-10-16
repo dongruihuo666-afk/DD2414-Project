@@ -318,6 +318,46 @@ result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
 
+### 2026-10-16 — Repair the legacy-probe watchdog compatibility
+
+- Changed `scripts/run_baseline_followup_day.py`,
+  `scripts/test_baseline_followup.py`, and added
+  `scripts/resume_baseline_followup_after_current.sh`. A live status check found
+  the five-sweep frozen probe terminated after 1,801.9 seconds at
+  28,000/28,130 train samples. Its flushed logs and status showed finite,
+  advancing training, not a stalled CUDA job.
+- Cause: the legacy probe does not emit `updated_unix_time`. The queue used
+  the attempt start time as its only fallback and incorrectly triggered the
+  1,800-second stale-progress watchdog. Heartbeats now also accept the mtime
+  of the atomic status file and flushed console log, with attempt start as a
+  floor so old files cannot count as new progress. A resumed queue explicitly
+  resets its display state to running.
+- Recovery: preserve the active raw/zero finetuning sequence. A separate
+  persistent waiting service will run the corrected queue after the current
+  service exits. It reuses completed summaries and the same absolute study
+  deadline, then retries the five-sweep probe and remaining optional work.
+  The terminated legacy probe had not saved an epoch checkpoint and therefore
+  needs a fresh probe epoch; no backbone pretraining is repeated.
+- Tests: `PYTHONPATH=scripts MPLCONFIGDIR=/tmp/dd2414-mpl
+  $HOME/miniconda3/envs/bev/bin/python -m unittest scripts.test_baseline_followup
+  scripts.test_fullsize_training scripts.test_fullsize_linear_probe
+  scripts.test_training_checkpoint` passed all 24 tests, including legacy
+  status-without-timestamp and stale-JSON/recent-log regression cases. Python
+  compilation, shell syntax for the waiting wrapper, and `git diff --check`
+  passed. No model, objective, data, epoch, batch, or downstream resume hash
+  was changed.
+- Verified results so far: both official references evaluated all 6,019 frames:
+  RGB Vehicle IoU `47.247%`; RGB plus five-sweep metaradar `55.495%`.
+  Raw-velocity full finetuning remains active with finite losses, batch five,
+  about 8.65 samples/s and observed 100% GPU utilization. Its own first
+  full-validation score is still pending.
+- Recovery service verified: `dd2414-baseline-followup-recovery.service` is
+  waiting (PID 2245100); the primary PID remains 2231565 and its GPU child was
+  not interrupted. The corrected probe retry will not run until the primary
+  sequence finishes. Review the eventual
+  complete/partial status and full-validation scores, not the old training-only
+  probe status.
+
 ### 2026-10-16 — Execute the unattended baseline meeting follow-up
 
 - Authorization: the owner approved proceeding through the day without

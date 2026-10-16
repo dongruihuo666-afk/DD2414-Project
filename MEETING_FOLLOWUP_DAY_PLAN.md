@@ -260,3 +260,11 @@ exact numerical equivalence.
 Optional depth/object-motion work currently produces training-only relative
 depth illustrations and annotation velocity coverage. Radar/depth alignment
 and a trained vehicle-motion readout remain future work.
+
+The first five-sweep probe attempt was incorrectly stopped by the queue's
+legacy timestamp handling after 30 minutes. The watchdog now accepts real
+status/log file updates. The persistent recovery service
+`dd2414-baseline-followup-recovery.service` waits for the original service to
+finish, then re-enters the same queue with its original absolute deadline,
+reusing completed stages and retrying the unfinished probe. This preserves
+the currently running finetuning without a GPU interruption.

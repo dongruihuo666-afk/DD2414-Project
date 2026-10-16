@@ -37,6 +37,23 @@ def choose_epochs(samples_per_second, hours_remaining):
     return 3 if 2*3*28130/max(samples_per_second, .01) < hours_remaining*3600*.5 else 1
 
 
+def latest_progress_time(child_status, stage_dir, started):
+    """Accept legacy trainers that expose progress via atomic files/logs.
+
+    The frozen legacy probe has no updated_unix_time field. Its status and
+    flushed console log are both real progress signals; using only a missing
+    JSON timestamp incorrectly kills a healthy job after the stale timeout.
+    Ignore files older than this attempt by retaining started as a floor.
+    """
+    candidates = [started, float(child_status.get('updated_unix_time', started))]
+    for name in ['status.json', 'console.log']:
+        try:
+            candidates.append((Path(stage_dir)/name).stat().st_mtime)
+        except FileNotFoundError:
+            pass
+    return max(candidates)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--study-dir', type=Path, required=True)
@@ -55,6 +72,7 @@ def main():
     state_path = study/'pipeline.json'
     state = read_json(state_path) or dict(started_unix_time=time.time(),
         deadline_unix_time=time.time()+args.hours*3600, stages={})
+    state['status'] = 'running'
     deadline = state['deadline_unix_time']
     manifest = ROOT/'configs/radar_scaling_manifest_seed125.json'
     run_root = ROOT/'fullsize_baseline/runs'
@@ -111,8 +129,8 @@ def main():
                     update(name, child_status=child_status)
                     limit = min(deadline-1200,
                                 started+budget_seconds if budget_seconds else deadline)
-                    heartbeat = child_status.get('updated_unix_time', started)
-                    stale = time.time()-max(heartbeat, started) > 1800
+                    heartbeat = latest_progress_time(child_status, stage_dir, started)
+                    stale = time.time()-heartbeat > 1800
                     if STOP or time.time() >= limit or stale:
                         timed_out = True
                         process.send_signal(signal.SIGUSR1 if
