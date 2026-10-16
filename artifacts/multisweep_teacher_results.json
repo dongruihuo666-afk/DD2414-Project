@@ -78,6 +78,34 @@
         "pid": 2258342,
         "returncode": 0,
         "finished_unix_time": 1792131855.2414644
+      },
+      "official_camera_112x192": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192",
+          "--height",
+          "112",
+          "--width",
+          "192",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792131862.6446419,
+        "pid": 2259648,
+        "returncode": 0,
+        "finished_unix_time": 1792132102.8835142
       }
     },
     "plan": [
@@ -888,45 +916,51 @@
       }
     ],
     "status": "running",
-    "current_stage": "recover_legacy_five_sweep_frozen_probe",
-    "updated_unix_time": 1792131845.2296937,
+    "current_stage": "official_camera_112x192",
+    "updated_unix_time": 1792132092.8688743,
     "child_status": {
-      "experiment": "frozen_one_layer_vehicle_probe_v1",
-      "checkpoint": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
-      "checkpoint_sha256": "281d8c7cb2429f80cafb4e957e0a14bde70b0c5c066d66610a697bc41287e1db",
-      "backbone_epoch": 8,
-      "radar_velocity_mode": "full",
-      "nsweeps": 5,
-      "probe_epochs": 1,
-      "train_samples": 28130,
-      "val_samples": 6019,
       "state": "complete",
-      "updates": 5626,
-      "elapsed_seconds": 2137.9860234020744,
-      "final_validation": {
-        "mean_balanced_bce": 0.4741873959654054,
-        "samples": 6019,
-        "vehicle_iou": 0.05117061478878868,
-        "precision": 0.052141511842143315,
-        "recall": 0.7331974956845841,
-        "f1": 0.09735929461664104,
-        "tp": 2747739,
-        "fp": 49949985,
-        "fn": 999872,
-        "tn": 185772775
+      "status": "complete",
+      "config": {
+        "experiment": "official_pretrained_reference",
+        "checkpoint": "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+        "checkpoint_sha256": "ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e",
+        "source_code_commit": "ea906d1d7c01d3b1baf8b31239203d7b9e89cd17",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc",
+        "use_radar": false,
+        "nsweeps": 1,
+        "image_resolution": [
+          112,
+          192
+        ],
+        "batch_size": 4,
+        "rotate_radar_velocity": false,
+        "precision": "float32",
+        "camera_reference": "CAM_FRONT",
+        "supervised_training_in_this_run": false
       },
-      "gpu": {
-        "utilization_percent": 21.0,
-        "memory_used_mib": 1167.0,
-        "memory_total_mib": 24564.0,
-        "temperature_c": 64.0,
-        "power_w": 237.49
-      }
+      "final_validation": {
+        "vehicle_iou": 0.12444639342941648,
+        "precision": 0.5508476375036349,
+        "recall": 0.13850023388233196,
+        "f1": 0.22134695643403868,
+        "tp": 519045,
+        "fp": 423221,
+        "fn": 3228566,
+        "tn": 235299539,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.13094360259322474,
+        "predicted_positive_fraction": 0.003934791582212064,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "elapsed_seconds": 198.18816094705835,
+      "peak_allocated_gib": 13.093381881713867
     },
-    "idle_warning_seconds": 0.15659570693969727,
+    "idle_warning_seconds": 3.2912611961364746,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 0940a5ef0284a7f2b244f7a7ae8596cc9bf7d120\n"
+      "message": "PUBLISHED ea906d1d7c01d3b1baf8b31239203d7b9e89cd17\n"
     }
   },
   "results": [
@@ -969,8 +1003,22 @@
     },
     {
       "name": "official_camera_112x192",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "vehicle_iou": 0.12444639342941648,
+        "precision": 0.5508476375036349,
+        "recall": 0.13850023388233196,
+        "f1": 0.22134695643403868,
+        "tp": 519045,
+        "fp": 423221,
+        "fn": 3228566,
+        "tn": 235299539,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.13094360259322474,
+        "predicted_positive_fraction": 0.003934791582212064,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/official_camera_112x192/summary.json"
     },
     {
