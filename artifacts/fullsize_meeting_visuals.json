@@ -1,0 +1,63 @@
+{
+  "experiment": "fullsize_raw_velocity_meeting_visuals_v1",
+  "selection": "Four evenly spaced validation scenes; within each scene, choose the sample nearest its temporal midpoint that has at least one valid GT vehicle cell. Selection never uses model predictions.",
+  "threshold": 0.5,
+  "samples": [
+    {
+      "dataset_index": 19,
+      "sample_token": "9ce5d3ae2cce4a0aaea1626e752f65d9",
+      "scene_token": "01452fbfbf4543af8acdfd3e8a1ee806",
+      "gt_vehicle_cells": 1081,
+      "radar_returns": 478,
+      "raw_velocity_vehicle_iou": 0.09394703656998739,
+      "velocity_zeroed_vehicle_iou": 0.09144185106597959
+    },
+    {
+      "dataset_index": 2027,
+      "sample_token": "3608204ac02a47afa1165e06f47d761d",
+      "scene_token": "55b3a17359014f398b6bbd90e94a8e1b",
+      "gt_vehicle_cells": 860,
+      "radar_returns": 331,
+      "raw_velocity_vehicle_iou": 0.041846153846153845,
+      "velocity_zeroed_vehicle_iou": 0.04046557163058849
+    },
+    {
+      "dataset_index": 3995,
+      "sample_token": "6d1c615ee4694f68996b1b40d2302aaf",
+      "scene_token": "a2b005c4dd654af48194ada18662c8ca",
+      "gt_vehicle_cells": 491,
+      "radar_returns": 404,
+      "raw_velocity_vehicle_iou": 0.049484536082474224,
+      "velocity_zeroed_vehicle_iou": 0.04823747680890538
+    },
+    {
+      "dataset_index": 5999,
+      "sample_token": "ad830c774eb7484a87fd2c776c570c2f",
+      "scene_token": "fcc020250f884397965ba00c1d9ad9e6",
+      "gt_vehicle_cells": 633,
+      "radar_returns": 591,
+      "raw_velocity_vehicle_iou": 0.04211332312404288,
+      "velocity_zeroed_vehicle_iou": 0.04217905987817492
+    }
+  ],
+  "sources": {
+    "raw_velocity_run": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_seed125",
+    "velocity_zeroed_run": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_zero_velocity_seed125",
+    "raw_velocity_probe": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_full_epoch008/probe_latest.pt",
+    "velocity_zeroed_probe": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_zero_epoch008/probe_latest.pt",
+    "manifest": "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json"
+  },
+  "outputs": {
+    "training_curves": "/home/students2026/dd2414/artifacts/fullsize_training_validation_curves.png",
+    "radar_intervention": "/home/students2026/dd2414/artifacts/fullsize_radar_intervention.png",
+    "linear_probe": "/home/students2026/dd2414/artifacts/fullsize_linear_probe_summary.png",
+    "mask_comparison": "/home/students2026/dd2414/artifacts/fullsize_vehicle_mask_comparison.png",
+    "overview": "/home/students2026/dd2414/artifacts/fullsize_experiment_overview.png"
+  },
+  "limitations": [
+    "One training seed and one radar sweep.",
+    "Binary vehicle mask, not multi-class semantic mIoU.",
+    "The camera ResNet is random-initialized and frozen in this legacy baseline.",
+    "Per-sample examples are deterministic illustrations; aggregate metrics use all 6,019 validation frames."
+  ]
+}

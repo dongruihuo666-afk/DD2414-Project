@@ -1,0 +1,34 @@
+{
+  "dataset": "v1.0-trainval",
+  "seed": 125,
+  "nsweeps": 1,
+  "samples": 2,
+  "modes": [
+    "matched",
+    "zero_velocity",
+    "empty",
+    "wrong_scene"
+  ],
+  "means": {
+    "matched": {
+      "semantic_loss": 0.9930890202522278,
+      "motion_loss": 1.4485762119293213
+    },
+    "zero_velocity": {
+      "semantic_loss": 0.9930925667285919,
+      "motion_loss": 1.4485610723495483
+    },
+    "empty": {
+      "semantic_loss": 0.9938274025917053,
+      "motion_loss": 1.4523210525512695
+    },
+    "wrong_scene": {
+      "semantic_loss": 0.9938339591026306,
+      "motion_loss": 1.4525933265686035
+    }
+  },
+  "records": "artifacts/trainval/wrong_scene_evaluation_check.jsonl",
+  "mapping_is_full_val_bijection": true,
+  "all_wrong_scenes_differ": true,
+  "acceptance": "all four radar modes produced aligned incremental records"
+}

@@ -1,0 +1,231 @@
+{
+  "pipeline": {
+    "started_unix_time": 1792114816.1581552,
+    "deadline_unix_time": 1792201216.1581552,
+    "stages": {
+      "official_camera": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera",
+          "--batch-size",
+          "2",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792114968.8415852,
+        "pid": 2232125,
+        "returncode": 0,
+        "finished_unix_time": 1792115569.3737192
+      },
+      "official_camera_radar_5sweep": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/eval_pretrained_baseline.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--checkpoint",
+          "/home/students2026/dd2414/checkpoints/8x5_5e-4_rad25_18:55:34/model-000025000.pth",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera_radar_5sweep",
+          "--batch-size",
+          "2",
+          "--num-workers",
+          "8",
+          "--use-radar"
+        ],
+        "started_unix_time": 1792115574.6640882,
+        "pid": 2235178,
+        "returncode": 0,
+        "finished_unix_time": 1792116175.2134943
+      },
+      "frozen_1x1_5sweep_1epoch": {
+        "status": "partial",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_fullsize_linear_probe.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
+          "--output-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
+          "--epochs",
+          "1",
+          "--batch-size",
+          "5",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792116180.961948,
+        "pid": 2238109,
+        "returncode": -15,
+        "finished_unix_time": 1792117982.8193853
+      },
+      "finetune_1sweep_velocity_full_3epochs": {
+        "status": "partial",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_baseline_downstream.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_seed125/checkpoints/epoch008.pt",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs",
+          "--epochs",
+          "3",
+          "--batch-size",
+          "5",
+          "--accumulation",
+          "1",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792117988.3366737,
+        "pid": 2242752,
+        "returncode": 0,
+        "finished_unix_time": 1792122081.1377969
+      },
+      "finetune_1sweep_velocity_zero_3epochs": {
+        "status": "deferred",
+        "reason": "deadline or stop"
+      }
+    },
+    "stage": "finished",
+    "updated_unix_time": 1792122086.8130417,
+    "paired_configuration": {
+      "epochs": 3,
+      "batch_size": 5,
+      "accumulation": 1,
+      "num_workers": 8,
+      "measured_samples_per_second": 8.358357280268834
+    },
+    "child_status": {},
+    "publication": {
+      "returncode": 0,
+      "message": "PUBLISHED caa9dff0191e6c3a10148890d034f9bea3e3ea06\n"
+    },
+    "status": "finished_with_partial_or_failed_stages",
+    "finished_unix_time": 1792122086.813039
+  },
+  "results": [
+    {
+      "name": "finetune_1sweep_velocity_full_3epochs",
+      "status": "partial",
+      "metrics": {
+        "vehicle_iou": 0.23108981144554852,
+        "precision": 0.5368224738751177,
+        "recall": 0.2886412170313301,
+        "f1": 0.37542315645387775,
+        "tp": 1081715,
+        "fp": 933318,
+        "fn": 2665896,
+        "tn": 234789442,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.22399228195274773,
+        "predicted_positive_fraction": 0.008414539934879877,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs/summary.json"
+    },
+    {
+      "name": "official_camera",
+      "status": "complete",
+      "metrics": {
+        "vehicle_iou": 0.4724727123840339,
+        "precision": 0.6526082951546262,
+        "recall": 0.6312288014951392,
+        "f1": 0.641740534015151,
+        "tp": 2365600,
+        "fp": 1259239,
+        "fn": 1382011,
+        "tn": 234463521,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.46421547999889873,
+        "predicted_positive_fraction": 0.015136899754500317,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera/summary.json"
+    },
+    {
+      "name": "official_camera_radar_5sweep",
+      "status": "complete",
+      "metrics": {
+        "vehicle_iou": 0.5549537637942829,
+        "precision": 0.7125872013241623,
+        "recall": 0.7149930982698044,
+        "f1": 0.713788122471405,
+        "tp": 2679516,
+        "fp": 1080748,
+        "fn": 1068095,
+        "tn": 234642012,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.5529006273237207,
+        "predicted_positive_fraction": 0.015702418567681595,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/official_camera_radar_5sweep/summary.json"
+    },
+    {
+      "name": "Historical frozen 1x1: velocity_full_epoch008",
+      "status": "complete",
+      "metrics": {
+        "mean_balanced_bce": 0.5043889948261756,
+        "samples": 6019,
+        "vehicle_iou": 0.049621359500155116,
+        "precision": 0.05074284318609551,
+        "recall": 0.6918503547993642,
+        "f1": 0.09455097126412429,
+        "tp": 2592786,
+        "fp": 48503799,
+        "fn": 1154825,
+        "tn": 187218961
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_full_epoch008/summary.json"
+    },
+    {
+      "name": "Historical frozen 1x1: velocity_zero_epoch008",
+      "status": "complete",
+      "metrics": {
+        "mean_balanced_bce": 0.515254666389748,
+        "samples": 6019,
+        "vehicle_iou": 0.048484281855805826,
+        "precision": 0.049549972985419154,
+        "recall": 0.6927149055758455,
+        "f1": 0.09248451826094936,
+        "tp": 2596026,
+        "fp": 49796051,
+        "fn": 1151585,
+        "tn": 185926709
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/probes/velocity_zero_epoch008/summary.json"
+    }
+  ]
+}

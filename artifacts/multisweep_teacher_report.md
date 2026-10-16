@@ -1,0 +1,49 @@
+# Multi-sweep double-distillation study
+
+All scientific runs use 28,130 train frames and the same 6,019 validation frames.
+Every comparison is single-seed and short-budget, not a convergence claim.
+Official original-resolution references (448x800) are in the previous study; this queue also evaluates those checkpoints at 112x192.
+New/legacy encoders use 112x192. A low-resolution evaluation of high-resolution-trained official weights is still not a matched training protocol.
+The depth treatment changes BOTH supervision and lifting; isolate those components before attributing a gain to depth loss alone.
+
+| Configuration | Status | Vehicle IoU (%) | Precision (%) | Recall (%) | F1 (%) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| double_dino_5sweep_depth_radar_pretrain_1epochs | complete | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar_frozen-probe_1epochs | complete | 5.908 | 34.552 | 6.652 | 11.156 |
+| double_dino_5sweep_depth_radar_finetune_1epochs | complete | 30.408 | 55.941 | 39.983 | 46.635 |
+| double_dino_5sweep_depth_radar_unfrozen-probe_1epochs | complete | 26.148 | 55.084 | 33.233 | 41.456 |
+| double_dino_5sweep_depth_radar_object-motion_1epochs | complete | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar-dav2_pretrain_1epochs | complete | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs | complete | 6.914 | 33.403 | 8.020 | 12.934 |
+| double_dino_5sweep_depth_radar-dav2_finetune_1epochs | complete | 30.607 | 54.630 | 41.038 | 46.869 |
+| double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs | complete | 26.448 | 54.881 | 33.797 | 41.833 |
+| double_dino_5sweep_depth_radar-dav2_object-motion_1epochs | queued | pending | pending | pending | pending |
+
+Object velocity, double_dino_5sweep_depth_radar_object-motion_1epochs:
+
+| Radar input | Objects | Velocity EPE (m/s) | Moving EPE (m/s) |
+| --- | ---: | ---: | ---: |
+| matched | 63002 | 1.2926261277553357 | 3.5325731313111532 |
+| zero_velocity | 63002 | 2.0257286993200787 | 6.476735684028199 |
+| empty | 63002 | 2.246325954771228 | 7.029440828398492 |
+| wrong_scene | 63002 | 2.033972923678456 | 6.462413861153209 |
+
+GT box positions are supplied; this is not detection or nuScenes NDS.
+
+
+## Monitoring and reliability
+
+The queue has no elapsed-time, log-idle or 24-hour kill rule. Long validation only emits a warning.
+Failed workers retry from the last durable update at most twice, then independent experiments continue.
+Dependent stages never use incomplete or failed pretraining. No automatic data/batch/epoch reduction.
+Check pipeline.json, each status.json/console.log, TensorBoard and checkpoint timestamps.
+A service stop requests a checkpoint at the next completed update; external power/storage failures remain possible.
+
+Legacy single-sweep results are historical controls, NOT a sweep-only control for these new objectives.
+Image distillation, camera unfreezing, projection heads, fixed recent target support and training budget differ from legacy runs.
+Radar-cell motion reconstruction remains a training auxiliary, not evidence of independent vehicle-motion accuracy.
+Depth-anchor errors use radar measurements, not independent dense depth ground truth.
+The DAV2 term supervises relative inverse-depth shape; radar provides metric scale.
+Five/ten-sweep pretraining keeps the teacher radar anchors at age <= 0.1 seconds in both runs.
+All accumulated sweeps still enter VoxelNet; the DINO target support is not expanded in the ten-sweep treatment.
+One epoch of a linear readout may underfit. Weak probe IoU does not by itself prove that representation learning failed.
