@@ -1,7 +1,9 @@
 # Meeting follow-up: one-day baseline experiment plan
 
 Date: 2026-10-16. Branch: `dd2414-mini-baseline`.
-Status: planned; no new training is launched by this change.
+Status: execution approved. The opt-in implementation and CUDA gates are now
+prepared; see the 2026-10-16 execution entry in `PROJECT_HANDOFF.md` and the
+live queue status below for actual progress.
 
 ## Meeting priorities and scope
 
@@ -59,9 +61,9 @@ host GPU access before starting the timed queue.
   radar reference uses the official metaradar path, five sweeps, and upstream
   filtering. Load the full model including its existing segmentation head.
   Simple-BEV already implements segmentation; no new detector conversion is needed.
-- New legacy downstream experiments keep their historical 224x400 resolution
+- New legacy downstream experiments keep their actual historical 112x192 resolution
   and one sweep. Label this resolution difference. Optionally also evaluate
-  official weights at 224x400; our own 448x800 run requires a separate budget.
+  official weights at 112x192; our own 448x800 run requires a separate budget.
 - Render GT, probabilities, predictions, and TP/FP/FN for fixed validation scene
   tokens chosen independently of performance. Scene-bootstrap intervals estimate
   evaluation uncertainty, not training-seed variation.
@@ -137,9 +139,10 @@ full-val reference with a tiny-subset result.
 ## Implementation gates before unattended execution
 
 Baseline has the legacy model, completed checkpoints, official evaluator,
-frozen probe, and reusable checkpoint utilities. A full-data resumable
-supervised finetuning program for these legacy checkpoints still needs to be
-implemented. The frozen probe uses `no_grad` feature extraction and saves at
+frozen probe, and reusable checkpoint utilities. The new opt-in full-data
+finetuning program is `scripts/train_baseline_downstream.py`; its sequential
+runner is `scripts/run_baseline_followup_day.py`. The old frozen probe uses
+`no_grad` feature extraction and saves at
 epoch boundaries; changing `requires_grad` alone does not implement finetuning
 or mid-epoch resume.
 
@@ -214,5 +217,46 @@ Sources: supplied transcript (00:18, 02:37, 04:10, 09:46, 18:31, 21:58,
 `eval_nuscenes.py`, `scripts/train_fullsize_linear_probe.py`,
 `scripts/compare_motion_target_bevcar_tiny.py`, and `FULLSIZE_MEETING_VISUALS.md`.
 
-Planning checks: `git diff --check`; inspect local completed run/probe summaries.
-This document claims no new model result, CUDA pass, or implemented runner.
+## Execution and monitoring
+
+The user approved continuous execution on 2026-10-16. GPU access is available
+on the actual host outside the tool sandbox. The measured historical input
+size was corrected from the planning typo 224x400 to 112x192. Official RGB and
+radar checkpoints were downloaded and strictly loaded in four-frame CUDA
+engineering checks. Those small checks are not full-validation results.
+
+Start/resume the persistent queue from the repository root:
+
+```bash
+bash scripts/start_baseline_followup_day.sh
+```
+
+Inspect it without interrupting training:
+
+```bash
+systemctl --user status dd2414-baseline-followup-day.service
+watch -n 10 /home/students2026/miniconda3/envs/bev/bin/python \
+  scripts/monitor_baseline_followup.py \
+  --study-dir fullsize_baseline/runs/meeting_followup_20261016
+tail -F fullsize_baseline/runs/meeting_followup_20261016/queue.log
+```
+
+Each child also has `console.log`, `status.json`, checkpoints, and a final
+summary. The study's `comparison/REPORT.md`, `metrics.json`, plots, and
+`validation/epoch*/mask_*.png` are produced automatically. Each completed
+stage publishes compact results and a handoff update to the baseline branch;
+publication failures are recorded and do not terminate training. The unrelated
+staged PDF is excluded from explicit-path commits.
+
+The queue first measures 200 full-data training updates at the selected batch,
+then locks a common 1- or 3-epoch schedule. Each training update acknowledges
+consumed samples only after successful optimization. Checkpoints include
+optimizer, scaler, sampler, model/buffers, and RNG states; camera projection
+backward on CUDA is not guaranteed bitwise deterministic. The real interrupted
+smoke restored the correct next update and finished, but its trajectory was
+not bitwise identical to an independent continuous run. Do not call that
+exact numerical equivalence.
+
+Optional depth/object-motion work currently produces training-only relative
+depth illustrations and annotation velocity coverage. Radar/depth alignment
+and a trained vehicle-motion readout remain future work.

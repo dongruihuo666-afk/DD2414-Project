@@ -25,7 +25,7 @@ held-out feature-loss probes, not all-frame training or downstream accuracy.
 The scaling trainer provides all-frame streaming self-supervision. The
 combined Hybrid Teacher implementation and RPL deployment live separately on
 `experiment/hybrid-teacher-10sweep-cluster`; that branch is outside the current
-baseline work scope. The baseline meeting follow-up is planned in
+baseline work scope. The baseline meeting follow-up is specified in
 `MEETING_FOLLOWUP_DAY_PLAN.md`: official pretrained references, supervised
 unfrozen downstream evaluation, and the missing five-sweep frozen probe first;
 depth supervision and independent object-motion evaluation follow.
@@ -317,6 +317,71 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-16 — Execute the unattended baseline meeting follow-up
+
+- Authorization: the owner approved proceeding through the day without
+  intermediate confirmations. All work is on `dd2414-mini-baseline`; the
+  cluster branch remains unchanged.
+- Changes: added `scripts/baseline_followup.py`,
+  `train_baseline_downstream.py`, `eval_pretrained_baseline.py`,
+  `run_baseline_followup_day.py`, `start_baseline_followup_day.sh`,
+  `report_baseline_followup.py`, `monitor_baseline_followup.py`,
+  `publish_baseline_followup.py`, `audit_baseline_followup_targets.py`, and
+  `test_baseline_followup.py`; updated `MEETING_FOLLOWUP_DAY_PLAN.md`.
+  All historical entrypoints and the cluster implementation are preserved.
+- Behavior: strict historical checkpoint/source loading; complete manifest
+  token-order checks; full student supervised decoder finetuning with the
+  original loss components; frozen/unfrozen identical-head modes; sample-
+  acknowledged periodic checkpoints containing model/buffers, optimizer,
+  scaler, sampler and RNG. Resume rejects changed implementation or settings.
+  Metrics use official global valid-cell IoU with per-frame counts, fixed-token
+  GT/prediction/error panels, TensorBoard and live status. The queue locks the
+  common epoch budget from a 200-update throughput pilot, runs the two official
+  references, missing five-sweep probe, and matched raw/zero finetuning pair,
+  then optional same-head/depth/annotation diagnostics if time permits.
+- Persistence: local user service, per-stage retries, absolute 24-hour
+  deadline, stale-progress checks, checkpointed stop, isolated logs and atomic
+  stage summaries. Each stage generates compact reports and attempts a scoped
+  baseline commit/push with a handoff update; Git failures are recorded without
+  cancelling training. Explicit-path commits exclude the staged project PDF.
+- Real host checks: outside the tool sandbox, CUDA sees the idle RTX 3090 Ti
+  with 24,564 MiB. Both official archives downloaded successfully and strict
+  four-frame CUDA inference passed at 448x800, including five-sweep metaradar.
+  RGB/radar checkpoint SHA-256 values are
+  `ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e` /
+  `a08475daf65f50e8df84a69a8372c626191bba4437133413b069f5aed4f03bad`.
+  An eight-train/four-val finetuning smoke made finite real updates, stopped
+  at update two, resumed at update three in another process, and completed
+  update four and validation. Batch two peaked near 7.41 GiB allocated.
+- Numerical limitation: the interrupted and independent continuous CUDA
+  runs had identical sampler positions but were not bitwise equivalent;
+  maximum floating parameter difference was about `2.79e-4`, and smoke IoU
+  differed by about `9.90e-5`. CUDA camera projection backward uses
+  `grid_sample`, which does not guarantee deterministic backward. Exact
+  checkpoint-state restoration must not be described as bitwise trajectory
+  equivalence. The CPU optimizer/sampler/RNG resume test is exact.
+- Reproduction: `PYTHONPATH=scripts MPLCONFIGDIR=/tmp/dd2414-mpl
+  $HOME/miniconda3/envs/bev/bin/python -m unittest scripts.test_baseline_followup
+  scripts.test_fullsize_training scripts.test_fullsize_linear_probe
+  scripts.test_training_checkpoint`; `python -m py_compile` on the added
+  Python files; `bash -n scripts/start_baseline_followup_day.sh`;
+  `bash scripts/start_baseline_followup_day.sh` on the actual CUDA host.
+- Checks: 22 CPU tests, shell syntax, Python compilation, and whitespace
+  checks pass. Real bounded CUDA checks above passed; they are engineering
+  checks, not full-validation research results. The previous plan's historical
+  224x400 input claim was corrected: these checkpoint/probe loaders use
+  112x192; official reference inference uses 448x800.
+- Remaining limitations: one seed, unequal official/custom resolution and
+  pretraining history; two finetuning recipes are not a pure test-time radar
+  ablation. Depth outputs are relative illustrations, not metric validation;
+  object-motion work is annotation coverage only, not a trained readout.
+  Actual full-data progress/results are recorded in
+  `fullsize_baseline/runs/meeting_followup_20261016/pipeline.json` and its
+  child summaries, not inferred from this implementation entry.
+- Next: launch the persistent queue, verify a finite 200-update pilot and
+  first production validation, then allow sequential execution and review the
+  final complete/partial status, full-val metrics, and prediction/GT masks.
 
 ### 2026-10-16 — Meeting-driven 24-hour baseline follow-up plan
 
