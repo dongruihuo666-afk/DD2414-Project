@@ -16,7 +16,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | double_dino_5sweep_depth_radar-dav2_pretrain_1epochs | complete | pending | pending | pending | pending |
 | double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs | complete | 6.914 | 33.403 | 8.020 | 12.934 |
 | double_dino_5sweep_depth_radar-dav2_finetune_1epochs | complete | 30.607 | 54.630 | 41.038 | 46.869 |
-| double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs | queued | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs | complete | 26.448 | 54.881 | 33.797 | 41.833 |
 | double_dino_5sweep_depth_radar-dav2_object-motion_1epochs | queued | pending | pending | pending | pending |
 
 Object velocity, double_dino_5sweep_depth_radar_object-motion_1epochs:

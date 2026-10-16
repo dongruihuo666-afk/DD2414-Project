@@ -289,6 +289,42 @@
         "pid": 2338501,
         "returncode": 0,
         "finished_unix_time": 1792181706.5621889
+      },
+      "double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
+          "--mode",
+          "unfrozen-probe",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "radar-dav2",
+          "--epochs",
+          "1",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_pretrain_1epochs/checkpoints/latest.pt"
+        ],
+        "started_unix_time": 1792181712.0514066,
+        "pid": 2352739,
+        "returncode": 0,
+        "finished_unix_time": 1792185676.4021
       }
     },
     "plan": [
@@ -634,47 +670,46 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_radar-dav2_finetune_1epochs",
-    "updated_unix_time": 1792181696.5511663,
+    "current_stage": "double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
+    "updated_unix_time": 1792185666.3357177,
     "child_status": {
-      "state": "complete",
-      "mode": "finetune",
+      "state": "validating_segmentation",
+      "mode": "unfrozen-probe",
       "nsweeps": 5,
       "depth_mode": "radar-dav2",
-      "updated_unix_time": 1792181692.6900268,
+      "updated_unix_time": 1792185659.4955978,
       "epoch_progress": 1.0,
       "epochs": 1,
       "update": 7033,
       "samples_seen": 28130,
-      "samples_per_second": 7.931151803429229,
+      "samples_per_second": 8.303445781621143,
       "latest": {
-        "loss": 5.0087199211120605,
-        "gradient_norm": 23.236663818359375,
+        "loss": 0.09109766781330109,
+        "gradient_norm": 0.922771692276001,
         "learning_rates": {
           "camera": 1.0000000000000002e-06,
-          "student": 1e-05
+          "readout": 0.0001,
+          "student": 2e-05
         },
-        "segmentation": 0.6788700819015503,
-        "center": 0.03688245639204979,
-        "offset": 4.222162246704102,
-        "uncertainty": 0.07080494612455368
+        "segmentation_bce": 0.09109766781330109
       },
-      "wall_seconds": 4111.690142515115,
-      "peak_allocated_gib": 18.1590633392334,
+      "wall_seconds": 3919.100295600947,
+      "peak_allocated_gib": 17.977942943572998,
       "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
-        "utilization_percent": 0.0,
-        "memory_used_mib": 21479.0,
+        "utilization_percent": 67.0,
+        "memory_used_mib": 21543.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 63.0,
-        "power_w": 113.15
-      }
+        "temperature_c": 67.0,
+        "power_w": 216.69
+      },
+      "validation_samples": 6019
     },
-    "idle_warning_seconds": 3.8470728397369385,
+    "idle_warning_seconds": 6.824446439743042,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED f6cf68cb8aac95496f5888ea22f2d9c5fe5a31b2\n"
+      "message": "PUBLISHED 7aa30f981178f8476f72a27e4a96c549bbd66083\n"
     }
   },
   "results": [
@@ -924,8 +959,22 @@
     },
     {
       "name": "double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "vehicle_iou": 0.2644841074283385,
+        "precision": 0.5488101211413755,
+        "recall": 0.33797237760269144,
+        "f1": 0.41832729391314627,
+        "tp": 1266589,
+        "fp": 1041293,
+        "fn": 2481022,
+        "tn": 234681467,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.2597450469142536,
+        "predicted_positive_fraction": 0.009637442788277136,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs/summary.json"
     },
     {
