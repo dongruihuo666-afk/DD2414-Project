@@ -1,0 +1,31 @@
+# RPL runtime dependencies for Python 3.10.
+#
+# torch==2.5.1 and torchvision==0.20.1 are intentionally installed in a
+# separate phase by setup_rpl_env.sh from PyTorch's official cu124 index.
+# Keeping them out of this PyPI-only file prevents an accidental CPU wheel.
+
+# Numerical stack. NumPy 1.x is intentional for this research codebase.
+numpy==1.26.4
+scipy==1.11.4
+scikit-learn==1.5.2
+scikit-image==0.22.0
+
+# nuScenes data loading and geometry. v1.2.0 supports NumPy <2 and Python >=3.9.
+nuscenes-devkit==1.2.0
+pyquaternion==0.9.9
+Shapely==2.0.3
+
+# Headless image and plotting stack for compute nodes.
+Pillow==10.4.0
+opencv-python-headless==4.10.0.84
+matplotlib==3.8.4
+
+# Imported by the unchanged Simple-BEV modules, including import-time helpers.
+efficientnet-pytorch==0.7.1
+fire==0.7.1
+
+# Both APIs are imported by the repository: torch.utils.tensorboard and
+# tensorboardX. The protobuf pin satisfies both without the old 3.19 ceiling.
+tensorboard==2.18.0
+tensorboardX==2.6.2.2
+protobuf==4.25.5

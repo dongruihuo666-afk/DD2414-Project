@@ -25,7 +25,9 @@ held-out feature-loss probes, not all-frame training or downstream accuracy.
 The scaling trainer provides all-frame streaming self-supervision. An isolated
 cluster path now implements the combined ten-sweep hybrid-teacher model and
 its two downstream protocols, but it has not yet produced a CUDA smoke or
-full-data result; see the 2026-10-16 work-log entry.
+full-data result. Its RPL deployment now has a pinned Python 3.10 / PyTorch
+2.5.1 CUDA 12.4 installer, CPU/GPU verifier, and guarded single-GPU Slurm
+launcher; see the 2026-10-16 work-log entries.
 
 The owner has adopted a staged full-data radar scaling study. The frozen order
 is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
@@ -312,6 +314,67 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-16 — Reproducible KTH RPL Python environment
+
+- Change: added `cluster_experiment/requirements-rpl.txt`,
+  `setup_rpl_env.sh`, `verify_rpl_env.py`, and
+  `test_rpl_environment.py`; expanded `cluster_experiment/README.md`; and
+  updated the opt-in `train.sh` and `submit_slurm.sh`. The installer creates
+  `dd2414-hybrid` with Python 3.10 only when absent, installs PyTorch 2.5.1 /
+  TorchVision 0.20.1 from the official CUDA 12.4 index separately from pinned
+  PyPI packages, runs `pip check`, performs a CPU import/source audit, and
+  prints the exact environment and `PYTHON_BIN`. It never launches training.
+- Dependency audit: recursively inspected the Hybrid Teacher entrypoints and
+  their local imports. The runtime needs PyTorch/TorchVision, the scientific
+  and nuScenes stacks, Pillow/OpenCV/Matplotlib, efficientnet-pytorch, Fire,
+  TensorBoard, and tensorboardX. The pinned BEVCar VoxelNet imports only
+  PyTorch, so Lyft SDK, MMCV, MMDetection3D, spconv, and the remaining BEVCar
+  training framework are excluded. DINOv2 ViT-S/14 loads without xFormers via
+  its PyTorch fallback. `efficientnet-pytorch==0.7.1` is the sole permitted
+  source distribution and is pure Python; other ordinary packages must resolve
+  as wheels so no large native build starts on `moria`.
+- Launch safety: CPU verification cannot report CUDA success. GPU verification
+  records model, memory, compute capability, native BF16 support, and a real
+  CUDA matrix multiplication, and verifies the pinned BEVCar and DINOv2
+  source/weight hashes. Slurm accepts a configurable constraint, account, CPU,
+  RAM, and time, but requires a verified partition, enforces exactly one GPU,
+  and rejects times over 48 hours. Dataset, Python, BEVCar, output, precision,
+  and PyTorch cache paths are propagated explicitly. The smoke protocol now
+  forwards `PRECISION` to pretraining, end-to-end finetuning, and the frozen
+  linear probe; its default remains BF16.
+- Reproduce: `bash -n cluster_experiment/setup_rpl_env.sh
+  cluster_experiment/train.sh cluster_experiment/submit_slurm.sh`;
+  `$HOME/miniconda3/envs/bev/bin/python -m py_compile
+  cluster_experiment/verify_rpl_env.py
+  cluster_experiment/test_rpl_environment.py` plus the four Hybrid Teacher
+  entrypoints; and `PYTHONPATH=scripts MPLCONFIGDIR=/tmp/dd2414-mpl
+  $HOME/miniconda3/envs/bev/bin/python -m unittest
+  cluster_experiment.test_rpl_environment scripts.test_hybrid_teacher_protocol
+  scripts.test_fullsize_training scripts.test_fullsize_linear_probe
+  scripts.test_training_checkpoint`. Dependency resolution was checked with
+  `pip install --dry-run --only-binary=:all:
+  --no-binary=efficientnet-pytorch -r
+  cluster_experiment/requirements-rpl.txt`.
+- Actual result: shell parsing and Python compilation passed; all 25 CPU tests
+  passed; the Python 3.10 PyPI dry-run found a compatible resolution for every
+  direct pin and binary wheels for every package except the documented 21-KiB
+  pure-Python efficientnet source archive. The verifier correctly rejected the
+  current workstation environment because its historical NumPy, nuScenes,
+  Pillow, scientific, and TensorBoard versions do not match the new RPL pins;
+  it still loaded all project modules, the exact BEVCar VoxelNet, and DINOv2,
+  and reported CUDA as not tested in CPU mode.
+- Limitations: the new environment has not been installed on `moria`, and this
+  host cannot validate an RPL driver, RTX 3080/2080 Ti CUDA execution, BF16,
+  Slurm feature names, cluster Internet policy, or a real Hybrid Teacher smoke.
+  `NUSCENES_ROOT`, partition, account, and optional constraint remain
+  deliberately unset because their RPL values are not known. Ten-sweep memory
+  and throughput therefore remain cluster acceptance gates.
+- Next: on `moria`, pull this branch, run
+  `bash cluster_experiment/setup_rpl_env.sh`, prepare the documented pinned
+  BEVCar and DINOv2 caches, locate shared nuScenes trainval, then submit
+  `verify` and `smoke`. Use FP16 on RTX 2080 Ti; use BF16 on RTX 3080 only after
+  the verifier passes. Review the smoke summaries before submitting `all`.
 
 ### 2026-10-16 — Isolated ten-sweep hybrid-teacher cluster protocol
 

@@ -4,9 +4,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:-all}"
 
-: "${NUSCENES_ROOT:?Set NUSCENES_ROOT to the nuScenes v1.0-trainval root}"
 : "${BEVCAR_SOURCE_DIR:?Set BEVCAR_SOURCE_DIR to the pinned BEVCar checkout}"
 : "${OUTPUT_ROOT:?Set OUTPUT_ROOT to persistent cluster storage}"
+if [[ "${MODE}" != "verify" ]]; then
+    : "${NUSCENES_ROOT:?Set NUSCENES_ROOT to the nuScenes v1.0-trainval root}"
+fi
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 MANIFEST="${MANIFEST:-${REPO_ROOT}/configs/radar_scaling_manifest_seed125.json}"
@@ -51,7 +53,10 @@ check_environment() {
         echo "Missing BEVCar nets/voxelnet.py under ${BEVCAR_SOURCE_DIR}" >&2; exit 1;
     }
     [[ -f "${MANIFEST}" ]] || { echo "Missing manifest: ${MANIFEST}" >&2; exit 1; }
-    "${PYTHON_BIN}" -c 'import torch, nuscenes; assert torch.cuda.is_available(); print(torch.cuda.get_device_name(0))'
+    "${PYTHON_BIN}" cluster_experiment/verify_rpl_env.py \
+        --mode gpu --precision "${PRECISION}" \
+        --bevcar-source "${BEVCAR_SOURCE_DIR}" \
+        --require-dinov2-cache
     "${PYTHON_BIN}" -m py_compile \
         scripts/hybrid_teacher_full.py \
         scripts/train_hybrid_teacher_pretrain.py \
@@ -167,7 +172,8 @@ run_smoke() {
         --data-root "${NUSCENES_ROOT}" --bevcar-source "${BEVCAR_SOURCE_DIR}" \
         --manifest "${MANIFEST}" --run-dir "${smoke_pretrain}" \
         --scale full --train-samples 4 --val-samples 4 --epochs 1 \
-        --batch-size 1 --num-workers 0 --seed "${SEED}" --nsweeps 10 \
+        --batch-size 1 --num-workers 0 --precision "${PRECISION}" \
+        --seed "${SEED}" --nsweeps 10 \
         --validation-epochs 1 --checkpoint-every-updates 1 --print-every-updates 1
     for stage_mode in finetune linear-probe; do
         run_logged "${smoke_root}/${stage_mode}" \
@@ -177,7 +183,8 @@ run_smoke() {
             --pretrain-checkpoint "${smoke_checkpoint}" \
             --run-dir "${smoke_root}/${stage_mode}" --train-samples 4 \
             --val-samples 4 --epochs 1 --batch-size 1 --num-workers 0 \
-            --seed "${SEED}" --validation-epochs 1 \
+            --precision "${PRECISION}" --seed "${SEED}" \
+            --validation-epochs 1 \
             --checkpoint-every-updates 1 --print-every-updates 1
     done
     "${PYTHON_BIN}" scripts/summarize_hybrid_teacher_cluster.py \
@@ -187,7 +194,15 @@ run_smoke() {
     echo "Smoke protocol passed. Remove ${smoke_root} when it is no longer needed."
 }
 
+verify_gpu_environment() {
+    "${PYTHON_BIN}" cluster_experiment/verify_rpl_env.py \
+        --mode gpu --precision "${PRECISION}" \
+        --bevcar-source "${BEVCAR_SOURCE_DIR}" \
+        --require-dinov2-cache
+}
+
 case "${MODE}" in
+    verify) verify_gpu_environment ;;
     check) check_environment ;;
     smoke) check_environment; run_smoke ;;
     pretrain) check_environment; run_pretrain ;;
@@ -202,7 +217,7 @@ case "${MODE}" in
         run_report
         ;;
     *)
-        echo "Usage: $0 {check|smoke|pretrain|finetune|linear-probe|evaluate|all}" >&2
+        echo "Usage: $0 {verify|check|smoke|pretrain|finetune|linear-probe|evaluate|all}" >&2
         exit 2
         ;;
 esac
