@@ -22,8 +22,13 @@ so it is weak generalization evidence. A separate uniform 64/16-scene control
 gave `+0.7980` and `+0.8602`, with correct radar outperforming no radar. See
 `TRAINVAL_RUN_PLAN.md` and the 2026-10-05 work-log entry. These are bounded
 held-out feature-loss probes, not all-frame training or downstream accuracy.
-The scaling trainer now provides all-frame streaming self-supervision; the
-combined hybrid model remains future implementation work.
+The scaling trainer provides all-frame streaming self-supervision. The
+combined Hybrid Teacher implementation and RPL deployment live separately on
+`experiment/hybrid-teacher-10sweep-cluster`; that branch is outside the current
+baseline work scope. The baseline meeting follow-up is planned in
+`MEETING_FOLLOWUP_DAY_PLAN.md`: official pretrained references, supervised
+unfrozen downstream evaluation, and the missing five-sweep frozen probe first;
+depth supervision and independent object-motion evaluation follow.
 
 The owner has adopted a staged full-data radar scaling study. The frozen order
 is streaming data, checkpoint/resume, wrong-scene evaluation, a throughput
@@ -120,9 +125,12 @@ history. A batch-5 BF16 smoke ran 15 finite updates with a real restart at
 update 10, zero overflow retries and 16.723 GiB peak PyTorch allocation. This
 is still the legacy frozen-random-camera architecture and is only a radar
 density follow-up, not the requested final dual-level-distillation model. The
-formal eight-epoch run is active as the restart-on-failure user service
-`dd2414-fullsize-5sweep.service`; it wrote a durable checkpoint at update 100,
-resumed, and reached update 150 at about 9.0 samples/s with finite losses.
+formal eight-epoch run subsequently completed all 45,008 updates and four
+6,019-frame validations, as verified from its local summary on 2026-10-16.
+Epoch-8 matched semantic/motion losses are `0.269462/0.107164`. Training took
+8.86 hours and four-mode validations another 2.80 hours. No five-sweep frozen
+probe summary was found, so the lower semantic loss does not yet establish
+a segmentation improvement.
 
 The results below this update are historical mini experiments unless an entry
 explicitly says trainval.
@@ -309,6 +317,45 @@ entry concise and factual: changed paths, reason, exact command(s), observed
 result, limitation, next action, commit/PR link or push blocker. Update the
 `Current state` section when a milestone changes. Do not duplicate entire
 chat transcripts, secrets, or unreviewed generated data.
+
+### 2026-10-16 — Meeting-driven 24-hour baseline follow-up plan
+
+- Change: added `MEETING_FOLLOWUP_DAY_PLAN.md` and refreshed this handoff's
+  current baseline status. Switched back to `dd2414-mini-baseline` at the
+  owner's request; the Hybrid Teacher cluster branch remains unchanged.
+- Rationale: prioritize the teacher's official pretrained segmentation
+  reference and unfrozen downstream evaluation before adding depth training.
+  Complete the missing five-sweep frozen probe instead of repeating finished
+  pretraining. Distinguish radar-cell velocity reconstruction from independent
+  GT-object motion evaluation, and decoder capacity from a pure freeze effect.
+- Evidence: inspected the supplied edited meeting transcript and supplement,
+  baseline loaders/evaluators/trainers, official model download scripts,
+  upstream Simple-BEV and Depth Anything V2 documentation, and local summaries.
+  Five-sweep pretraining is complete at eight epochs; its matched semantic
+  loss is `0.269462`, but no matching frozen probe summary was found. The
+  official evaluator accumulates global intersections/unions; mean per-frame
+  IoU must not be called the official primary aggregation.
+- Reproduce planning checks: `git diff --check`; read
+  `fullsize_baseline/runs/full28130_seed125/summary.json`,
+  `fullsize_baseline/runs/full28130_zero_velocity_seed125/summary.json`,
+  `fullsize_baseline/runs/full28130_sweeps5_seed125/summary.json`, and
+  `fullsize_baseline/probes/velocity_full_epoch008/summary.json`; inspect
+  `eval_nuscenes.py` lines computing `intersection`/`union` and the full-split
+  accumulation. Verify target branch with `git branch --show-current`.
+- Actual checks: full/zero/five-sweep summaries all report `complete`, eight
+  epochs, and 6,019 validation frames; measured historical times were used for
+  the plan. Documentation whitespace and referenced-path checks passed.
+  `git fetch origin dd2414-mini-baseline` found no upstream divergence.
+- Limitations: this task only writes the work plan. No finetuning runner,
+  supervised finetuning, depth loss, object-motion readout, GPU smoke, or new
+  score was implemented or run. This execution environment cannot communicate
+  with an NVIDIA driver. Official pretrained weights were not found under
+  the expected checkpoint tree. The 24-hour slots and proposed three-epoch
+  finetuning schedule require a real throughput pilot; fallback must keep
+  paired epoch budgets equal.
+- Next: implement the opt-in baseline downstream/queue programs, pass the
+  actual GPU/resume gates, and execute the ordered schedule. Preserve the
+  unrelated staged `DD2414_Project_Plan.pdf`; commit only this plan/handoff.
 
 ### 2026-10-09 — Five-sweep full-data support and real CUDA gates
 
