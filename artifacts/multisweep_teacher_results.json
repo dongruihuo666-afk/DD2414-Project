@@ -135,6 +135,40 @@
         "pid": 2259856,
         "returncode": 0,
         "finished_unix_time": 1792132349.299775
+      },
+      "double_dino_5sweep_depth_none_pretrain_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs",
+          "--mode",
+          "pretrain",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "none",
+          "--epochs",
+          "1"
+        ],
+        "started_unix_time": 1792132354.610011,
+        "pid": 2260050,
+        "returncode": 0,
+        "finished_unix_time": 1792137040.1045225
       }
     },
     "plan": [
@@ -945,19 +979,57 @@
       }
     ],
     "status": "running",
-    "current_stage": "official_camera_radar_5sweep_112x192",
-    "updated_unix_time": 1792132339.2891748,
+    "current_stage": "double_dino_5sweep_depth_none_pretrain_1epochs",
+    "updated_unix_time": 1792137029.9600012,
     "child_status": {
-      "state": "validating",
-      "samples": 5600,
-      "total": 6019,
-      "updated_unix_time": 1792132327.2698138,
-      "elapsed_seconds": 193.59479598980397
+      "state": "validating_pretrain",
+      "mode": "pretrain",
+      "nsweeps": 5,
+      "depth_mode": "none",
+      "updated_unix_time": 1792137019.1215942,
+      "epoch_progress": 1.0,
+      "epochs": 1,
+      "update": 7033,
+      "samples_seen": 28130,
+      "samples_per_second": 6.947809756625964,
+      "latest": {
+        "loss": 0.3610847592353821,
+        "gradient_norm": 6.845476150512695,
+        "learning_rates": {
+          "camera": 2e-05,
+          "student": 2e-05
+        },
+        "image": 0.42137256264686584,
+        "bev": 0.25686946511268616,
+        "radar_motion_auxiliary": 0.14262929558753967,
+        "bev_mask_cells": 37036,
+        "radar_points_per_sample": [
+          2320,
+          2041
+        ],
+        "occupied_voxels_per_sample": [
+          633,
+          591
+        ],
+        "motion_auxiliary_covered_cells": 58
+      },
+      "wall_seconds": 4640.456076778937,
+      "peak_allocated_gib": 14.389086723327637,
+      "eta_training_seconds": 0.0,
+      "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
+      "gpu": {
+        "utilization_percent": 63.0,
+        "memory_used_mib": 15739.0,
+        "memory_total_mib": 24564.0,
+        "temperature_c": 68.0,
+        "power_w": 217.74
+      },
+      "validation_samples": 6019
     },
-    "idle_warning_seconds": 12.019361019134521,
+    "idle_warning_seconds": 10.825668573379517,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 2471368097ca4feeec385c10a76735a35f873c86\n"
+      "message": "PUBLISHED c2dd1a1dd5cf18e3206ebeb7a86e73436957542e\n"
     }
   },
   "results": [
@@ -1040,8 +1112,21 @@
     },
     {
       "name": "double_dino_5sweep_depth_none_pretrain_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "samples": 6019,
+        "losses": {
+          "loss": 0.4489620974797073,
+          "image": 0.4241214593020482,
+          "bev": 0.27636705172341175,
+          "radar_motion_auxiliary": 0.28608831842118154
+        },
+        "depth_anchors": 0,
+        "depth_mae_m": null,
+        "depth_rmse_m": null,
+        "depth_abs_rel": null,
+        "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/summary.json"
     },
     {
