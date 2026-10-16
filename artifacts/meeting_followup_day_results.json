@@ -51,10 +51,38 @@
         "pid": 2235178,
         "returncode": 0,
         "finished_unix_time": 1792116175.2134943
+      },
+      "frozen_1x1_5sweep_1epoch": {
+        "status": "partial",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_fullsize_linear_probe.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
+          "--output-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/frozen_1x1_5sweep_1epoch",
+          "--epochs",
+          "1",
+          "--batch-size",
+          "5",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792116180.961948,
+        "pid": 2238109,
+        "returncode": -15,
+        "finished_unix_time": 1792117982.8193853
       }
     },
-    "stage": "official_camera_radar_5sweep",
-    "updated_unix_time": 1792116175.2135024,
+    "stage": "frozen_1x1_5sweep_1epoch",
+    "updated_unix_time": 1792117982.8193889,
     "paired_configuration": {
       "epochs": 3,
       "batch_size": 5,
@@ -63,15 +91,32 @@
       "measured_samples_per_second": 8.358357280268834
     },
     "child_status": {
-      "state": "validating",
-      "samples": 5800,
-      "total": 6019,
-      "updated_unix_time": 1792116149.403999,
-      "elapsed_seconds": 550.9143081700895
+      "experiment": "frozen_one_layer_vehicle_probe_v1",
+      "checkpoint": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
+      "checkpoint_sha256": "281d8c7cb2429f80cafb4e957e0a14bde70b0c5c066d66610a697bc41287e1db",
+      "backbone_epoch": 8,
+      "radar_velocity_mode": "full",
+      "nsweeps": 5,
+      "probe_epochs": 1,
+      "train_samples": 28130,
+      "val_samples": 6019,
+      "state": "training",
+      "epoch": 1,
+      "updates": 5600,
+      "samples_seen_this_epoch": 28000,
+      "mean_train_loss": 0.4995359101838299,
+      "elapsed_seconds": 1750.3791425470263,
+      "gpu": {
+        "utilization_percent": 54.0,
+        "memory_used_mib": 19767.0,
+        "memory_total_mib": 24564.0,
+        "temperature_c": 68.0,
+        "power_w": 231.31
+      }
     },
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED ea64598f9cfeff2edc8896612cbe7422bd97c656\n"
+      "message": "PUBLISHED d19c5365893b188dacc50e39d3bcb332a481091a\n"
     }
   },
   "results": [
