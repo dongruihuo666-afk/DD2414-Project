@@ -79,10 +79,40 @@
         "pid": 2238109,
         "returncode": -15,
         "finished_unix_time": 1792117982.8193853
+      },
+      "finetune_1sweep_velocity_full_3epochs": {
+        "status": "partial",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_baseline_downstream.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/full28130_seed125/checkpoints/epoch008.pt",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs",
+          "--epochs",
+          "3",
+          "--batch-size",
+          "5",
+          "--accumulation",
+          "1",
+          "--num-workers",
+          "8"
+        ],
+        "started_unix_time": 1792117988.3366737,
+        "pid": 2242752,
+        "returncode": 0,
+        "finished_unix_time": 1792122081.1377969
       }
     },
-    "stage": "frozen_1x1_5sweep_1epoch",
-    "updated_unix_time": 1792117982.8193889,
+    "stage": "finetune_1sweep_velocity_full_3epochs",
+    "updated_unix_time": 1792122081.1377995,
     "paired_configuration": {
       "epochs": 3,
       "batch_size": 5,
@@ -91,35 +121,63 @@
       "measured_samples_per_second": 8.358357280268834
     },
     "child_status": {
-      "experiment": "frozen_one_layer_vehicle_probe_v1",
-      "checkpoint": "/home/students2026/dd2414/fullsize_baseline/runs/full28130_sweeps5_seed125/checkpoints/epoch008.pt",
-      "checkpoint_sha256": "281d8c7cb2429f80cafb4e957e0a14bde70b0c5c066d66610a697bc41287e1db",
-      "backbone_epoch": 8,
-      "radar_velocity_mode": "full",
-      "nsweeps": 5,
-      "probe_epochs": 1,
-      "train_samples": 28130,
-      "val_samples": 6019,
-      "state": "training",
-      "epoch": 1,
-      "updates": 5600,
-      "samples_seen_this_epoch": 28000,
-      "mean_train_loss": 0.4995359101838299,
-      "elapsed_seconds": 1750.3791425470263,
+      "state": "running",
+      "updated_unix_time": 1792122071.5657818,
+      "epoch_progress": 1.1464628510487025,
+      "epochs": 3,
+      "update": 6450,
+      "samples_seen": 32250,
+      "samples_per_second": 8.646906577860847,
+      "wall_seconds": 4057.258021506015,
+      "peak_allocated_gib": 17.64524507522583,
+      "eta_training_seconds": 6029.902084694303,
+      "latest": {
+        "loss": 3.425355911254883,
+        "gradient_norm": 143.11636352539062,
+        "segmentation": 0.8198933005332947,
+        "center": 0.06973382085561752,
+        "offset": 2.457505464553833,
+        "uncertainty": 0.07822313904762268,
+        "seconds": 0.5722717770840973,
+        "learning_rates": {
+          "camera": 7.839604249133945e-06,
+          "student": 7.839604249133945e-05
+        }
+      },
       "gpu": {
-        "utilization_percent": 54.0,
-        "memory_used_mib": 19767.0,
+        "utilization_percent": 99.0,
+        "memory_used_mib": 20745.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 68.0,
-        "power_w": 231.31
+        "temperature_c": 76.0,
+        "power_w": 309.35
       }
     },
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED d19c5365893b188dacc50e39d3bcb332a481091a\n"
+      "message": "PUBLISHED 68271a08bfd9e9aae45507b306e3b100446fef22\n"
     }
   },
   "results": [
+    {
+      "name": "finetune_1sweep_velocity_full_3epochs",
+      "status": "partial",
+      "metrics": {
+        "vehicle_iou": 0.23108981144554852,
+        "precision": 0.5368224738751177,
+        "recall": 0.2886412170313301,
+        "f1": 0.37542315645387775,
+        "tp": 1081715,
+        "fp": 933318,
+        "fn": 2665896,
+        "tn": 234789442,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.22399228195274773,
+        "predicted_positive_fraction": 0.008414539934879877,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
+      "source": "/home/students2026/dd2414/fullsize_baseline/runs/meeting_followup_20261016/finetune_1sweep_velocity_full_3epochs/summary.json"
+    },
     {
       "name": "official_camera",
       "status": "complete",
