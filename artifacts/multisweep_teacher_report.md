@@ -17,7 +17,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | double_dino_5sweep_depth_radar-dav2_frozen-probe_1epochs | complete | 6.914 | 33.403 | 8.020 | 12.934 |
 | double_dino_5sweep_depth_radar-dav2_finetune_1epochs | complete | 30.607 | 54.630 | 41.038 | 46.869 |
 | double_dino_5sweep_depth_radar-dav2_unfrozen-probe_1epochs | complete | 26.448 | 54.881 | 33.797 | 41.833 |
-| double_dino_5sweep_depth_radar-dav2_object-motion_1epochs | queued | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar-dav2_object-motion_1epochs | complete | pending | pending | pending | pending |
 
 Object velocity, double_dino_5sweep_depth_radar_object-motion_1epochs:
 
@@ -27,6 +27,18 @@ Object velocity, double_dino_5sweep_depth_radar_object-motion_1epochs:
 | zero_velocity | 63002 | 2.0257286993200787 | 6.476735684028199 |
 | empty | 63002 | 2.246325954771228 | 7.029440828398492 |
 | wrong_scene | 63002 | 2.033972923678456 | 6.462413861153209 |
+
+GT box positions are supplied; this is not detection or nuScenes NDS.
+
+
+Object velocity, double_dino_5sweep_depth_radar-dav2_object-motion_1epochs:
+
+| Radar input | Objects | Velocity EPE (m/s) | Moving EPE (m/s) |
+| --- | ---: | ---: | ---: |
+| matched | 63002 | 1.2990642190128856 | 3.5368592885188264 |
+| zero_velocity | 63002 | 2.0149345389876943 | 6.445439490683839 |
+| empty | 63002 | 2.255507316500185 | 7.050182093074 |
+| wrong_scene | 63002 | 2.027820117864862 | 6.475570682841578 |
 
 GT box positions are supplied; this is not detection or nuScenes NDS.
 
