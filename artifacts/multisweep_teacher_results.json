@@ -243,6 +243,42 @@
         "pid": 2264303,
         "returncode": 0,
         "finished_unix_time": 1792143693.8321707
+      },
+      "double_dino_5sweep_depth_none_unfrozen-probe_1epochs": {
+        "status": "complete",
+        "attempts": 1,
+        "command": [
+          "/home/students2026/miniconda3/envs/bev/bin/python",
+          "scripts/train_multisweep_teacher.py",
+          "--data-root",
+          "/home/students2026/datasets/nuscenes",
+          "--bevcar-source",
+          "/home/students2026/dd2414/external/BEVCar",
+          "--manifest",
+          "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+          "--batch-size",
+          "4",
+          "--num-workers",
+          "8",
+          "--precision",
+          "bf16",
+          "--run-dir",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
+          "--mode",
+          "unfrozen-probe",
+          "--nsweeps",
+          "5",
+          "--depth-mode",
+          "none",
+          "--epochs",
+          "1",
+          "--checkpoint",
+          "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_pretrain_1epochs/checkpoints/latest.pt"
+        ],
+        "started_unix_time": 1792143699.8599818,
+        "pid": 2267713,
+        "returncode": 0,
+        "finished_unix_time": 1792147904.9148343
       }
     },
     "plan": [
@@ -1053,47 +1089,45 @@
       }
     ],
     "status": "running",
-    "current_stage": "double_dino_5sweep_depth_none_finetune_1epochs",
-    "updated_unix_time": 1792143683.8204167,
+    "current_stage": "double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
+    "updated_unix_time": 1792147894.9030282,
     "child_status": {
       "state": "complete",
-      "mode": "finetune",
+      "mode": "unfrozen-probe",
       "nsweeps": 5,
       "depth_mode": "none",
-      "updated_unix_time": 1792143683.137137,
+      "updated_unix_time": 1792147891.0166426,
       "epoch_progress": 1.0,
       "epochs": 1,
       "update": 7033,
       "samples_seen": 28130,
-      "samples_per_second": 7.3130802683342635,
+      "samples_per_second": 7.699260400142887,
       "latest": {
-        "loss": 4.940761566162109,
-        "gradient_norm": 21.48963165283203,
+        "loss": 0.08843135088682175,
+        "gradient_norm": 1.647315502166748,
         "learning_rates": {
           "camera": 1.0000000000000002e-06,
-          "student": 1e-05
+          "readout": 0.0001,
+          "student": 2e-05
         },
-        "segmentation": 0.6624242067337036,
-        "center": 0.035264331847429276,
-        "offset": 4.169545650482178,
-        "uncertainty": 0.07352730631828308
+        "segmentation_bce": 0.08843135088682175
       },
-      "wall_seconds": 4379.387036672095,
-      "peak_allocated_gib": 14.364269733428955,
+      "wall_seconds": 4166.986890939996,
+      "peak_allocated_gib": 14.183149337768555,
       "eta_training_seconds": 0.0,
       "throughput_scope": "optimizer steps including input wait, excluding checkpoints and validation",
       "gpu": {
         "utilization_percent": 0.0,
-        "memory_used_mib": 20408.0,
+        "memory_used_mib": 15591.0,
         "memory_total_mib": 24564.0,
-        "temperature_c": 62.0,
-        "power_w": 112.88
+        "temperature_c": 61.0,
+        "power_w": 112.25
       }
     },
-    "idle_warning_seconds": 0.6698763370513916,
+    "idle_warning_seconds": 3.8707594871520996,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 8a51715da89e62bfa45ad367d654c4f64fda1b85\n"
+      "message": "PUBLISHED 53943786090dab2af9c180b2136f6ac341496a18\n"
     }
   },
   "results": [
@@ -1235,8 +1269,22 @@
     },
     {
       "name": "double_dino_5sweep_depth_none_unfrozen-probe_1epochs",
-      "status": "queued",
-      "final_validation": {},
+      "status": "complete",
+      "final_validation": {
+        "vehicle_iou": 0.251816064509596,
+        "precision": 0.5206984744343132,
+        "recall": 0.32779842945279003,
+        "f1": 0.4023211902273293,
+        "tp": 1228461,
+        "fp": 1130795,
+        "fn": 2519150,
+        "tn": 234591965,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.24696597214225371,
+        "predicted_positive_fraction": 0.00985197454761533,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc"
+      },
       "source": "/home/students2026/dd2414/fullsize_baseline/runs/multisweep_teacher_20261016/double_dino_5sweep_depth_none_unfrozen-probe_1epochs/summary.json"
     },
     {
