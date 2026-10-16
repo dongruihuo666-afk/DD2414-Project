@@ -9,7 +9,7 @@ The depth treatment changes BOTH supervision and lifting; isolate those componen
 | Configuration | Status | Vehicle IoU (%) | Precision (%) | Recall (%) | F1 (%) |
 | --- | --- | ---: | ---: | ---: | ---: |
 | double_dino_5sweep_depth_radar_pretrain_1epochs | complete | pending | pending | pending | pending |
-| double_dino_5sweep_depth_radar_frozen-probe_1epochs | queued | pending | pending | pending | pending |
+| double_dino_5sweep_depth_radar_frozen-probe_1epochs | complete | 5.908 | 34.552 | 6.652 | 11.156 |
 | double_dino_5sweep_depth_radar_finetune_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_radar_unfrozen-probe_1epochs | queued | pending | pending | pending | pending |
 | double_dino_5sweep_depth_radar_object-motion_1epochs | queued | pending | pending | pending | pending |
