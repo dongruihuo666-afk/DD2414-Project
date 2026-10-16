@@ -705,9 +705,9 @@
         "expected_summary": "/home/students2026/dd2414/fullsize_baseline/runs/depth_priority_20261016/double_dino_5sweep_depth_radar-dav2_object-motion_1epochs/summary.json"
       }
     ],
-    "status": "running",
+    "status": "complete",
     "current_stage": "double_dino_5sweep_depth_radar-dav2_object-motion_1epochs",
-    "updated_unix_time": 1792189075.7351527,
+    "updated_unix_time": 1792189091.274261,
     "child_status": {
       "state": "complete",
       "mode": "object-motion",
@@ -743,7 +743,7 @@
     "idle_warning_seconds": 3.4935038089752197,
     "publication": {
       "returncode": 0,
-      "message": "PUBLISHED 92db9185309d3e132359820a6196d52a3a8d59b0\n"
+      "message": "PUBLISHED 0fa12269e2339335c434971de6cea9753190faa6\n"
     }
   },
   "results": [
