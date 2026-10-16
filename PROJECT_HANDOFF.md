@@ -379,9 +379,14 @@ chat transcripts, secrets, or unreviewed generated data.
   Actual full-data progress/results are recorded in
   `fullsize_baseline/runs/meeting_followup_20261016/pipeline.json` and its
   child summaries, not inferred from this implementation entry.
-- Next: launch the persistent queue, verify a finite 200-update pilot and
-  first production validation, then allow sequential execution and review the
-  final complete/partial status, full-val metrics, and prediction/GT masks.
+- Launch: `dd2414-baseline-followup-day.service` is active on the actual host.
+  The batch-five pilot reached 25 finite updates at about 7.5 samples/s,
+  100% observed GPU utilization, 17.65 GiB peak allocation and approximately
+  19.3 GiB total process memory. The terminal monitor also reads the pilot's
+  live status while the parent queue is waiting for its result.
+- Next: verify the complete 200-update pilot and first production validation,
+  then allow sequential execution and review the final complete/partial
+  status, full-val metrics, and prediction/GT masks.
 
 ### 2026-10-16 — Meeting-driven 24-hour baseline follow-up plan
 
