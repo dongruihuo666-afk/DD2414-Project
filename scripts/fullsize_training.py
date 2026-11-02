@@ -96,7 +96,7 @@ def slice_batch(batch, index):
     return tuple(output)
 
 
-def extract_teacher_features_batched(teacher, images, device):
+def extract_teacher_features_batched(teacher, images, device, resolution=None):
     """Extract all B x S camera maps in one frozen DINO forward."""
     if images.ndim != 5:
         raise ValueError('images must have shape (B, S, 3, H, W)')
@@ -104,8 +104,11 @@ def extract_teacher_features_batched(teacher, images, device):
     flat = images.reshape(batch * cameras, channels, height, width).to(
         device, non_blocking=True,
     )
+    teacher_height, teacher_width = resolution or (TEACHER_HEIGHT, TEACHER_WIDTH)
+    if teacher_height % PATCH_SIZE or teacher_width % PATCH_SIZE:
+        raise ValueError('Teacher resolution must be divisible by patch size')
     flat = F.interpolate(
-        flat, size=(TEACHER_HEIGHT, TEACHER_WIDTH), mode='bicubic',
+        flat, size=(teacher_height, teacher_width), mode='bicubic',
         align_corners=False, antialias=True,
     )
     mean = flat.new_tensor((0.485, 0.456, 0.406)).view(1, 3, 1, 1)
@@ -114,7 +117,7 @@ def extract_teacher_features_batched(teacher, images, device):
     tokens = output['x_norm_patchtokens']
     features = tokens.transpose(1, 2).reshape(
         batch, cameras, tokens.shape[-1],
-        TEACHER_HEIGHT // PATCH_SIZE, TEACHER_WIDTH // PATCH_SIZE,
+        teacher_height // PATCH_SIZE, teacher_width // PATCH_SIZE,
     )
     return features
 

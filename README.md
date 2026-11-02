@@ -14,6 +14,18 @@ from the upstream code.
 
 ## Current milestone
 
+2026-11-03: active scientific training is full-data only. The owner selected the
+unchanged official 700-scene train / 150-scene validation split. The new study
+strictly loads the nuScenes-trained official RGB encoder, uses 448x800 images,
+double DINO distillation and ten radar sweeps, with independent velocity-present
+and velocity-hidden training and matched pre/post-fusion frozen probes.
+See [the approved protocol and monitoring commands](FULL_DATA_TEST_PROTOCOL.md).
+Launch with `bash scripts/start_official_full_data.sh`; it waits for an idle GPU
+without stopping other users' jobs. Runtime status, not this README, determines
+whether training has actually started.
+
+### Historical milestones
+
 Full nuScenes trainval is installed on the Ubuntu training host; mini was
 removed there. The seed-125 streaming study has completed the fixed-budget
 `64 -> 256 -> 1,024 -> 4,096 -> 28,130` curve, with every point evaluated on
@@ -24,12 +36,13 @@ every scale; both saturate around 4,096 rather than growing indefinitely. Read
 and motion losses, not downstream segmentation accuracy. Historical mini
 commands require a separate mini dataset.
 
-An independent epoch-matched follow-up is now prepared under
+An independent epoch-matched follow-up was implemented under
 [`fullsize_baseline/`](fullsize_baseline/README.md). It keeps the P9 model and
 one-sweep objective unchanged, but compares 4,096 and all 28,130 samples at
 eight epochs with a measured batch/worker configuration and live status,
-TensorBoard, and plot monitoring. Only engineering pilots have run; neither
-formal eight-epoch result exists yet.
+TensorBoard, and plot monitoring. Those historical eight-epoch runs completed;
+their results are in `PROJECT_HANDOFF.md`. Numeric subsets are retired and
+are not scheduled by the current full-data-only queue.
 
 - Completed the one-sweep full-data radar scaling curve with deterministic
   manifests, exact checkpoint/resume and matched/zero/empty/wrong-scene

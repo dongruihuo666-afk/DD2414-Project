@@ -107,13 +107,33 @@ class MultiSweepTeacher(nn.Module):
         probability = math.log(40.)/math.log(240.)
         nn.init.constant_(self.depth_head.bias, math.log(probability/(1-probability)))
 
-    def features(self, inputs):
+    def features(self, inputs, location='fused_bev'):
         images, pixels, cameras, vox, radar = inputs
         depth_vox = DepthAwareVox(vox, self.depth_head) if self.depth_mode != 'none' else vox
-        shared, _, images_features = self.student(rgb_camXs=images,
+        shared, camera, images_features = self.student(rgb_camXs=images,
             pix_T_cams=pixels, cam0_T_camXs=cameras, vox_util=depth_vox,
             bevcar_voxels=radar, return_shared_bev=True)
+        if location == 'camera_bev':
+            # Fixed height pooling preserves 128 channels and the identical
+            # 1x1 probe capacity; no radar or learned fusion is used here.
+            b, cy, z, x = camera.shape
+            shared = camera.reshape(b, 128, cy // 128, z, x).mean(2)
+        elif location != 'fused_bev':
+            raise ValueError(f'Unknown feature location: {location}')
         return shared, images_features, getattr(depth_vox, 'prediction', None)
+
+
+def load_official_camera_encoder(encoder, checkpoint):
+    """Load every official encoder tensor, rejecting missing/extra/shape errors."""
+    payload = torch.load(checkpoint, map_location='cpu', weights_only=False)
+    state = payload['model_state_dict']
+    selected = {name[len('encoder.'):]: value for name, value in state.items()
+                if name.startswith('encoder.')}
+    if not selected:
+        raise ValueError('Official checkpoint contains no encoder.* tensors')
+    encoder.load_state_dict(selected, strict=True)
+    return dict(path=str(Path(checkpoint).resolve()), sha256=digest_file(checkpoint),
+                tensors=len(selected), scope='encoder.* only; no decoder/fusion weights')
 
 
 def build_model(device, seed, bevcar_source, depth_mode):
@@ -296,9 +316,10 @@ def pool_objects(features, records):
 
 
 class Downstream(nn.Module):
-    def __init__(self, backbone, mode):
+    def __init__(self, backbone, mode, location='fused_bev'):
         super().__init__()
         self.backbone, self.mode = backbone, mode
+        self.location = location
         configure(backbone, mode)
         self.probe = nn.Conv2d(128, 1, 1) if mode in ['frozen-probe','unfrozen-probe'] else None
         self.motion = nn.Linear(128, 2) if mode == 'object-motion' else None
@@ -320,9 +341,9 @@ class Downstream(nn.Module):
     def forward(self, inputs):
         if self.mode in ['frozen-probe','object-motion']:
             with torch.no_grad():
-                shared, image, depth = self.backbone.features(inputs)
+                shared, image, depth = self.backbone.features(inputs, self.location)
         else:
-            shared, image, depth = self.backbone.features(inputs)
+            shared, image, depth = self.backbone.features(inputs, self.location)
         if self.mode == 'finetune':
             outputs = self.backbone.student.decoder(shared, None)
             return (outputs['raw_feat'], outputs['feat'], outputs['segmentation'],

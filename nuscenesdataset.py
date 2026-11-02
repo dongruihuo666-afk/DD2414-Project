@@ -279,8 +279,10 @@ def get_rot(h):
     ])
 
 
-def img_transform(img, resize_dims, crop):
-    img = img.resize(resize_dims, Image.NEAREST)
+def img_transform(img, resize_dims, crop, checkpoint_era_resize=False):
+    # Opt-in official-checkpoint preprocessing; preserve the legacy default.
+    img = (img.resize(resize_dims) if checkpoint_era_resize else
+           img.resize(resize_dims, Image.NEAREST))
     img = img.crop(crop)
     return img
 
@@ -812,7 +814,8 @@ class NuscData(torch.utils.data.Dataset):
             pix_T_cam = utils.geom.merge_intrinsics(fx, fy, new_x0, new_y0)
             intrin = pix_T_cam.squeeze(0)
 
-            img = img_transform(img, resize_dims, crop)
+            img = img_transform(img, resize_dims, crop,
+                checkpoint_era_resize=self.data_aug_conf.get('checkpoint_era_resize', False))
             imgs.append(totorch_img(img))
 
             intrins.append(intrin)

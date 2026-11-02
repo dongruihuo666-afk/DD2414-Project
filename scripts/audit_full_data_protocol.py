@@ -43,18 +43,22 @@ def partition_errors(partitions, initialization_scenes=(), historical_test_expos
     return errors
 
 
-def experiment_tasks():
+def experiment_tasks(official_protocol=False):
     """Requested scope, not executable commands or a claim that training has started."""
     common = dict(training_data='entire approved training partition',
         validation_data='entire approved validation partition',
         test_access='locked until protocol and model-selection policy are approved',
         camera_initialization='official Simple-BEV RGB encoder; strict load',
         image_resolution=[448,800], radar_sweeps=10, depth_mode='none')
+    if official_protocol:
+        common.update(training_data='official train: 700 scenes / 28130 samples',
+            validation_data='official val: 150 scenes / 6019 samples',
+            test_access='no local test; report validation metrics, never blind-test scores')
     tasks = []
     def add(name, mode, epochs, parent=None, velocity=None, location=None):
         tasks.append(dict(name=name,mode=mode,epochs=epochs,parent=parent,
             velocity_input=velocity,probe_location=location,
-            status='pending_test_protocol',configuration=dict(common)))
+            status='queued' if official_protocol else 'pending_test_protocol',configuration=dict(common)))
     add('official_rgb_encoder_initial_probe','frozen-probe',10,location='camera_bev')
     for velocity in ['present','hidden_throughout_training_and_evaluation']:
         parent=f'double_dino_velocity_{velocity}'
@@ -92,7 +96,7 @@ def historical_holdout_candidate(scenes, samples, validation_names, seed=125):
             for name,tokens in roles.items()})
 
 
-def audit(data_root, archive, checkpoint):
+def audit(data_root, archive, checkpoint, official_protocol=False):
     from nuscenes.utils.splits import create_splits_scenes
     with (data_root/'v1.0-trainval/scene.json').open() as handle:
         scenes = json.load(handle)
@@ -135,12 +139,20 @@ def audit(data_root, archive, checkpoint):
         test['metadata_download_verified'] = False
     exposure_file = ROOT/'artifacts/meeting_20261016/evidence.json'
     previous = json.loads(exposure_file.read_text()) if exposure_file.is_file() else {}
-    return dict(status='blocked_test_protocol_decision',official_trainval=rows,
+    overlaps = dict(scenes=len(scene_sets['train'] & scene_sets['val']),
+        logs=len(log_sets['train'] & log_sets['val']),
+        samples=len(sample_sets['train'] & sample_sets['val']))
+    if any(overlaps.values()):
+        raise ValueError('Official training and validation partitions overlap')
+    if official_protocol and (rows['train']['samples'] != 28130 or
+            rows['val']['samples'] != 6019 or not checkpoint.is_file()):
+        raise ValueError('Official protocol requires complete data membership and RGB checkpoint')
+    return dict(status='ready_official_train_val' if official_protocol else 'blocked_test_protocol_decision',
+        approved_protocol='official_train_val' if official_protocol else None,
+        official_trainval=rows,
         active_full_manifest_sha256=digest,
         manifest_membership_matches_official=True,
-        trainval_overlap=dict(scenes=len(scene_sets['train'] & scene_sets['val']),
-            logs=len(log_sets['train'] & log_sets['val']),
-            samples=len(sample_sets['train'] & sample_sets['val'])),
+        trainval_overlap=overlaps,
         official_test=test,
         camera_checkpoint=dict(path=str(checkpoint),exists=checkpoint.is_file(),
             sha256=digest_file(checkpoint) if checkpoint.is_file() else None,
@@ -150,7 +162,7 @@ def audit(data_root, archive, checkpoint):
             reported_frames=previous.get('validation_samples'),
             cannot_relabel_as_untouched_test=bool(previous)),
         proposed_historical_holdout=historical_holdout_candidate(scenes,samples,official['val']),
-        blockers=[
+        blockers=[] if official_protocol else [
             'Official test has no public instance/box annotations for local Vehicle BEV IoU or GT-box velocity EPE.',
             'Holding out official train scenes does not remove their prior exposure in the requested RGB encoder.',
             'Official val has already been evaluated in this project; a new split cannot restore a never-observed test claim.',
@@ -158,9 +170,9 @@ def audit(data_root, archive, checkpoint):
         sources=[
             'https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/README.md',
             'https://registry.opendata.aws/motional-nuscenes/'],
-        experiment_tasks=experiment_tasks(),
+        experiment_tasks=experiment_tasks(official_protocol),
         training_launched=False,
-        note='This is a task specification and audit, not a running scheduler.')
+        note='Audit only. Runtime state is separately recorded in the official-protocol queue pipeline.json.')
 
 
 def main():
@@ -172,14 +184,16 @@ def main():
         default=ROOT/'checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth')
     p.add_argument('--output',type=Path)
     p.add_argument('--require-ready',action='store_true',help='Exit nonzero while test approval is missing.')
+    p.add_argument('--protocol', choices=['pending','official_train_val'], default='pending')
     args=p.parse_args()
-    result=audit(args.data_root,args.test_metadata_archive,args.camera_checkpoint)
+    result=audit(args.data_root,args.test_metadata_archive,args.camera_checkpoint,
+                 args.protocol == 'official_train_val')
     payload=json.dumps(result,indent=2)+'\n'
     if args.output:
         args.output.parent.mkdir(parents=True,exist_ok=True)
         args.output.write_text(payload)
     print(payload)
-    if args.require_ready:
+    if args.require_ready and result['status'] != 'ready_official_train_val':
         raise SystemExit(2)
 
 

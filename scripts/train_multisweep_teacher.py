@@ -25,10 +25,11 @@ from fullsize_training import (AcknowledgedShuffleSampler, atomic_json_write,
     learning_rate_at_step, query_nvidia_smi, semantic_loss_batched,
     build_motion_targets_batched, motion_loss_batched)
 from multisweep_teacher import (Downstream, build_model, configure,
-    image_cosine_loss, load_depth_teacher, object_targets, pool_objects,
+    image_cosine_loss, load_depth_teacher, load_official_camera_encoder, object_targets, pool_objects,
     prepare_bevcar_inputs, projected_radar_depth, relative_depth_loss,
     relative_depth_target, sparse_depth_loss, recent_radar_target_batch)
-from radar_evaluation import RADAR_MODES, radar_for_mode, wrong_scene_dataset_indices
+from radar_evaluation import (RADAR_MODES, radar_for_mode, wrong_scene_dataset_indices,
+                              apply_radar_velocity_mode)
 from radar_scaling_data import IndexedSubset, validate_scaling_manifest
 from train_fullsize_linear_probe import reset_seeds
 from train_nuscenes import SimpleLoss
@@ -52,6 +53,12 @@ def parse_args():
     p.add_argument('--mode', choices=['pretrain','frozen-probe','unfrozen-probe',
                                     'finetune','object-motion'], required=True)
     p.add_argument('--checkpoint', type=Path)
+    p.add_argument('--official-camera-checkpoint', type=Path)
+    p.add_argument('--image-resolution', type=int, nargs=2, default=[112,192])
+    p.add_argument('--teacher-resolution', type=int, nargs=2, default=[196,336])
+    p.add_argument('--velocity-mode', choices=['full','zero'], default='full')
+    p.add_argument('--probe-location', choices=['camera_bev','fused_bev'], default='fused_bev')
+    p.add_argument('--initial-camera-probe', action='store_true')
     p.add_argument('--nsweeps', type=int, choices=[5,10], default=5)
     p.add_argument('--depth-mode', choices=['none','radar','radar-dav2'], default='none')
     p.add_argument('--epochs', type=int, default=2)
@@ -107,8 +114,8 @@ def evaluate_motion(model, dataset, indices, manifest, args, device, dtype, outp
     frames = 0
     with (output/'per_object.jsonl').open('w') as handle:
         for (positions, batch), (_, wrong) in zip(loader, wrong_loader):
-            matched = prepare_bevcar_inputs(batch, device)
-            other = prepare_bevcar_inputs(wrong, device)[-1]
+            matched = model_inputs(batch, device, args.velocity_mode)
+            other = model_inputs(wrong, device, args.velocity_mode)[-1]
             tokens = [manifest['val']['tokens'][full_indices.index(indices[int(i)])]
                       for i in positions]
             for mode in RADAR_MODES:
@@ -164,6 +171,11 @@ def evaluate_motion(model, dataset, indices, manifest, args, device, dtype, outp
     return result
 
 
+def model_inputs(batch, device, velocity_mode):
+    inputs = prepare_bevcar_inputs(batch, device)
+    return (*inputs[:-1], apply_radar_velocity_mode(inputs[-1], velocity_mode))
+
+
 def main():
     args = parse_args()
     if min(args.epochs, args.batch_size, args.checkpoint_every, args.print_every) < 1:
@@ -174,6 +186,15 @@ def main():
         raise ValueError('loss weights must be nonnegative')
     if args.mode == 'pretrain' and min(args.image_weight,args.bev_weight) <= 0:
         raise ValueError('double distillation requires both DINO terms')
+    if min(*args.image_resolution, *args.teacher_resolution) < 1:
+        raise ValueError('Image dimensions must be positive')
+    if any(size % 14 for size in args.teacher_resolution):
+        raise ValueError('DINO dimensions must be divisible by 14')
+    if args.initial_camera_probe and not (args.mode == 'frozen-probe' and
+            args.probe_location == 'camera_bev' and args.official_camera_checkpoint and not args.checkpoint):
+        raise ValueError('Initial probe requires official encoder, frozen camera BEV and no student checkpoint')
+    if args.mode != 'frozen-probe' and args.probe_location != 'fused_bev':
+        raise ValueError('Only frozen probes may select pre-fusion features')
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA required; CPU unit tests are not a training smoke')
     if args.precision == 'bf16' and not torch.cuda.is_bf16_supported():
@@ -192,8 +213,10 @@ def main():
     if args.seed != manifest['seed']:
         raise ValueError('seed differs from manifest')
     backbone = build_model(device, args.seed, args.bevcar_source, args.depth_mode)
+    initialization = (load_official_camera_encoder(backbone.student.encoder,
+        args.official_camera_checkpoint) if args.official_camera_checkpoint else None)
     source = None
-    if args.mode != 'pretrain':
+    if args.mode != 'pretrain' and not args.initial_camera_probe:
         if args.checkpoint is None:
             raise ValueError('downstream requires a completed new double-distillation checkpoint')
         source = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
@@ -201,9 +224,16 @@ def main():
         if (cfg['experiment'] != 'baseline_multisweep_double_distillation'
                 or cfg['mode'] != 'pretrain' or source['sampler']['epoch'] != cfg['epochs']):
             raise ValueError('source must be a completed double-distillation pretraining run')
-        for key in ['nsweeps','depth_mode','seed']:
+        for key in ['nsweeps','depth_mode','seed','velocity_mode','image_resolution','teacher_resolution']:
+            if key not in cfg and not args.official_camera_checkpoint:
+                continue  # Historical opt-in runs retain their defaults.
             if cfg[key] != getattr(args,key):
                 raise ValueError(f'source {key} mismatch')
+        if cfg.get('official_camera_checkpoint') != (
+                str(args.official_camera_checkpoint.resolve()) if args.official_camera_checkpoint else None):
+            raise ValueError('source official encoder provenance mismatch')
+        if initialization and cfg.get('official_camera_initialization') != initialization:
+            raise ValueError('source official encoder hash mismatch')
         if cfg['manifest_sha256'] != manifest['manifest_sha256']:
             raise ValueError('source manifest mismatch')
         if cfg['bevcar_sha256'] != digest_file(args.bevcar_source/'nets/voxelnet.py'):
@@ -211,10 +241,13 @@ def main():
         backbone.load_state_dict(source['model'], strict=True)
         del source
     configure(backbone, args.mode)
-    model = backbone if args.mode == 'pretrain' else Downstream(backbone, args.mode).to(device)
+    model = backbone if args.mode == 'pretrain' else Downstream(backbone, args.mode, args.probe_location).to(device)
     frozen = args.mode in ['frozen-probe','object-motion']
     initial_digest = state_digest(backbone) if frozen else None
-    datasets = load_datasets(args, manifest, args.nsweeps)
+    datasets = load_datasets(args, manifest, args.nsweeps, resolution=args.image_resolution)
+    if initialization:
+        for dataset in datasets:
+            dataset.data_aug_conf['checkpoint_era_resize'] = True
     count = args.train_samples or 28130
     indices = manifest['scales']['full']['dataset_indices'][:count]
     subset = IndexedSubset(datasets[0], indices)
@@ -230,7 +263,7 @@ def main():
                 if module is not None for p in module.parameters()}
     for name, members, base_lr in [
         ('camera',[p for p in trainable if id(p) in camera_ids],
-         args.learning_rate if args.mode == 'pretrain' else args.camera_lr),
+         args.learning_rate if args.mode == 'pretrain' and not initialization else args.camera_lr),
         ('readout',[p for p in trainable if id(p) in head_ids],args.probe_lr),
         ('student',[p for p in trainable if id(p) not in camera_ids|head_ids],args.learning_rate)]:
         if members:
@@ -244,7 +277,12 @@ def main():
         source_checkpoint_sha256=digest_file(args.checkpoint) if args.checkpoint else None,
         manifest_sha256=manifest['manifest_sha256'], train_samples=count,
         bevcar_sha256=digest_file(args.bevcar_source/'nets/voxelnet.py'),
-        image_resolution=[112,192], camera_initialization='trainable random ResNet101; DINO image SSL',
+        official_camera_initialization=initialization,
+        camera_initialization=('official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation'
+                               if initialization else 'trainable random ResNet101; DINO image SSL'),
+        data_protocol='official 700-scene train / 150-scene validation; no local blind test claim',
+        camera_probe_pooling='fixed height mean, 128 channels; fused probe also 128 channels',
+        image_resize='Pillow RGB default (checkpoint-era)' if initialization else 'legacy nearest',
         losses='image_weight * image DINO + bev_weight * radar-soft-masked BEV DINO + motion_weight * radar velocity reconstruction auxiliary; optional depth',
         segmentation_readout_loss='official SimpleLoss(pos_weight=2.13); not legacy class-balanced BCE',
         bev_target_radar_age_seconds=.1,
@@ -252,8 +290,13 @@ def main():
         input_voxel_guard=7000,
         source_code_commit=code_commit(), frozen_initial_sha256=initial_digest,
         implementation_sha256={name:digest_file(ROOT/'scripts'/name) for name in
-            ['multisweep_teacher.py','train_multisweep_teacher.py']},
+            ['multisweep_teacher.py','train_multisweep_teacher.py','baseline_followup.py',
+             'fullsize_training.py','radar_evaluation.py','radar_scaling_data.py','training_checkpoint.py']},
         dino_weight_sha256=digest_file(ROOT/'.cache/torch/hub/checkpoints/dinov2_vits14_pretrain.pth'))
+    if initialization:
+        config['model_data_implementation_sha256'] = {name:digest_file(ROOT/name) for name in
+            ['nets/segnet.py','nets/bevcar_voxel_adapter.py','nets/radar_encoder.py',
+             'nuscenesdataset.py','utils/vox.py','utils/geom.py']}
     if args.depth_mode == 'radar-dav2':
         config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
     directory = args.run_dir
@@ -297,12 +340,13 @@ def main():
     def pretrain_loss(batch):
         target_batch = recent_radar_target_batch(batch)
         with torch.no_grad():
-            features = extract_teacher_features_batched(teacher, batch[0][:,0], device)
+            features = extract_teacher_features_batched(teacher, batch[0][:,0], device,
+                                                        resolution=args.teacher_resolution)
             bev, mask = build_targets_from_features_batched(target_batch,features,device)
         # Target builders use inference_mode; normalize/clone outside it so that
         # autograd can save targets while training student projection heads.
         bev, mask = bev.clone(), mask.clone()
-        inputs = prepare_bevcar_inputs(batch, device)
+        inputs = model_inputs(batch, device, args.velocity_mode)
         shared, image, depth = backbone.features(inputs)
         parts = dict(image=image_cosine_loss(backbone.image_head(image),features),
             bev=semantic_loss_batched(backbone.bev_head(shared),bev,mask))
@@ -371,7 +415,7 @@ def main():
         else:
             def predict(batch):
                 with torch.autocast('cuda',dtype=dtype):
-                    outputs = model(prepare_bevcar_inputs(batch,device))
+                    outputs = model(model_inputs(batch,device,args.velocity_mode))
                 return outputs[2] if args.mode == 'finetune' else outputs
             result = evaluate_predictions(predict,datasets[1],selected,args,manifest,output,
                 lambda n: status('validating_segmentation',validation_samples=n))
@@ -417,7 +461,7 @@ def main():
                         if args.mode == 'pretrain':
                             loss,parts,info = pretrain_loss(batch)
                         else:
-                            inputs = prepare_bevcar_inputs(batch,device)
+                            inputs = model_inputs(batch,device,args.velocity_mode)
                             outputs = model(inputs)
                             if args.mode == 'object-motion':
                                 values,targets = [],[]

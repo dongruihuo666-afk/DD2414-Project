@@ -1,5 +1,6 @@
 {
-  "status": "blocked_test_protocol_decision",
+  "status": "ready_official_train_val",
+  "approved_protocol": "official_train_val",
   "official_trainval": {
     "train": {
       "scenes": 700,
@@ -60,12 +61,7 @@
       }
     }
   },
-  "blockers": [
-    "Official test has no public instance/box annotations for local Vehicle BEV IoU or GT-box velocity EPE.",
-    "Holding out official train scenes does not remove their prior exposure in the requested RGB encoder.",
-    "Official val has already been evaluated in this project; a new split cannot restore a never-observed test claim.",
-    "A labeled test protocol and treatment of historical/pretrained exposure must be chosen before automatic training."
-  ],
+  "blockers": [],
   "sources": [
     "https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/eval/detection/README.md",
     "https://registry.opendata.aws/motional-nuscenes/"
@@ -78,11 +74,11 @@
       "parent": null,
       "velocity_input": null,
       "probe_location": "camera_bev",
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -99,11 +95,11 @@
       "parent": null,
       "velocity_input": "present",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -120,11 +116,11 @@
       "parent": "double_dino_velocity_present",
       "velocity_input": "present",
       "probe_location": "camera_bev",
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -141,11 +137,11 @@
       "parent": "double_dino_velocity_present",
       "velocity_input": "present",
       "probe_location": "fused_bev",
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -162,11 +158,11 @@
       "parent": "double_dino_velocity_present",
       "velocity_input": "present",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -183,11 +179,11 @@
       "parent": "double_dino_velocity_present",
       "velocity_input": "present",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -204,11 +200,11 @@
       "parent": null,
       "velocity_input": "hidden_throughout_training_and_evaluation",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -225,11 +221,11 @@
       "parent": "double_dino_velocity_hidden_throughout_training_and_evaluation",
       "velocity_input": "hidden_throughout_training_and_evaluation",
       "probe_location": "camera_bev",
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -246,11 +242,11 @@
       "parent": "double_dino_velocity_hidden_throughout_training_and_evaluation",
       "velocity_input": "hidden_throughout_training_and_evaluation",
       "probe_location": "fused_bev",
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -267,11 +263,11 @@
       "parent": "double_dino_velocity_hidden_throughout_training_and_evaluation",
       "velocity_input": "hidden_throughout_training_and_evaluation",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -288,11 +284,11 @@
       "parent": "double_dino_velocity_hidden_throughout_training_and_evaluation",
       "velocity_input": "hidden_throughout_training_and_evaluation",
       "probe_location": null,
-      "status": "pending_test_protocol",
+      "status": "queued",
       "configuration": {
-        "training_data": "entire approved training partition",
-        "validation_data": "entire approved validation partition",
-        "test_access": "locked until protocol and model-selection policy are approved",
+        "training_data": "official train: 700 scenes / 28130 samples",
+        "validation_data": "official val: 150 scenes / 6019 samples",
+        "test_access": "no local test; report validation metrics, never blind-test scores",
         "camera_initialization": "official Simple-BEV RGB encoder; strict load",
         "image_resolution": [
           448,
@@ -304,5 +300,5 @@
     }
   ],
   "training_launched": false,
-  "note": "This is a task specification and audit, not a running scheduler."
+  "note": "Audit only. Runtime state is separately recorded in the official-protocol queue pipeline.json."
 }

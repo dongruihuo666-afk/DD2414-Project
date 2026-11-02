@@ -11,11 +11,16 @@ reproduction method, evidence, limitations, and handoff decisions.
 selection are retired. The active manifest now contains only the full 28,130
 train / 6,019 validation records, with hash
 `dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d`.
-The requested 448x800, ten-sweep, official-RGB-encoder warm-start study is
-**not running**. Test-protocol approval is unresolved: official test metadata
-contains no GT annotations, the official RGB encoder has already seen official
-train, and official val has already been evaluated during project development.
-See `FULL_DATA_TEST_PROTOCOL.md` and `artifacts/full_data_protocol_audit.json`.
+The owner has now approved the unchanged official 700-scene train / 150-scene
+validation split. No extra holdout is created, and scores are called validation
+results, not blind-test results. The 448x800, ten-sweep, official-RGB-encoder
+warm-start study is deployed as `dd2414-official-full-data.service` and is
+**waiting for the occupied GPU, not yet training**. The other compute process
+(PID 3344413, about 20,204 MiB) is not interrupted. The persistent queue first
+requires real finite-update/new-process-resume checks, then runs eleven tasks.
+See `FULL_DATA_TEST_PROTOCOL.md`, `configs/full_data_official_protocol.json`,
+and live `fullsize_baseline/runs/official_rgb_full_10sweep_20261103/pipeline.json`.
+The admission audit is ready; it does not certify a passed CUDA pilot.
 The historical progress statements below do not imply this new study is complete.
 
 2026-10-05 trainval status: the Ubuntu host has full labeled `v1.0-trainval`;
@@ -2340,3 +2345,75 @@ chat transcripts, secrets, or unreviewed generated data.
   of caches/checkpoints to the new approved split, and persistent eleven-task
   queue with a measured CUDA/resume gate. Do not silently change initialization
   or call an unlabeled inference set a scored test set.
+
+### 2026-11-03 — Official train/val approval and executable high-resolution queue
+
+- Scope/decision: the owner chose the original official split. All eleven
+  experiments train on 28,130 frames / 700 scenes and validate on 6,019 frames /
+  150 scenes. Sample/scene/log overlaps are zero. The inactive 75/75-scene
+  holdout alternative is not selected. Test blobs are not needed for these
+  validation experiments, and no test-set or validation-label gradient updates
+  are introduced.
+- Changed implementation: `scripts/audit_full_data_protocol.py` and its compact
+  artifact admit the explicitly selected protocol; the new config freezes
+  full-data budgets and checkpoint identity. `scripts/multisweep_teacher.py`
+  strictly loads official `encoder.*` tensors and exposes fixed-height-mean
+  camera-BEV features before fusion. `scripts/train_multisweep_teacher.py`
+  supports official initialization, high image/teacher resolution, both probe
+  locations, initial-camera probing, and velocity hidden throughout training
+  and evaluation. `scripts/fullsize_training.py` accepts explicit DINO patch
+  resolution. The new opt-in resize in `nuscenesdataset.py` matches the official
+  checkpoint-era Pillow default; legacy/default preprocessing is unchanged.
+- New execution/monitoring: `scripts/run_official_full_data.py`,
+  `scripts/start_official_full_data.sh`, `scripts/show_official_full_data.py`,
+  and `scripts/publish_official_full_data.py`. The queue waits for three idle
+  GPU checks, never signals other users' jobs, performs full-manifest updates
+  two and three across a process restart, then executes all eleven tasks with
+  durable checkpoints, epoch validation, progress/TensorBoard, bounded retries,
+  disk guard and scoped stage-result publication. Git publication failures are
+  recorded without discarding training. `README.md`, the historical plan header,
+  `.gitignore`, and `FULL_DATA_TEST_PROTOCOL.md` describe the new path.
+- Training matrix: one ten-epoch initial frozen camera probe; two independent
+  five-epoch double-DINO models (raw input velocity vs zero input velocity);
+  four ten-epoch frozen pre/post-fusion probes; two five-epoch GT-object velocity
+  readouts; two five-epoch supervised end-to-end segmentation adaptations.
+  Camera input is 448x800, frozen DINO input 448x798 (patch size 14), all radar
+  inputs use ten sweeps, depth is disabled, batch size one, BF16, eight workers.
+  Warm-start encoder LR is 1e-5, other pretraining LR 2e-4, probe LR 1e-3;
+  the existing 0.2/0.8 image/BEV terms and 0.5 motion auxiliary remain explicit.
+- Reproduce: `bash scripts/start_official_full_data.sh`. Preview exact commands
+  with `python scripts/run_official_full_data.py --study-dir
+  fullsize_baseline/runs/official_rgb_full_10sweep_20261103 --plan-only`.
+  Inspect with `watch -n 10 "$HOME/miniconda3/envs/bev/bin/python
+  scripts/show_official_full_data.py"`, `systemctl --user status
+  dd2414-official-full-data.service`, and the study's `queue.log`/`pipeline.json`.
+  Safe stop: `systemctl --user stop dd2414-official-full-data.service`.
+- Actual checks: 73 CPU regression tests pass via `PYTHONPATH=scripts
+  OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2
+  MPLCONFIGDIR=/tmp/dd2414-mpl $HOME/miniconda3/envs/bev/bin/python -m unittest
+  discover -s scripts -p 'test_*.py'`. Python compilation, shell syntax and
+  `git diff --check` pass. A real CPU strict load verified all 568 official
+  encoder tensors and checkpoint SHA-256
+  `ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e`.
+  The official-protocol audit exits zero. The background service was verified
+  active/running with infinite runtime/stop timeout; `pipeline.json` reports
+  `waiting_for_gpu`, 0/11 tasks, no training child, and about 3,578 MiB free
+  while the unrelated GPU process remains active at 97-100% utilization.
+- Limitations: no high-resolution CUDA update or scientific epoch has completed
+  yet. CPU checks are not CUDA training evidence. The queue contains 80 training
+  epochs plus validation, so no overnight finish or duration is guaranteed.
+  Batch-one throughput/memory remain unmeasured until GPU admission; the CUDA
+  gate stops on failure instead of silently changing the model or sample count.
+  The workstation queue cannot reserve a GPU against new external jobs.
+  Official RGB initialization already contains nuScenes supervised knowledge;
+  new DINO pretraining is not training from a label-free initialization. The
+  pre/post probes match 128-channel readout capacity but differ in feature
+  compression, so they do not isolate a causal radar gain. Motion uses oracle
+  GT boxes; radar reconstruction loss remains auxiliary. Earlier official exact
+  reproduction covered 6,016 val frames due to drop-last; this queue scores all
+  6,019. One seed and finite budgets do not establish convergence.
+- Next: let the pre-existing job finish, inspect the automatic finite-update /
+  resume gate and measured GPU footprint, then review full-validation IoU,
+  confusion counts, masks and independent motion results as stages finish.
+  Checkpoints, logs and per-object/frame records remain local; only compact
+  results and code are pushed. The unrelated staged project PDF is preserved.

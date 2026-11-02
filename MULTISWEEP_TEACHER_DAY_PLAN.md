@@ -1,5 +1,9 @@
 # Full-data multi-sweep, double-distillation follow-up
 
+Historical 2026-10-16 low-resolution plan. For the approved 2026-11-03
+official-RGB-encoder, 448x800, ten-sweep study use `FULL_DATA_TEST_PROTOCOL.md`
+and `scripts/start_official_full_data.sh`; do not relaunch this old matrix.
+
 Date: 2026-10-16. Branch: `dd2414-mini-baseline` only.
 This supersedes the pending-task order of `MEETING_FOLLOWUP_DAY_PLAN.md`.
 The cluster experiment branch and the official Simple-BEV path are unchanged.
