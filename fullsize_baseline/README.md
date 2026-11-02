@@ -1,6 +1,20 @@
 # Full-size epoch baseline
 
-This directory isolates the new epoch-matched 4,096-versus-full experiment
+## Current policy (2026-11-03)
+
+All full-data training entry points now use full training and validation partitions.
+Numeric subset scales and prefix selection have been removed. The existing
+manifest contains only `full`; historical artifacts remain recoverable from Git.
+Its changed hash prevents silent resume of old checkpoints with a different
+run specification.
+
+The new high-resolution RGB-checkpoint experiment is pending a test-protocol
+decision; see [FULL_DATA_TEST_PROTOCOL.md](../FULL_DATA_TEST_PROTOCOL.md).
+The scripts below are the legacy architecture, not that new experiment.
+
+## Historical epoch exposure comparison
+
+This directory originally isolated an epoch-matched 4,096-versus-full experiment
 from the historical fixed-update radar-scaling artifacts.
 
 The locked comparison keeps the existing one-sweep model and objective while
@@ -14,8 +28,8 @@ training two independently initialized runs for eight complete data passes:
 The 4,096-sample control is complete: 6,560 finite updates, 32,768 sample
 exposures, zero AMP overflow retries, and complete validation at epochs
 1/3/5/8. Matched semantic/motion loss improved from `0.33595/0.91730` at epoch
-1 to `0.30503/0.28907` at epoch 8. The full 28,130-sample run is the remaining
-half of the comparison.
+1 to `0.30503/0.28907` at epoch 8. The full 28,130-sample run subsequently
+completed; these are historical results, not pending subset jobs.
 
 Runtime products are intentionally ignored by Git:
 
@@ -35,7 +49,7 @@ Preview the selected full-data command without starting it:
 bash scripts/run_fullsize_baseline.sh
 ```
 
-Select the 4,096 control with `SCALE=4096`. Execution remains opt-in through
+Subset selection is no longer supported. Execution remains opt-in through
 `--execute`; the launcher defaults to the measured batch size 5, eight loader
 workers, BF16, eight epochs, seed 125 and one radar sweep. Each run starts from
 its own initialization and never resumes a historical fixed-update checkpoint.
@@ -55,10 +69,9 @@ FP16 teacher cache is not used for this comparison: its complexity and storage
 cost are not justified by that upper bound. The flag is for engineering pilots
 only and adds CUDA synchronizations; do not use it for formal training.
 
-The two formal launch commands for the frozen configuration are:
+The full-data legacy launch command is:
 
 ```bash
-SCALE=4096 bash scripts/run_fullsize_baseline.sh --execute
 bash scripts/run_fullsize_baseline.sh --execute
 ```
 

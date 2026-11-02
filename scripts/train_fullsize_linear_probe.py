@@ -48,9 +48,9 @@ def parse_args():
     parser.add_argument('--learning-rate', type=float, default=1e-3)
     parser.add_argument('--weight-decay', type=float, default=0.0)
     parser.add_argument('--seed', type=int, default=125)
-    parser.add_argument('--train-samples', type=int, default=0,
+    parser.add_argument('--train-samples', type=int, choices=(0,28130), default=0,
                         help='0 uses all 28,130 manifest training samples')
-    parser.add_argument('--val-samples', type=int, default=6019)
+    parser.add_argument('--val-samples', type=int, choices=(6019,), default=6019)
     parser.add_argument('--print-every-steps', type=int, default=100)
     return parser.parse_args()
 

@@ -41,7 +41,6 @@ from radar_evaluation import (  # noqa: E402
 from radar_scaling_data import (  # noqa: E402
     IndexedSubset,
     make_streaming_loader,
-    prefix_indices,
     scale_indices,
     validate_scaling_manifest,
 )
@@ -61,7 +60,7 @@ def parse_args():
     parser.add_argument('--data-root', type=Path, required=True)
     parser.add_argument('--bevcar-source', type=Path, required=True)
     parser.add_argument('--manifest', type=Path, required=True)
-    parser.add_argument('--scale', default='128')
+    parser.add_argument('--scale', choices=('full',), default='full')
     parser.add_argument('--max-updates', type=int, required=True)
     parser.add_argument('--learning-rate', type=float, default=2e-4)
     parser.add_argument('--semantic-weight', type=float, default=1.0)
@@ -74,8 +73,8 @@ def parse_args():
     parser.add_argument('--train-log', type=Path, required=True)
     parser.add_argument('--validation-records', type=Path, required=True)
     parser.add_argument('--summary-out', type=Path, required=True)
-    parser.add_argument('--val-samples', type=int, default=4,
-                        help='0 disables evaluation; use 6019 for full validation')
+    parser.add_argument('--val-samples', type=int, choices=(6019,), default=6019,
+                        help='Full validation only.')
     parser.add_argument('--stop-after-update', type=int, default=0,
                         help='cleanly stop after this update, for resume testing')
     parser.add_argument('--resume', action='store_true')
@@ -315,18 +314,8 @@ def main():
     validate_scaling_manifest(manifest)
     if manifest['seed'] != args.seed:
         raise ValueError('manifest seed does not match training seed')
-    if args.scale == 'full':
-        dataset_indices = scale_indices(manifest, 'full')
-        scale_name = 'full'
-    else:
-        scale_count = int(args.scale)
-        if str(scale_count) in manifest['scales']:
-            dataset_indices = scale_indices(manifest, scale_count)
-        elif scale_count == 128:
-            dataset_indices = prefix_indices(manifest, scale_count)
-        else:
-            raise ValueError('scale must be 64, 128 pilot, 256, 1024, 4096 or full')
-        scale_name = str(scale_count)
+    dataset_indices = scale_indices(manifest, 'full')
+    scale_name = 'full'
 
     torch.set_num_threads(2)
     device = torch.device('cuda:0')

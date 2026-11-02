@@ -7,6 +7,17 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-03 priority update: subset generation and numeric-scale/prefix training
+selection are retired. The active manifest now contains only the full 28,130
+train / 6,019 validation records, with hash
+`dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d`.
+The requested 448x800, ten-sweep, official-RGB-encoder warm-start study is
+**not running**. Test-protocol approval is unresolved: official test metadata
+contains no GT annotations, the official RGB encoder has already seen official
+train, and official val has already been evaluated during project development.
+See `FULL_DATA_TEST_PROTOCOL.md` and `artifacts/full_data_protocol_audit.json`.
+The historical progress statements below do not imply this new study is complete.
+
 2026-10-05 trainval status: the Ubuntu host has full labeled `v1.0-trainval`;
 mini has been removed. The official split is 700 train / 150 val scenes and
 28,130 / 6,019 samples; all 2,631,083 referenced sensor files were present and
@@ -2283,3 +2294,49 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: regenerate for the group meeting after depth validation is available;
   retain the selected scenes and full-validation metrics, then execute the
   separately planned ImageNet-initialized 448x800 matched experiment.
+
+### 2026-11-03 — Full-only entry points and test-provenance admission audit
+
+- Scope: the owner requested removing subset experiments, establishing a
+  non-leaking train/validation/test protocol, obtaining official test if usable,
+  then automatically running the eleven-task high-resolution study. This commit
+  completes subset-entry cleanup and the test feasibility audit; it does not
+  claim the requested new model trainer or scheduler has been implemented.
+- Changed files: the active manifest, `scripts/radar_scaling_data.py`, the stream
+  check and batch-equivalence check, legacy full-data baseline/linear-probe/
+  downstream/multi-sweep trainers, `scripts/run_fullsize_baseline.sh`, and the
+  full-manifest tests. Numeric scale construction, prefix selection and the
+  4,096 launcher branch are removed. Formal sample-count options reject bounded
+  training and validation. Historical results are retained; old pinned resumes
+  require their original manifest/code instead of bypassing the changed hash.
+- New files: `scripts/audit_full_data_protocol.py`, its tests,
+  `FULL_DATA_TEST_PROTOCOL.md`, and `artifacts/full_data_protocol_audit.json`;
+  the artifact allowlist and current README/old-plan status are updated.
+- Actual download: fetched 70,803,751 bytes of official test metadata to the
+  ignored `.cache/nuscenes/v1.0-test_meta.tgz`. SHA-256 is
+  `c5f5169875eead4874fc345235e3fc9a4b60dcad42a18386a824a1d1d58f3ed6`.
+  Reading the archive directly verified 150 scenes / 6,008 samples, zero
+  sample annotations, and zero instances. Sensor blobs are not downloaded:
+  they cannot supply missing GT for local Vehicle BEV IoU or GT-box velocity.
+- Reproduce audit: `PYTHONPATH=scripts MPLCONFIGDIR=$PWD/.cache/matplotlib
+  $HOME/miniconda3/envs/bev/bin/python scripts/audit_full_data_protocol.py
+  --output artifacts/full_data_protocol_audit.json --require-ready`.
+  Expected exit code is 2 while no valid test protocol is selected. The eleven
+  pending records are task specifications, not a running executable queue.
+- Actual checks: all 65 CPU tests pass with `PYTHONPATH=scripts .../envs/bev/bin/python
+  -m unittest discover -s scripts -p 'test_*.py'`; shell syntax passes;
+  `SCALE=4096 bash scripts/run_fullsize_baseline.sh` correctly refuses subset
+  execution; `git diff --check` passes. Full manifest membership matches official
+  metadata and train/val overlap is zero for samples, scenes and logs. The
+  requested RGB checkpoint exists and its SHA-256 is recorded in the audit.
+- Blocker/limitations: partitioning official train cannot erase pretrained
+  exposure; splitting historically evaluated val cannot create a pristine
+  blind test. The audit includes a metadata-only whole-log holdout proposal,
+  explicitly inactive and historically observed. No new scientific training,
+  final-test scoring, high-resolution GPU pilot or scheduler launch occurred.
+- Next: obtain the owner's choice of labeled test protocol and acceptable
+  historical exposure. Then implement the high-resolution strict RGB encoder
+  initialization, two-location probes, training-time velocity controls, binding
+  of caches/checkpoints to the new approved split, and persistent eleven-task
+  queue with a measured CUDA/resume gate. Do not silently change initialization
+  or call an unlabeled inference set a scored test set.

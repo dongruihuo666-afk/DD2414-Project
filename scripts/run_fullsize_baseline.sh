@@ -23,9 +23,8 @@ case "${nsweeps}" in
     *) echo 'NSWEEPS must be 1, 5, or 10.' >&2; exit 2 ;;
 esac
 case "${scale}" in
-    4096) run_name="scale4096${velocity_suffix}${sweep_suffix}_seed${seed}" ;;
     full) run_name="full28130${velocity_suffix}${sweep_suffix}_seed${seed}" ;;
-    *) echo 'SCALE must be 4096 or full.' >&2; exit 2 ;;
+    *) echo 'Subset training has been removed; SCALE must be full.' >&2; exit 2 ;;
 esac
 run_dir="${RUN_DIR:-${REPO_ROOT}/fullsize_baseline/runs/${run_name}}"
 python_bin="${CONDA_ROOT}/envs/${CONDA_ENV}/bin/python"

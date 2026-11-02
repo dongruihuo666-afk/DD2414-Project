@@ -62,7 +62,7 @@ def parse_args():
     parser.add_argument('--data-root', type=Path, required=True)
     parser.add_argument('--bevcar-source', type=Path, required=True)
     parser.add_argument('--manifest', type=Path, required=True)
-    parser.add_argument('--scale', choices=('4096', 'full'), required=True)
+    parser.add_argument('--scale', choices=('full',), default='full')
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--epochs', type=int, default=8)
     parser.add_argument('--batch-size', type=int, default=5)
@@ -84,7 +84,7 @@ def parse_args():
     parser.add_argument('--checkpoint-every-steps', type=int, default=1000)
     parser.add_argument('--print-every-steps', type=int, default=50)
     parser.add_argument('--validation-epochs', default='1,3,5,8')
-    parser.add_argument('--val-samples', type=int, default=6019)
+    parser.add_argument('--val-samples', type=int, choices=(6019,), default=6019)
     parser.add_argument('--validation-print-every', type=int, default=500)
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--stop-after-steps', type=int, default=0,

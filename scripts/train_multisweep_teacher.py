@@ -67,8 +67,9 @@ def parse_args():
     p.add_argument('--depth-weight', type=float, default=.2)
     p.add_argument('--relative-depth-weight', type=float, default=.05)
     p.add_argument('--precision', choices=['bf16','fp16'], default='bf16')
-    p.add_argument('--train-samples', type=int, default=0, help='smoke only; 0 = full split')
-    p.add_argument('--val-samples', type=int, default=6019)
+    p.add_argument('--train-samples', type=int, choices=(0,28130), default=0,
+                   help='Full split only; subset training has been removed.')
+    p.add_argument('--val-samples', type=int, choices=(6019,), default=6019)
     p.add_argument('--checkpoint-every', type=int, default=250)
     p.add_argument('--print-every', type=int, default=25)
     p.add_argument('--stop-after-updates', type=int, default=0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CPU-only tests for deterministic radar-scaling manifests and streaming."""
+"""CPU-only contracts for full-data manifests and retired subset rejection."""
 
 import json
 import tempfile
@@ -14,7 +14,6 @@ from radar_scaling_data import (
     IndexedSubset,
     build_scaling_manifest,
     make_streaming_loader,
-    prefix_indices,
     scale_indices,
     validate_scaling_manifest,
     write_manifest,
@@ -46,29 +45,20 @@ class RadarScalingDataTests(unittest.TestCase):
         self.train = FakeDataset('train', scenes=12, samples_per_scene=3)
         self.val = FakeDataset('val', scenes=4, samples_per_scene=2)
 
-    def test_manifest_is_reproducible_nested_and_scene_spread(self):
-        first = build_scaling_manifest(self.train, self.val, seed=125,
-                                       scale_counts=(4, 8, 16))
-        second = build_scaling_manifest(self.train, self.val, seed=125,
-                                        scale_counts=(4, 8, 16))
+    def test_manifest_is_reproducible_and_full_only(self):
+        first = build_scaling_manifest(self.train, self.val, seed=125)
+        second = build_scaling_manifest(self.train, self.val, seed=125)
         self.assertEqual(first, second)
-        self.assertEqual(first['scales']['4']['unique_scenes'], 4)
-        self.assertEqual(first['scales']['8']['unique_scenes'], 8)
-        self.assertEqual(first['scales']['16']['unique_scenes'], 12)
-        self.assertEqual(
-            first['scales']['16']['dataset_indices'][:8],
-            first['scales']['8']['dataset_indices'],
-        )
+        self.assertEqual(set(first['scales']), {'full'})
+        self.assertEqual(first['scales']['full']['unique_scenes'], 12)
         self.assertEqual(len(first['scales']['full']['dataset_indices']), 36)
         self.assertEqual(len(set(first['scales']['full']['dataset_indices'])), 36)
         self.assertTrue(validate_scaling_manifest(first))
 
     def test_seed_changes_order_but_not_membership(self):
-        first = build_scaling_manifest(self.train, self.val, seed=125,
-                                       scale_counts=(4, 8, 16))
-        second = build_scaling_manifest(self.train, self.val, seed=42,
-                                        scale_counts=(4, 8, 16))
-        self.assertNotEqual(scale_indices(first, 4), scale_indices(second, 4))
+        first = build_scaling_manifest(self.train, self.val, seed=125)
+        second = build_scaling_manifest(self.train, self.val, seed=42)
+        self.assertNotEqual(scale_indices(first, 'full'), scale_indices(second, 'full'))
         self.assertEqual(
             set(scale_indices(first, 'full')),
             set(scale_indices(second, 'full')),
@@ -77,30 +67,32 @@ class RadarScalingDataTests(unittest.TestCase):
     def test_overlap_and_invalid_scale_are_rejected(self):
         shared_val = FakeDataset('train', scenes=2, samples_per_scene=2)
         with self.assertRaisesRegex(ValueError, 'overlap'):
-            build_scaling_manifest(self.train, shared_val, scale_counts=(4, 8))
-        with self.assertRaisesRegex(ValueError, 'strictly increasing'):
-            build_scaling_manifest(self.train, self.val, scale_counts=(8, 4))
-        with self.assertRaisesRegex(ValueError, 'smaller than full'):
-            build_scaling_manifest(self.train, self.val, scale_counts=(36,))
+            build_scaling_manifest(self.train, shared_val)
+        manifest = build_scaling_manifest(self.train, self.val)
+        for count in [64, 256, 1024, 4096]:
+            with self.assertRaisesRegex(ValueError, 'only full'):
+                scale_indices(manifest, count)
+        manifest['scales']['64'] = manifest['scales']['full']
+        with self.assertRaisesRegex(ValueError, 'only full'):
+            validate_scaling_manifest(manifest)
 
     def test_atomic_write_and_streaming_loader(self):
-        manifest = build_scaling_manifest(self.train, self.val, seed=125,
-                                          scale_counts=(4, 8, 16))
+        manifest = build_scaling_manifest(self.train, self.val, seed=125)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'manifest.json'
             write_manifest(manifest, path)
             self.assertEqual(json.loads(path.read_text()), manifest)
             self.assertEqual(list(path.parent.glob('.*.tmp-*')), [])
         batches = list(make_streaming_loader(
-            self.train, scale_indices(manifest, 8), batch_size=2,
+            self.train, scale_indices(manifest, 'full'), batch_size=2,
         ))
-        self.assertEqual(len(batches), 4)
+        self.assertEqual(len(batches), 18)
         observed = [int(value) for batch in batches for value in batch]
-        self.assertEqual(observed, scale_indices(manifest, 8))
-        indexed = IndexedSubset(self.train, prefix_indices(manifest, 4))
+        self.assertEqual(observed, scale_indices(manifest, 'full'))
+        indexed = IndexedSubset(self.train, scale_indices(manifest, 'full'))
         position, value = indexed[2]
         self.assertEqual(position, 2)
-        self.assertEqual(value, prefix_indices(manifest, 4)[2])
+        self.assertEqual(value, scale_indices(manifest, 'full')[2])
 
 
 if __name__ == '__main__':

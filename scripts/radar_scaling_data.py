@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic nested manifests and streaming loaders for radar scaling."""
+"""Full-data manifests and streaming loaders; subset scales are retired."""
 
 import hashlib
 import json
@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader, Dataset, Subset
 
 MANIFEST_SCHEMA_VERSION = 1
 DEFAULT_SEED = 125
-DEFAULT_SCALE_COUNTS = (64, 256, 1024, 4096)
 
 
 class IndexedSubset(Dataset):
@@ -104,8 +103,7 @@ def _digest(value):
     return hashlib.sha256(payload).hexdigest()
 
 
-def build_scaling_manifest(train_dataset, val_dataset, seed=DEFAULT_SEED,
-                           scale_counts=DEFAULT_SCALE_COUNTS):
+def build_scaling_manifest(train_dataset, val_dataset, seed=DEFAULT_SEED):
     train_records = dataset_records(train_dataset)
     val_records = dataset_records(val_dataset)
     train_scenes = {record['scene_token'] for record in train_records}
@@ -115,17 +113,7 @@ def build_scaling_manifest(train_dataset, val_dataset, seed=DEFAULT_SEED,
         raise ValueError(f'train/val scene overlap: {len(overlap)} scenes')
 
     ordered_train = scene_spread_order(train_records, seed)
-    counts = tuple(int(count) for count in scale_counts)
-    if tuple(sorted(set(counts))) != counts:
-        raise ValueError('scale counts must be unique and strictly increasing')
-    if counts and (counts[0] < 1 or counts[-1] >= len(ordered_train)):
-        raise ValueError('bounded scales must be positive and smaller than full train')
-
-    scales = {}
-    for count in counts:
-        selected = ordered_train[:count]
-        scales[str(count)] = {'count': count, **_record_columns(selected)}
-    scales['full'] = {'count': len(ordered_train), **_record_columns(ordered_train)}
+    scales = {'full': {'count': len(ordered_train), **_record_columns(ordered_train)}}
 
     val = {'count': len(val_records), **_record_columns(val_records)}
     manifest = {
@@ -133,7 +121,7 @@ def build_scaling_manifest(train_dataset, val_dataset, seed=DEFAULT_SEED,
         'seed': int(seed),
         'dataset_version': getattr(getattr(train_dataset, 'nusc', None),
                                    'version', 'unknown'),
-        'selection': 'stable-hash scene round-robin; each scale is a prefix',
+        'selection': 'full training split; stable-hash scene round-robin order',
         'scales': scales,
         'val': val,
     }
@@ -146,6 +134,8 @@ def validate_scaling_manifest(manifest):
     if manifest.get('schema_version') != MANIFEST_SCHEMA_VERSION:
         raise ValueError('unsupported manifest schema version')
     scales = manifest['scales']
+    if set(scales) != {'full'}:
+        raise ValueError('subset scales have been removed; only full is supported')
     full = scales['full']
     full_indices = full['dataset_indices']
     full_tokens = full['tokens']
@@ -156,26 +146,21 @@ def validate_scaling_manifest(manifest):
     if len(full_tokens) != len(set(full_tokens)):
         raise ValueError('full scale repeats sample tokens')
 
-    bounded = sorted(
-        ((int(name), value) for name, value in scales.items() if name != 'full'),
-        key=lambda item: item[0],
-    )
-    previous_indices = []
-    for count, value in bounded:
-        if value['count'] != count:
-            raise ValueError(f'scale {count} stores the wrong count')
-        indices = value['dataset_indices']
-        if indices != full_indices[:count]:
-            raise ValueError(f'scale {count} is not a prefix of full')
-        if indices[:len(previous_indices)] != previous_indices:
-            raise ValueError(f'scale {count} is not nested')
-        if len(value['tokens']) != count or len(value['scene_tokens']) != count:
-            raise ValueError(f'scale {count} has incomplete record columns')
-        previous_indices = indices
-
     val = manifest['val']
     if val['count'] != len(val['dataset_indices']) or val['count'] != len(val['tokens']):
         raise ValueError('validation count does not match its records')
+    for name, split in [('train', full), ('validation', val)]:
+        for column in ['dataset_indices', 'sample_indices', 'tokens', 'scene_tokens']:
+            if len(split[column]) != split['count']:
+                raise ValueError(f'{name}: incomplete {column}')
+        if len(set(split['tokens'])) != split['count']:
+            raise ValueError(f'{name}: duplicate sample tokens')
+        if len(set(split['dataset_indices'])) != split['count']:
+            raise ValueError(f'{name}: duplicate dataset indices')
+        if split['unique_scenes'] != len(set(split['scene_tokens'])):
+            raise ValueError(f'{name}: inconsistent scene count')
+    if set(full_tokens) & set(val['tokens']):
+        raise ValueError('manifest train/val sample tokens overlap')
     if set(full['scene_tokens']) & set(val['scene_tokens']):
         raise ValueError('manifest train/val scenes overlap')
 
@@ -219,14 +204,6 @@ def make_streaming_loader(dataset, dataset_indices, batch_size=1, num_workers=0)
 
 def scale_indices(manifest, scale):
     key = str(scale)
-    if key not in manifest['scales']:
-        raise KeyError(f'unknown scale {scale}; choose from {list(manifest["scales"])}')
-    return manifest['scales'][key]['dataset_indices']
-
-
-def prefix_indices(manifest, count):
-    count = int(count)
-    full = manifest['scales']['full']['dataset_indices']
-    if not 1 <= count <= len(full):
-        raise ValueError('prefix count must fit the full training scale')
-    return full[:count]
+    if key != 'full':
+        raise ValueError('subset scales have been removed; only full is supported')
+    return manifest['scales']['full']['dataset_indices']

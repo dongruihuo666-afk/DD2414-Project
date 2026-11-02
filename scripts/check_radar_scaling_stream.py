@@ -17,7 +17,6 @@ sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
 from dinov2_bev_demo import build_loaders  # noqa: E402
 from radar_scaling_data import (  # noqa: E402
-    DEFAULT_SCALE_COUNTS,
     build_scaling_manifest,
     make_streaming_loader,
     scale_indices,
@@ -34,8 +33,7 @@ def parse_args():
     parser.add_argument('--manifest-out', type=Path, required=True)
     parser.add_argument('--summary-out', type=Path, required=True)
     parser.add_argument('--seed', type=int, default=125)
-    parser.add_argument('--scale-counts', default='64,256,1024,4096')
-    parser.add_argument('--stream-scale', default='1024')
+    parser.add_argument('--stream-scale', choices=('full',), default='full')
     parser.add_argument('--check-batches', type=int, default=512)
     parser.add_argument('--nsweeps', type=int, default=1)
     return parser.parse_args()
@@ -43,9 +41,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    counts = tuple(int(part) for part in args.scale_counts.split(',') if part)
-    if counts != DEFAULT_SCALE_COUNTS:
-        raise ValueError(f'P1 requires locked scales {DEFAULT_SCALE_COUNTS}')
     if args.check_batches < 512:
         raise ValueError('P1 acceptance requires at least 512 streaming batches')
     if not torch.cuda.is_available():
@@ -59,7 +54,7 @@ def main():
     )
     train_dataset, val_dataset = (loader.dataset for loader in loaders)
     manifest = build_scaling_manifest(
-        train_dataset, val_dataset, seed=args.seed, scale_counts=counts,
+        train_dataset, val_dataset, seed=args.seed,
     )
     write_manifest(manifest, args.manifest_out)
 

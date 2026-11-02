@@ -1,5 +1,9 @@
 # Full-data radar scaling study
 
+**Historical plan: subset execution retired on 2026-11-03.** Numeric training
+scales are no longer supported. This document retains historical evidence only.
+Use `FULL_DATA_TEST_PROTOCOL.md` for the current scope and test-protocol decision.
+
 ## Decision and research question
 
 This plan records the adopted path for testing whether radar becomes useful as

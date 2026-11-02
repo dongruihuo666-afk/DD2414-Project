@@ -51,7 +51,7 @@ def main():
         raise RuntimeError('CUDA is required')
     manifest = json.loads(args.manifest.read_text())
     validate_scaling_manifest(manifest)
-    indices = scale_indices(manifest, 4096)[:2]
+    indices = scale_indices(manifest, 'full')[:2]
     train_loader, _ = build_loaders(
         args.data_root, num_workers=0, nsweeps=args.nsweeps,
         rotate_radar_velocity=True, dset='trainval',

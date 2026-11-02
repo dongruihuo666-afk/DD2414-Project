@@ -5,6 +5,7 @@ __pycache__
 .cache/
 /external/BEVCar/
 artifacts/*
+!artifacts/full_data_protocol_audit.json
 !artifacts/meeting_20261016/
 artifacts/meeting_20261016/*
 !artifacts/meeting_20261016/*.png
