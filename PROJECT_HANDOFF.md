@@ -2417,3 +2417,18 @@ chat transcripts, secrets, or unreviewed generated data.
   confusion counts, masks and independent motion results as stages finish.
   Checkpoints, logs and per-object/frame records remain local; only compact
   results and code are pushed. The unrelated staged project PDF is preserved.
+
+<!-- official-full-runtime:start -->
+
+### Official-split full-data runtime
+
+- Changed: compact `artifacts/official_full_data_results.json` and this runtime block.
+- Queue state: `running`; last stage: `official_rgb_encoder_camera_bev_frozen_probe`.
+- Reproduce/resume: `bash scripts/start_official_full_data.sh`.
+- Evidence: completed summaries require a successful worker exit and full validation;
+  the JSON records exact commands, initialization, epochs and actual metrics.
+- Limitations: one seed, finite epoch budgets, no unseen local test set,
+  pre/post compression differs, GT boxes supplied to motion readout.
+- Next: continue pending tasks or inspect the recorded failure before restarting.
+
+<!-- official-full-runtime:end -->
