@@ -7,6 +7,13 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-04 branch housekeeping: the owner withdrew the isolated
+`experiment/official-rgb-double-distill-cluster` deployment. Its local branch
+and clean worktree have been removed after saving a verified recovery bundle.
+The matching GitHub branch still exists: deletion is blocked by SSH public-key
+authentication. The active local eleven-task plan, code, checkpoints and queue
+are unchanged. See the cleanup entry below for recovery and remaining commands.
+
 2026-11-03 priority update: subset generation and numeric-scale/prefix training
 selection are retired. The active manifest now contains only the full 28,130
 train / 6,019 validation records, with hash
@@ -2432,3 +2439,45 @@ chat transcripts, secrets, or unreviewed generated data.
 - Next: continue pending tasks or inspect the recorded failure before restarting.
 
 <!-- official-full-runtime:end -->
+
+### 2026-11-04 — Retire the isolated cluster deployment branch
+
+- Request: clean up exactly `experiment/official-rgb-double-distill-cluster`,
+  not the older `experiment/hybrid-teacher-10sweep-cluster` branch or the active
+  `dd2414-mini-baseline` training study. No model/training-plan edits or process
+  signals are part of this housekeeping task.
+- Read-only admission: the target worktree was clean; its only ignored files
+  were generated Python bytecode caches. No dataset, environment, checkpoint,
+  local configuration or training results were present there. Local and public
+  HTTPS remote inspection resolved the branch to
+  `dbaada28a7d132a7769c2f22c26b51c223278d12`.
+- Recovery: created and verified the approximately 27-KiB incremental bundle
+  `.cache/branch_backups/official-rgb-double-distill-cluster-dbaada2.bundle`.
+  It includes the cluster commit and requires base `ec95b07`, which remains
+  in the active branch history. The ignored bundle is local only, not staged.
+  To restore the local branch if explicitly desired, use `git fetch
+  .cache/branch_backups/official-rgb-double-distill-cluster-dbaada2.bundle
+  refs/heads/experiment/official-rgb-double-distill-cluster:refs/heads/experiment/official-rgb-double-distill-cluster`.
+- Completed: `git worktree remove
+  /home/students2026/dd2414/.cache/worktrees/official-rgb-double-distill-cluster`
+  and `git branch -d experiment/official-rgb-double-distill-cluster` succeeded
+  without forcing worktree removal. The source checkout and disposable bytecode
+  caches were removed; only the verified recovery bundle is retained.
+- Remaining external step: `git push origin --delete
+  experiment/official-rgb-double-distill-cluster` failed with
+  `Permission denied (publickey)`. The earlier SSH remote read failed the same
+  way. Public HTTPS `ls-remote` confirms the remote branch is still present;
+  its remote-tracking ref is deliberately not pruned or falsely reported gone.
+  Restoring GitHub authentication is required for remote deletion and for
+  pushing this scoped handoff change. No credentials/configuration were changed.
+- Changed repository file: only `PROJECT_HANDOFF.md`, to record the requested
+  retirement, exact targets, recovery, checks and authentication limitation.
+  Checks: bundle verification passes; the local branch and extra worktree are
+  absent; `git diff --check` passes. CPU/CUDA regression runs are unnecessary
+  for a metadata/documentation-only cleanup. The live queue remains running
+  at its velocity-present pre-fusion probe (about 5.44/10 epochs at inspection),
+  and the unrelated staged `DD2414_Project_Plan.pdf` is untouched.
+- Next: restore the user's normal GitHub SSH authentication, delete the exact
+  remote ref, verify it is absent with `git ls-remote --heads origin
+  experiment/official-rgb-double-distill-cluster`, and push the scoped handoff
+  commit. Do not merge the retired code or alter the running local plan.
