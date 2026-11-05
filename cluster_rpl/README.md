@@ -193,8 +193,12 @@ record this numerical-environment difference. Initial CPU setup job 1250185
 failed solving conda dependencies: old Pillow required an old libxcb that
 conflicted with libgl, and scipy 1.15.3 was unavailable in that resolution.
 The revised YAML uses mamba for Python/user libraries and pinned PyPI/official
-CUDA wheels for the numerical packages. Its install still needs runtime
-verification. The inherited historical `requirements.txt` is NOT used.
+CUDA wheels for the numerical packages. Setup job `1250190` subsequently
+completed in 8m48s. CPU validation job `1250197` passed `pip check`, imports,
+a frozen DINO forward and all 66 regression tests. PyYAML is pinned explicitly
+because the environment contract tests parse YAML. This is CPU validation,
+not the real training/resume pilot. The inherited historical
+`requirements.txt` is NOT used.
 
 Preview:
 
@@ -215,6 +219,14 @@ Existing environments are
 inspected, never overwritten. Do not upgrade NVIDIA drivers or install a
 system CUDA toolkit. Batch execution uses the mamba-created environment's
 absolute Python path directly so checkpoint signals do not hit a wrapper.
+
+The owner separately authorized removal of only
+`/Midgard/home/hongen/miniforge3/envs/dd2414-hybrid`, after checking that no
+job uses it and validating the replacement `envs/dd2414`. Old environment
+manifests are preserved in `PROJECT/.cache/env_backups/`; they permit package
+reconstruction, not instant restoration of a deleted environment. Cleanup job
+`1250199` completed successfully; only base and the validated `dd2414` remain
+registered. Base and other environments must remain untouched.
 
 ## 5. Configure and import only finished work
 
@@ -305,6 +317,25 @@ the last durable training checkpoint remains the recovery point.
 
 ## 7. Monitor and back up
 
+The full dataset is currently uploading from the workstation to **arwen**.
+It does not depend on a chat session remaining open. On the workstation:
+
+```bash
+systemctl --user status dd2414-rpl-nuscenes-upload.service
+tail -F /home/students2026/dd2414/.cache/worktrees/rpl-full-data-double-distill/.cache/rpl_nuscenes_upload.log
+```
+
+The receiver is CPU-only Slurm job `1250189` (a restart can assign a new ID).
+The service uses partial-file recovery and bounded retries; there is no
+`--delete`. Source size is 419,984,351,322 bytes (391.14 GiB). Rsync's live
+percentage uses its incrementally discovered file list, **not necessarily that
+whole-dataset denominator**. Verify service exit, transfer totals and the full
+asset audit before declaring the dataset complete or launching formal work.
+
+Slurm was verified as `17.11.10`: use its supported basic options. In
+particular, `srun --overlap` is unavailable; do not copy modern Slurm monitoring
+flags without checking. Binary rsync transport requires `srun --unbuffered`.
+
 Query `squeue -u hongen`, the returned Job ID with
 `sacct -j JOB_ID`, or this lightweight progress renderer:
 
@@ -330,8 +361,12 @@ bash -n cluster_rpl/job.sh
 bash -n cluster_rpl/setup_environment.sh
 ```
 
-CPU contracts are not a CUDA pilot. RPL environment installation, node-local
-capacity, data transfer route, full-data upload, assets audit, CUDA memory
-feasibility and any formal cluster training remain unverified until their
-commands have actually run. The one-GPU code path is
-intentional; there is no DDP, shared-memory pooling or autonomous job scheduler.
+CPU contracts are not a CUDA training pilot. Environment installation and CPU
+validation, node-local capacity, the real rsync route, and pinned RGB, DINO and
+BEVCar assets have been verified. Full-data upload is still in progress.
+The complete sensor audit, real three-update/resume pilot, full-model GPU memory
+feasibility and formal cluster training remain pending. Synthetic CUDA job
+`1250200` passed native-BF16 convolution forward/backward on an RTX 3080 with
+9.64 GiB visible memory and released its GPU after 12 seconds; this does not
+replace the real pilot. The one-GPU code path is intentional; there is no
+DDP, shared-memory pooling or autonomous job scheduler.

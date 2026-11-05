@@ -13,9 +13,9 @@ approved single-GPU workflow without per-command prompts. Elevated privilege,
 interference with existing jobs, other users' files or shared settings still
 requires approval. The owner separately approved removal of exactly
 `dd2414-hybrid`; preserve its package manifest and validate the replacement
-before removing it. That removal is not yet complete in this entry.
+before removing it. That removal is now complete (details below).
 
-The cluster clone is now verified at `45637b0467d80c9ed90819540b2174b8aad789d8`
+The cluster clone was verified at `07c0718ab8d0c261b00910978f7575a804e39b39`
 on `experiment/rpl-full-data-double-distill`, with a clean worktree. Moria's
 older Git lacks `switch`; this single-branch clone also needed a narrowly added
 `remote.origin.fetch` rule for the new branch before `checkout --track` worked.
@@ -27,8 +27,12 @@ owner belongs to the `datasets` group, and personal `datasets/nuscenes`,
 `dd2414_assets` and `dd2414_runs` directories were successfully created under
 `/local_storage/users/hongen`. The source dataset measures 419,984,351,322 bytes
 (about 391.14 GiB). A GPU query in a CPU-only allocation correctly exposed no
-devices; native BF16/VRAM still require a real GPU allocation. The workstation
-pretraining status records about 6.67 GiB peak allocation, not a passed RPL pilot.
+devices. A later real one-GPU check, job `1250200`, completed in 12 seconds:
+RTX 3080, 9.64 GiB visible memory, capability 8.6, native BF16, finite convolution
+forward/backward under torch 2.5.1+cu121. The allocation was released on exit.
+This synthetic compatibility check is not the full-model training/resume pilot.
+The workstation pretraining records about 6.67 GiB peak allocation, not a
+guarantee that the complete RPL workload fits.
 
 CPU-only mamba setup job `1250185` failed after 35 seconds, before a new
 environment was registered: conda Pillow 9.4/libxcb conflicted with modern
@@ -36,22 +40,34 @@ libgl, and scipy 1.15.3 was not offered in that solve. The environment YAML is
 revised to let mamba manage Python 3.10.14, pip and user-space libgl/libglib,
 while pinned official CUDA 12.1 torch/torchvision and scientific wheels install
 inside that environment. No version pin or model setting is loosened. The
-working baseline environment is untouched. Re-read submission manual attachment
+base environment is untouched. Re-read submission manual attachment
 `4299901b-39d6-4b12-884e-6169875b6752` in full: one GPU total for the master
 account, explicit limits <=48 hours, salloc <=6 hours, no compute on moria,
 no idle GPU placeholders, node-local data binding, no blanket cancellation.
 
-Reproduction: the existing CPU suites below plus parse
-`cluster_rpl/environment.yml`, confirm numerical pins are in its pip section,
-and execute `bash cluster_rpl/setup_environment.sh --execute` only in a bounded
-CPU allocation. The failed setup job/log is preserved under the cluster
-project's `.cache/rpl_setup-1250185.log`. Actual solver/install, transfers and
-old-environment removal remain pending; update this entry with their observed
-results before calling the deployment ready. Next: commit/push the scoped YAML
-and guide correction, fast-forward the idle cluster clone, retry CPU setup,
-test the CPU Slurm rsync route, then start resumable data upload. The added
-environment regression test passes (25 new CPU tests); the existing 41 CPU
-contracts are unchanged. CPU-only Slurm rsync dry-run works with
+Replacement setup job `1250190` completed in 8m48s. CPU validation job `1250197`
+completed in 2m47s: `pip check`, actual training imports, frozen DINO ViT-S/14
+forward (1x4x384 patch tokens), 25 deployment tests and 41 inherited CPU tests
+all passed. PyYAML 6.0.3 was installed for the YAML contract test and is now
+explicitly pinned in `cluster_rpl/environment.yml`; the regression contract
+checks this dependency. Missing xFormers and matplotlib deprecation warnings
+were nonfatal. Reproduction: use the two CPU-suite commands below, run
+`python -m pip check`, and load the cached DINO teacher on CPU. Full output is
+in `.cache/rpl_environment_check-1250197.log`; installation logs remain in
+`.cache/rpl_setup-1250185.log` and `.cache/rpl_setup-1250190.log` on the cluster.
+
+Before deleting the authorized old environment, own-job/process inspection
+found only our CPU upload and no old-environment interpreter. Cleanup job
+`1250199` completed in 31 seconds using `mamba env remove --prefix
+/Midgard/home/hongen/miniforge3/envs/dd2414-hybrid --yes`; path absence and
+the remaining base/new `dd2414` environment list were verified. Old manifests
+are preserved in `.cache/env_backups/dd2414-hybrid.yml` and
+`dd2414-hybrid-pip.txt`; the new validated environment is exported beside them
+as `dd2414-validated.yml` and `dd2414-validated-pip.txt`. These are reconstruction
+records, not an instant rollback of the removed environment. Cleanup log:
+`.cache/rpl_environment_cleanup-1250199.log`. No other environment was removed.
+
+CPU-only Slurm rsync dry-run works with
 `srun --unbuffered`; the default-buffered route stalled its bounded test.
 An actual 88,283,115-byte DINO weight transfer also passed the pinned SHA-256
 check at about 12 MB/s. Full data upload is now started as the workstation user
@@ -62,14 +78,25 @@ logs are `.cache/rpl_nuscenes_upload.log` in this isolated worktree. Rsync has
 partial-file recovery, a 50 MiB/s ceiling and three bounded service restart
 attempts per hour; there is no `--delete`. The initial buffered dry-run job
 `1250186` was naturally stopped by its five-minute time limit, not by a blanket
-cancel. Full transfer completion and full data audit have not yet occurred.
+cancel. The receiver is job `1250189`; a restart may change that ID. Slurm is
+17.11.10; `--overlap` is unsupported, so modern monitoring flags must not be
+assumed. At the inspected snapshot, payload transfer reached about 12.58 GiB
+of 391.14 GiB (3.22%), with zero service restarts. Rsync's displayed percentage
+uses a changing scanned-file denominator and is not whole-dataset progress.
+The official RGB checkpoint, pinned BEVCar source and DINO weight/Python tree
+have separately arrived and passed their pinned hashes. Full dataset transfer,
+the complete sensor-file audit, actual three-update/new-process-resume pilot
+and formal training have not yet occurred. Next: verify this scoped commit on
+GitHub, fast-forward the idle cluster clone, keep the persistent upload running,
+then audit all data and run the real pilot. Refresh workstation task ownership
+before any long formal run; do not stop or reorder its unchanged queue.
 
 2026-11-05 **RPL deployment branch only**: the owner approved isolated cluster
 preparation on `experiment/rpl-full-data-double-distill`, based on `3f8a328`.
 All edits are in a separate worktree; the workstation baseline checkout,
-systemd queue, protocol and staged PDF are unchanged. The owner subsequently
-required separate explicit approval for **every cluster command, including
-read-only commands**. No further cluster command was issued after that rule.
+systemd queue, protocol and staged PDF are unchanged. The owner initially
+required separate approval for every cluster command; the continuation entry
+above records the subsequent relaxation and current deployment evidence.
 The earlier approved-session inspection found a clean cluster clone at
 `/Midgard/home/hongen/projects/DD2414-Project`, still on the historical
 `experiment/hybrid-teacher-10sweep-cluster` branch (`4a086d0`), mamba 2.1.1,
@@ -126,14 +153,16 @@ python cluster_rpl/control.py plan
 bash cluster_rpl/setup_environment.sh
 ```
 
-Actual tests: 24 new CPU tests and 41 inherited CPU tests passed (65 total).
+Initial preparation tests: 24 new CPU tests and 41 inherited CPU tests passed
+(65 total); the continuation above adds a 25th deployment contract (66 total).
 Shell syntax, Python compilation, plan/setup previews and `git diff --check`
 passed. A real source-run completion export validated the three completed
 configurations and marked the active fused probe separately; its index is
 runtime-only under `.cache/`, not committed. Tests involving pilot behavior
 mock CUDA/child training: they are not real GPU updates on RPL.
 
-Limitations: the environment solver/install, data node choice/free disk,
+Initial preparation limitations (superseded where verified above): the
+environment solver/install, data node choice/free disk,
 approved upload route, data/checkpoint transfer, allocated assets audit, actual
 CUDA memory feasibility, pilot and formal cluster training have not run.
 The cluster checkout has not yet switched to this branch. File existence checks
@@ -144,10 +173,8 @@ There is no DDP or automatic multi-card memory pooling. The unchanged local
 queue can later reach a task assigned to RPL; coordinate ownership before
 launch instead of promising a distributed lock or silently stopping local work.
 
-Next step: after pushing and verifying this branch, show the exact single
-cluster repository-status command and wait for approval. Then request approval
-separately for fetch, branch switch, resource/storage checks, each setup/upload
-operation, the pilot and each formal submission. See `cluster_rpl/README.md`.
+Current next steps and approval boundaries are in the continuation entry above
+and `cluster_rpl/README.md`; the earlier per-command prompt rule is superseded.
 
 2026-11-04 branch housekeeping: the owner withdrew the isolated
 `experiment/official-rgb-double-distill-cluster` deployment. Its local branch

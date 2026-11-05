@@ -30,3 +30,4 @@ dependencies:
       - tensorboard==2.10.0
       - protobuf==3.19.4
       - Shapely==1.8.5.post1
+      - PyYAML==6.0.3
