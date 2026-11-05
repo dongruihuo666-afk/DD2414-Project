@@ -9,13 +9,15 @@ is `/Midgard/home/hongen/projects/DD2414-Project` (singular `Project`).
 
 ## Approval and resource boundary
 
-The owner requires **approval before every cluster command, including read-only
-queries**. Show the exact SSH/remote command, purpose and expected mutations;
-wait for approval; execute only that approved command; report its outcome.
-Do not combine a sequence of remote operations into one shell invocation.
-Do not run the following guide as a batch. Approval of a previous step does not
-approve subsequent commands, retries, uploads, installations or submissions.
-When a command invokes a supplied script, disclose that script's actions too.
+On 2026-11-05 the owner replaced per-command prompts with standing approval
+for routine inspection, project synchronization, personal-directory environment
+and data preparation, and the approved single-GPU workflow. **Ask before high-
+privilege operations, interference with existing jobs, other people's files,
+shared configuration or broader destructive operations.** The separate request
+to delete only `dd2414-hybrid` does not authorize deleting other environments.
+Keep commands/job logs and report failures. This guide separates steps for
+auditability; routine commands no longer need individual prompts. Site rules
+still apply: owner permission is not a multi-GPU account exemption.
 
 No script here connects through SSH, pushes to GitHub, automatically submits a
 queue, cancels jobs, requeues jobs or chooses a node. Each real submission needs
@@ -61,7 +63,7 @@ snapshot alone guarantees no future cross-host overlap.
 
 ## 1. Inspect and synchronize the existing clone
 
-Request approval separately for each of these remote commands:
+Inspect the clone and account jobs before switching:
 
 ```bash
 git -C /Midgard/home/hongen/projects/DD2414-Project status --short --branch
@@ -80,10 +82,19 @@ After the new branch has been pushed from the workstation:
 git -C /Midgard/home/hongen/projects/DD2414-Project fetch origin
 ```
 
-If the branch is absent locally and the worktree is clean:
+For an old single-branch clone, first inspect `git config --get-all
+remote.origin.fetch`. If it only maps the historical branch, add a mapping
+for `refs/heads/experiment/rpl-full-data-double-distill` to
+`refs/remotes/origin/experiment/rpl-full-data-double-distill` with
+`git config --add remote.origin.fetch SOURCE:DESTINATION`, preserving the old
+rule, and fetch again. A manually fetched remote ref alone may not be recognized
+for `--track` without this mapping. Do not add duplicate mappings blindly.
+
+If the branch is absent locally and the worktree is clean (moria's older Git
+does not implement `switch`):
 
 ```bash
-git -C /Midgard/home/hongen/projects/DD2414-Project switch --track -c experiment/rpl-full-data-double-distill origin/experiment/rpl-full-data-double-distill
+git -C /Midgard/home/hongen/projects/DD2414-Project checkout -b experiment/rpl-full-data-double-distill --track origin/experiment/rpl-full-data-double-distill
 ```
 
 ```bash
@@ -97,8 +108,8 @@ launcher and its queue waits for a 22,000 MiB physical-GPU-0 availability check.
 
 ## 2. Choose a node and inspect storage
 
-Ask approval for `rplgpu`, `rplquota`, partition/account inspection and each
-node-specific check. The supplied manuals are not live hardware inventories.
+Check `rplgpu`, `rplquota`, partition/account settings and the proposed node.
+The supplied manuals are not live hardware inventories.
 Prioritize a compatible RTX 3080 node, but measure actual VRAM and free disk.
 An idle node does not guarantee immediate scheduling. Turing RTX 2080 Ti does
 not have native BF16; never infer precision support from driver version alone.
@@ -137,10 +148,18 @@ site-approved transfer route. The login key lives on the workstation under
 `/home/students2026/Hongen_sshkey/.ssh/`; the older config's `~/.ssh/...`
 IdentityFile does not identify that file. Do not copy private keys into the
 project/cluster, forward an agent unnecessarily, disable host-key checks, or
-assume direct compute-node SSH is permitted. The approved route and chosen
-hostname are prerequisites to constructing an exact rsync command.
+assume direct compute-node SSH is permitted. The route and chosen hostname
+are prerequisites to an exact rsync command. One option is an rsync server
+invoked by CPU-only `srun` through the trusted moria session: no compute-node
+key forwarding or idle placeholder allocation is needed. Test a small transfer
+first, and only document the route as working after that real test.
+Use `srun --unbuffered` for this binary protocol: the default buffered mode
+stalled the initial bounded dry run, whereas the unbuffered dry run succeeded.
+Each transfer must request explicit CPU, RAM, node and <=48-hour time limits;
+no GPU or idle allocation holder is needed. A long-running workstation rsync
+must be persisted by a service, not depend on an interactive agent tool call.
 
-Use a dry-run inventory, then an individually approved resumable rsync copy
+Use a dry-run inventory, then a resumable rsync copy
 with `--partial --info=progress2`, never `--delete`. Preserve complete source
 layout, particularly historical sweeps for the ten-sweep input. Do not delete
 the workstation source. A size/mtime comparison alone is not byte verification:
@@ -165,22 +184,25 @@ the entire workstation checkout.
 
 ## 4. Build the isolated mamba environment
 
-Mamba 2.1.1 was observed on the account before the per-command approval rule
-was added; do not assume a fresh command is preapproved. Reuse Miniforge at
+Mamba 2.1.1 was observed on the account. Reuse Miniforge at
 `/Midgard/home/hongen/miniforge3`. Do not reinstall it or mutate base.
 `environment.yml` pins Python 3.10.14, torch 2.5.1, torchvision 0.20.1,
 NumPy 1.23.5, Pillow 9.4.0 and nuScenes devkit 1.1.11. It uses the official
 CUDA 12.1 torch build for the cluster, not the workstation CUDA 12.4 build;
-record this numerical-environment difference. No solver/install has yet been
-validated on RPL. The inherited historical `requirements.txt` is NOT used.
+record this numerical-environment difference. Initial CPU setup job 1250185
+failed solving conda dependencies: old Pillow required an old libxcb that
+conflicted with libgl, and scipy 1.15.3 was unavailable in that resolution.
+The revised YAML uses mamba for Python/user libraries and pinned PyPI/official
+CUDA wheels for the numerical packages. Its install still needs runtime
+verification. The inherited historical `requirements.txt` is NOT used.
 
-Preview (one separately approved cluster command):
+Preview:
 
 ```bash
 bash cluster_rpl/setup_environment.sh
 ```
 
-After approval, the following creates one new environment and installs the
+The following creates one new environment and installs the
 listed conda/pip dependencies. Run package-heavy preparation in an allocated
 CPU context; do not compile packages on moria. It refuses an existing prefix:
 
@@ -188,8 +210,8 @@ CPU context; do not compile packages on moria. It refuses an existing prefix:
 bash cluster_rpl/setup_environment.sh --execute
 ```
 
-Then obtain approval for each verification command, including `mamba run -n
-dd2414 python -m pip check` and environment export. Existing environments are
+Verify with `mamba run -n dd2414 python -m pip check` and environment export.
+Existing environments are
 inspected, never overwritten. Do not upgrade NVIDIA drivers or install a
 system CUDA toolkit. Batch execution uses the mamba-created environment's
 absolute Python path directly so checkpoint signals do not hit a wrapper.
@@ -197,7 +219,7 @@ absolute Python path directly so checkpoint signals do not hit a wrapper.
 ## 5. Configure and import only finished work
 
 Create a personal config at `PROJECT/.cache/rpl.json`, based on
-`config.example.json`, after approval. Choose a real node; the placeholder is
+`config.example.json`. Choose a real node; the placeholder is
 deliberately non-submittable. Store no credentials. Keep BF16 on a proven
 native-BF16 node to match the workstation treatment; if FP16 is necessary,
 declare it before starting and do not silently combine it with BF16 treatment
@@ -209,7 +231,7 @@ On the workstation, snapshot only completed results:
 python cluster_rpl/control.py export-completed --study /home/students2026/dd2414/fullsize_baseline/runs/official_rgb_full_10sweep_20261103 --output .cache/workstation_completed.json
 ```
 
-Copy that small index after approval and configure `completed_index` to its
+Copy that small index and configure `completed_index` to its
 absolute cluster path. If downstream tasks need a completed pretraining,
 also copy its `summary.json`, `config.json`, and `checkpoints/latest.pt` into
 `RUN_ROOT/EXACT_TASK_NAME/`. The checkpoint hash must match the exported index.
@@ -223,11 +245,11 @@ Interrupted workstation runs are not claimed to resume exactly on a different
 machine/precision/code version; finish them there or start a separately named
 experiment after approval. Never patch checkpoint signatures to force a resume.
 
-## 6. CPU audit, GPU pilot, then individually approved jobs
+## 6. CPU audit, GPU pilot, then explicit single-task jobs
 
 All command examples here assume the cluster project directory, personal
 config `.cache/rpl.json`, and an appropriate allocated CPU context for auditing.
-Each command still requires separate owner approval.
+The routine workflow is authorized under the boundary described above.
 
 The full stat-heavy audit must run on the data node, not moria:
 
@@ -253,7 +275,7 @@ Preview a real three-update/full-manifest engineering pilot:
 python cluster_rpl/control.py --config .cache/rpl.json submit --task official_rgb_double_dino_10sweep_velocity_zero_pretrain --pilot
 ```
 
-After approval, use the same command with `--execute`. A scheduling-only check
+To submit, use the same command with `--execute`. A scheduling-only check
 uses `--test-only --execute` and does NOT replace the real pilot. The pilot
 trains two updates, exits, starts a new process, resumes to update three and
 requires finite loss and gradient norm. It validates operation, not numerical
@@ -267,15 +289,15 @@ Only after the audit and pilot pass, preview the first formal task:
 python cluster_rpl/control.py --config .cache/rpl.json submit --task official_rgb_double_dino_10sweep_velocity_zero_pretrain
 ```
 
-Show the exact printed `sbatch` command and obtain approval before `--execute`.
+Inspect and log the exact printed `sbatch` command before `--execute`.
 Submission creates log directories and a submission record, requests one GPU,
 pins the data node, and runs exactly that task. A returned Job ID means queued,
 not necessarily running. No dependent job is automatically submitted.
-Inspect the outcome before approving the next task from `plan`.
+Inspect the outcome before selecting the next task from `plan`.
 
 The wrapper requests an early checkpoint signal five minutes before the wall
 limit. Partial exits are non-successful and do not unlock downstream work.
-After inspection and renewed approval, resubmit the SAME task/config with
+After inspection, resubmit the SAME task/config with
 `--resume --execute`. There is no automatic requeue loop. Do not change epoch
 budgets, precision, paths or code and bypass a resume mismatch. A pre-timeout
 signal is not guaranteed to finish a long validation before the hard limit;
@@ -283,7 +305,7 @@ the last durable training checkpoint remains the recovery point.
 
 ## 7. Monitor and back up
 
-After separate approval, query `squeue -u hongen`, the returned Job ID with
+Query `squeue -u hongen`, the returned Job ID with
 `sacct -j JOB_ID`, or this lightweight progress renderer:
 
 ```bash
@@ -311,5 +333,5 @@ bash -n cluster_rpl/setup_environment.sh
 CPU contracts are not a CUDA pilot. RPL environment installation, node-local
 capacity, data transfer route, full-data upload, assets audit, CUDA memory
 feasibility and any formal cluster training remain unverified until their
-individually approved commands have actually run. The one-GPU code path is
+commands have actually run. The one-GPU code path is
 intentional; there is no DDP, shared-memory pooling or autonomous job scheduler.

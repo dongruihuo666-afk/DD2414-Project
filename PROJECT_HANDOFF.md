@@ -7,6 +7,63 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-05 RPL deployment continuation: the owner has now authorized routine
+cluster queries, project sync, personal environment/data preparation and the
+approved single-GPU workflow without per-command prompts. Elevated privilege,
+interference with existing jobs, other users' files or shared settings still
+requires approval. The owner separately approved removal of exactly
+`dd2414-hybrid`; preserve its package manifest and validate the replacement
+before removing it. That removal is not yet complete in this entry.
+
+The cluster clone is now verified at `45637b0467d80c9ed90819540b2174b8aad789d8`
+on `experiment/rpl-full-data-double-distill`, with a clean worktree. Moria's
+older Git lacks `switch`; this single-branch clone also needed a narrowly added
+`remote.origin.fetch` rule for the new branch before `checkout --track` worked.
+The existing old-branch fetch rule was preserved. These are repository-local
+changes, not shared cluster configuration changes.
+
+Read-only CPU allocations on arwen found about 3.4 TiB local free space. The
+owner belongs to the `datasets` group, and personal `datasets/nuscenes`,
+`dd2414_assets` and `dd2414_runs` directories were successfully created under
+`/local_storage/users/hongen`. The source dataset measures 419,984,351,322 bytes
+(about 391.14 GiB). A GPU query in a CPU-only allocation correctly exposed no
+devices; native BF16/VRAM still require a real GPU allocation. The workstation
+pretraining status records about 6.67 GiB peak allocation, not a passed RPL pilot.
+
+CPU-only mamba setup job `1250185` failed after 35 seconds, before a new
+environment was registered: conda Pillow 9.4/libxcb conflicted with modern
+libgl, and scipy 1.15.3 was not offered in that solve. The environment YAML is
+revised to let mamba manage Python 3.10.14, pip and user-space libgl/libglib,
+while pinned official CUDA 12.1 torch/torchvision and scientific wheels install
+inside that environment. No version pin or model setting is loosened. The
+working baseline environment is untouched. Re-read submission manual attachment
+`4299901b-39d6-4b12-884e-6169875b6752` in full: one GPU total for the master
+account, explicit limits <=48 hours, salloc <=6 hours, no compute on moria,
+no idle GPU placeholders, node-local data binding, no blanket cancellation.
+
+Reproduction: the existing CPU suites below plus parse
+`cluster_rpl/environment.yml`, confirm numerical pins are in its pip section,
+and execute `bash cluster_rpl/setup_environment.sh --execute` only in a bounded
+CPU allocation. The failed setup job/log is preserved under the cluster
+project's `.cache/rpl_setup-1250185.log`. Actual solver/install, transfers and
+old-environment removal remain pending; update this entry with their observed
+results before calling the deployment ready. Next: commit/push the scoped YAML
+and guide correction, fast-forward the idle cluster clone, retry CPU setup,
+test the CPU Slurm rsync route, then start resumable data upload. The added
+environment regression test passes (25 new CPU tests); the existing 41 CPU
+contracts are unchanged. CPU-only Slurm rsync dry-run works with
+`srun --unbuffered`; the default-buffered route stalled its bounded test.
+An actual 88,283,115-byte DINO weight transfer also passed the pinned SHA-256
+check at about 12 MB/s. Full data upload is now started as the workstation user
+service `dd2414-rpl-nuscenes-upload.service`, writing only arwen's personal
+nuScenes directory. The remote rsync step requests one CPU, 4 GiB, zero GPUs,
+47 hours, and releases its allocation on exit; no idle holder is used. Upload
+logs are `.cache/rpl_nuscenes_upload.log` in this isolated worktree. Rsync has
+partial-file recovery, a 50 MiB/s ceiling and three bounded service restart
+attempts per hour; there is no `--delete`. The initial buffered dry-run job
+`1250186` was naturally stopped by its five-minute time limit, not by a blanket
+cancel. Full transfer completion and full data audit have not yet occurred.
+
 2026-11-05 **RPL deployment branch only**: the owner approved isolated cluster
 preparation on `experiment/rpl-full-data-double-distill`, based on `3f8a328`.
 All edits are in a separate worktree; the workstation baseline checkout,

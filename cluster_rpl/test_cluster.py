@@ -52,6 +52,21 @@ class ClusterTests(unittest.TestCase):
             self.assertTrue(task['requires'] is None or task['requires'] in seen)
             seen.add(task['name'])
 
+    def test_environment_avoids_old_conda_graph_and_pins_cuda_wheels(self):
+        import yaml
+        spec = yaml.safe_load((HERE/'environment.yml').read_text())
+        self.assertEqual(spec['channels'],['conda-forge','nodefaults'])
+        packages = spec['dependencies']
+        self.assertIn('python=3.10.14',packages)
+        self.assertIn('libgl',packages)
+        self.assertNotIn('pillow=9.4.0',packages)
+        wheels = next(p['pip'] for p in packages if isinstance(p,dict))
+        for requirement in ['torch==2.5.1+cu121','torchvision==0.20.1+cu121',
+                            'Pillow==9.4.0','numpy==1.23.5','scipy==1.15.3']:
+            self.assertIn(requirement,wheels)
+        self.assertIn('opencv-python==4.6.0.66',wheels)
+        self.assertFalse(any(p.startswith('opencv-python-headless') for p in wheels))
+
     def test_scientific_configuration_is_unchanged(self):
         for task in tasks(self.cfg):
             command = task['command']
