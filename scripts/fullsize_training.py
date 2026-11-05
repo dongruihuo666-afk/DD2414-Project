@@ -230,6 +230,11 @@ def query_nvidia_smi():
         '--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw',
         '--format=csv,noheader,nounits',
     ]
+    # CUDA logical index zero need not be physical GPU zero. The opt-in
+    # cluster wrapper supplies the actual allocated device UUID.
+    gpu_uuid = os.environ.get('DD2414_TELEMETRY_GPU_UUID')
+    if gpu_uuid:
+        command += ['--id=' + gpu_uuid]
     try:
         result = subprocess.run(
             command, check=True, capture_output=True, text=True, timeout=3,

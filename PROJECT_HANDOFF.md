@@ -7,6 +7,91 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-05 **RPL deployment branch only**: the owner approved isolated cluster
+preparation on `experiment/rpl-full-data-double-distill`, based on `3f8a328`.
+All edits are in a separate worktree; the workstation baseline checkout,
+systemd queue, protocol and staged PDF are unchanged. The owner subsequently
+required separate explicit approval for **every cluster command, including
+read-only commands**. No further cluster command was issued after that rule.
+The earlier approved-session inspection found a clean cluster clone at
+`/Midgard/home/hongen/projects/DD2414-Project`, still on the historical
+`experiment/hybrid-teacher-10sweep-cluster` branch (`4a086d0`), mamba 2.1.1,
+5.5 GiB of the 100 GiB home quota used, and no account jobs. These are snapshots,
+not a claim of current node availability or completed cluster deployment.
+
+Local source inventory at this preparation step contains three completed tasks:
+the official-encoder initial camera probe, velocity-present five-epoch double
+distillation, and its ten-epoch camera-BEV frozen probe. The velocity-present
+fused-BEV probe is active, around eight of ten epochs in the inspected snapshot.
+This supersedes the old "not yet training" statement below for that study.
+Seven tasks are not started in that snapshot. RPL preparation prioritizes the
+missing velocity-hidden group, respecting the pretraining dependency before
+segmentation, object motion and the two probes. Completion snapshots must be
+refreshed before actual launch; there is no cross-host reservation mechanism.
+
+Changed files and rationale:
+
+- `cluster_rpl/environment.yml`, `setup_environment.sh`: isolated mamba
+  environment, pinned Python 3.10/torch 2.5.1/torchvision 0.20.1/numpy 1.23.5/
+  Pillow 9.4/nuScenes 1.1.11; CUDA 12.1 is an explicit deployment difference
+  from the workstation CUDA 12.4 build. Setup prints by default and refuses
+  to overwrite an existing environment. OpenCV's package name matches the
+  pinned SDK requirement (no duplicate full/headless cv2 providers); a user-
+  environment libgl dependency avoids a system-level graphics install.
+- `cluster_rpl/control.py`, `job.sh`, `config.example.json`: opt-in,
+  dependency-aware reverse priority, explicit one-task/one-GPU Slurm submission,
+  chosen node binding, no physical-GPU-0/22 GiB idle gate, no systemd/GitHub
+  publisher, no automatic SSH/queue/requeue/cancel. An asset audit and a real
+  finite-update/new-process-resume pilot are mandatory before formal admission.
+  Early signals are forwarded only to the owned child. Partial work does not
+  unlock dependent tasks. Output locking prevents concurrent writers per run.
+- `cluster_rpl/check_assets.py`, `assets.json`: pinned RGB/DINO/BEVCar checks,
+  official full split membership and every referenced sensor file's presence/
+  nonzero size. The audit requires an allocated CPU context on the data node.
+- `scripts/source_provenance.py`, `train_multisweep_teacher.py`: explicit
+  downstream-only `--allow-source-relocation` accepts identical official RGB
+  content at a new path, preserving hash/tensor-count/scope and strict model
+  loading. Exact same-run optimizer/sampler/RNG resume validation is unchanged;
+  old implementation signatures are not rewritten or bypassed.
+- `scripts/fullsize_training.py`: opt-in allocated-GPU UUID telemetry supplied
+  by the RPL runner; unset retains the existing default behavior.
+- `cluster_rpl/test_cluster.py`, `README.md`: CPU regression contracts and
+  step-by-step approval-aware deployment, data transfer, environment, audit,
+  checkpoint/resume, monitoring and backup instructions.
+
+Reproduction (from this branch, using the existing workstation environment):
+
+```bash
+PYTHONPATH=scripts python -m unittest discover -s cluster_rpl -p test_cluster.py -v
+PYTHONPATH=scripts python -m unittest scripts.test_official_full_data scripts.test_full_data_protocol scripts.test_fullsize_training scripts.test_training_checkpoint scripts.test_multisweep_teacher -v
+bash -n cluster_rpl/job.sh cluster_rpl/setup_environment.sh
+python cluster_rpl/control.py plan
+bash cluster_rpl/setup_environment.sh
+```
+
+Actual tests: 24 new CPU tests and 41 inherited CPU tests passed (65 total).
+Shell syntax, Python compilation, plan/setup previews and `git diff --check`
+passed. A real source-run completion export validated the three completed
+configurations and marked the active fused probe separately; its index is
+runtime-only under `.cache/`, not committed. Tests involving pilot behavior
+mock CUDA/child training: they are not real GPU updates on RPL.
+
+Limitations: the environment solver/install, data node choice/free disk,
+approved upload route, data/checkpoint transfer, allocated assets audit, actual
+CUDA memory feasibility, pilot and formal cluster training have not run.
+The cluster checkout has not yet switched to this branch. File existence checks
+are not byte checksums of the full dataset. Native BF16 requires a suitable GPU;
+if FP16 is necessary, lock and disclose the changed comparison conditions.
+One-GPU account policy remains applicable despite an earlier two-GPU dry run.
+There is no DDP or automatic multi-card memory pooling. The unchanged local
+queue can later reach a task assigned to RPL; coordinate ownership before
+launch instead of promising a distributed lock or silently stopping local work.
+
+Next step: after pushing and verifying this branch, show the exact single
+cluster repository-status command and wait for approval. Then request approval
+separately for fetch, branch switch, resource/storage checks, each setup/upload
+operation, the pilot and each formal submission. See `cluster_rpl/README.md`.
+
 2026-11-04 branch housekeeping: the owner withdrew the isolated
 `experiment/official-rgb-double-distill-cluster` deployment. Its local branch
 and clean worktree have been removed after saving a verified recovery bundle.

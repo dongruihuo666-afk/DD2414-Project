@@ -1,0 +1,18 @@
+{
+  "node": "CHOOSE_AFTER_RESOURCE_AND_DISK_CHECK",
+  "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+  "run_root": "/local_storage/users/hongen/dd2414_runs/official_rgb_double_distillation_10sweep",
+  "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+  "mamba": "/Midgard/home/hongen/miniforge3/bin/mamba",
+  "camera_checkpoint": "/local_storage/users/hongen/dd2414_assets/official_rgb.pth",
+  "bevcar_source": "/local_storage/users/hongen/dd2414_assets/BEVCar",
+  "precision": "bf16",
+  "workers": 4,
+  "cpus": 4,
+  "memory": "32G",
+  "time": "47:00:00",
+  "partition": null,
+  "account": null,
+  "qos": null,
+  "completed_index": null
+}

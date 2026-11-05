@@ -34,6 +34,7 @@ from radar_scaling_data import IndexedSubset, validate_scaling_manifest
 from train_fullsize_linear_probe import reset_seeds
 from train_nuscenes import SimpleLoss
 from training_checkpoint import load_training_checkpoint, save_training_checkpoint
+from source_provenance import check_camera_source_provenance
 
 STOP = False
 
@@ -54,6 +55,8 @@ def parse_args():
                                     'finetune','object-motion'], required=True)
     p.add_argument('--checkpoint', type=Path)
     p.add_argument('--official-camera-checkpoint', type=Path)
+    p.add_argument('--allow-source-relocation', action='store_true',
+                   help='Allow a downstream parent to reference an identical official RGB file at a new path; exact resume stays strict.')
     p.add_argument('--image-resolution', type=int, nargs=2, default=[112,192])
     p.add_argument('--teacher-resolution', type=int, nargs=2, default=[196,336])
     p.add_argument('--velocity-mode', choices=['full','zero'], default='full')
@@ -229,11 +232,8 @@ def main():
                 continue  # Historical opt-in runs retain their defaults.
             if cfg[key] != getattr(args,key):
                 raise ValueError(f'source {key} mismatch')
-        if cfg.get('official_camera_checkpoint') != (
-                str(args.official_camera_checkpoint.resolve()) if args.official_camera_checkpoint else None):
-            raise ValueError('source official encoder provenance mismatch')
-        if initialization and cfg.get('official_camera_initialization') != initialization:
-            raise ValueError('source official encoder hash mismatch')
+        check_camera_source_provenance(cfg, args.official_camera_checkpoint,
+                                       initialization, args.allow_source_relocation)
         if cfg['manifest_sha256'] != manifest['manifest_sha256']:
             raise ValueError('source manifest mismatch')
         if cfg['bevcar_sha256'] != digest_file(args.bevcar_source/'nets/voxelnet.py'):
@@ -291,7 +291,8 @@ def main():
         source_code_commit=code_commit(), frozen_initial_sha256=initial_digest,
         implementation_sha256={name:digest_file(ROOT/'scripts'/name) for name in
             ['multisweep_teacher.py','train_multisweep_teacher.py','baseline_followup.py',
-             'fullsize_training.py','radar_evaluation.py','radar_scaling_data.py','training_checkpoint.py']},
+             'fullsize_training.py','radar_evaluation.py','radar_scaling_data.py','training_checkpoint.py',
+             'source_provenance.py']},
         dino_weight_sha256=digest_file(ROOT/'.cache/torch/hub/checkpoints/dinov2_vits14_pretrain.pth'))
     if initialization:
         config['model_data_implementation_sha256'] = {name:digest_file(ROOT/name) for name in

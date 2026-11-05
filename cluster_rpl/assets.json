@@ -1,0 +1,6 @@
+{
+  "scope": "Hashes of the teacher and BEVCar source used by the workstation; copy assets separately, never commit weights",
+  "dino_weight_sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+  "dino_python_tree_sha256": "88b35b92ca99c27c3bd9c650d930f43e78c7e6341fb13ecfffdc26272fbf80a5",
+  "bevcar_voxelnet_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac"
+}
