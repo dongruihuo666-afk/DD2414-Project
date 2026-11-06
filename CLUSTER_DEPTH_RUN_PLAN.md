@@ -40,18 +40,99 @@ substitute velocity-present weights for that future comparison.
 
 ## Implementation and deployment gates
 
-The current bounded change adds explicit completed-parent initialization and
-an adjustable relative-depth teacher input resolution. It does NOT yet provide
-the three-treatment Slurm matrix, admission audit extensions, or an automatic
-queue. Existing cluster configuration still targets the old no-depth study.
-Do not submit it as if it were this new depth study.
+The branch now implements opt-in two-process DDP continuation pretraining,
+the three-treatment command matrix and a signal-safe Slurm batch wrapper.
+This is LOCAL CODE PREPARATION: this update does not connect to the cluster,
+update its checkout, copy assets, submit allocations or run full-model CUDA.
+The inherited `control.py` configuration still targets the old single-GPU
+no-depth study; do not submit it as if it were this new matrix.
 
-Before formal execution, implement the dedicated matrix and output root, copy
-and hash-check the parent and Depth Anything source/weights, audit every sensor
-reference on arwen, and pass real finite-update/new-process-resume tests for
-all three depth modes. No silent resolution/sweep/model reductions after OOM.
-The inherited low-resolution teacher size is not silently a formal choice:
-lock the desired teacher resolution in the new matrix and record it explicitly.
+Each GPU processes one frame (six cameras). The global batch is two, with
+14,065 synchronized optimizer updates per complete epoch / 70,325 per new
+five-epoch phase. Every one of the 28,130 training frames is seen exactly once
+per epoch, with disjoint shards and no padding/drop-last. Both validation
+shards together score all 6,019 frames once (3,010 + 3,009), using the same
+rank-zero model buffers. Training averages the two rank-local per-sample
+objectives, not a global-cell-count-normalized loss. Learning rates stay
+1e-5 / 2e-4 for camera / other student parameters; AdamW, quarter-epoch warmup
+and cosine decay remain. All three treatments use this SAME new recipe.
+It is not an identical optimizer trajectory or update budget to global-batch-
+one historical runs. Memory is not pooled and a twofold speedup is not promised.
+
+DINO and optional Depth Anything V2 stay frozen in separate per-rank copies.
+The relative-depth teacher is explicitly 448x798 in this matrix. Trainable
+student forward/projection heads execute inside DDP. BatchNorm uses rank-local
+statistics, with rank-zero buffers broadcast before training forwards (not
+SyncBatchNorm). The opt-in sample-local augmentation RNG is keyed by seed,
+epoch and index, independent of worker prefetch; it is not the old worker-RNG
+trajectory. Training RNG starts at seed-plus-rank so dropout masks need not
+match across different local examples. Same-world-size resume restores each rank's sampler,
+RNG, scaler and buffers, shared model/optimizer and global progress. A completed
+single-GPU parent is model-only INITIALIZATION, never a two-GPU exact resume.
+
+Downstream segmentation, both frozen probes and GT-box motion remain
+single-GPU. Each treatment's four downstream commands start from its own
+completed DDP continuation with unprefixed model keys. The matrix is three
+pretraining tasks plus twelve readout tasks, NOT fifteen simultaneous jobs.
+There is no automatic dispatcher, cross-host reservation or auto-requeue.
+
+Before formal execution, confirm permission for the longer two-GPU resource
+use, copy/hash-check the parent and Depth Anything source/weights, extend the
+admission audit, audit every sensor reference on arwen, and pass real finite-
+update/new-process-resume tests for all three depth modes. CPU/Gloo tests are
+not a full-model CUDA/memory/throughput test. No silent resolution/sweep/model
+reductions after OOM. An automatic dispatch mechanism is still future work.
+
+### Local preview (no training or allocation)
+
+```bash
+python cluster_rpl/depth_study.py --config cluster_rpl/depth_study.example.json
+```
+
+This prints the resource profile and all fifteen exact commands. Copy the
+example to an ignored `.cache/` config only when preparing actual deployment.
+The parent path in the example is a future destination, NOT a transferred file.
+Inspect/verify every asset and the configured node-local output root first.
+
+### Future submission template (NOT executed in this update)
+
+After deployment, authorization and admission pilots, inside the new branch
+on moria, with an existing absolute config path:
+
+```bash
+sbatch --nodes=1 --ntasks=1 --nodelist=arwen --gres=gpu:2 \
+  --cpus-per-task=8 --mem=32G --time=47:00:00 --signal=B:USR1@300 \
+  --job-name=dd2414-depth-none \
+  --output=/Midgard/home/hongen/projects/DD2414-Project/.cache/depth-none-%j.out \
+  --error=/Midgard/home/hongen/projects/DD2414-Project/.cache/depth-none-%j.err \
+  cluster_rpl/depth_ddp_job.sh \
+  /Midgard/home/hongen/projects/DD2414-Project/.cache/depth_study.json none
+```
+
+Use `radar` and `radar-dav2` in place of `none` for the other treatments, one
+explicit submission at a time under the authorized account limits. The wrapper
+never submits anything itself and refuses execution on moria/outside Slurm.
+It launches one torchrun agent with two local training processes. It holds an
+output-specific launch lock, and rank zero also locks its checkpoint directory.
+Use `--signal=B:USR1@300`, not a signal directly to torchrun: the wrapper writes
+`RUN_DIR/REQUEST_CHECKPOINT`, both ranks agree at a safe boundary, save, and exit
+partial. Partial exits return 75, not dependency-success. SIGKILL/node failure
+cannot save a fresh checkpoint; resume from the latest atomic completed save.
+
+For the real admission pilot, use a bounded allocation and append
+`--stop-after-updates 2`; then start a NEW process with `--resume
+--stop-after-updates 3` in that same treatment run directory. This uses full
+manifest/model/resolution, not a sample subset. Once the pilot is checked,
+resume with only `--resume` and a formal time limit. Code/configuration and world
+size must not change between these resumes. Never automatically migrate a
+single-GPU optimizer or resume a world-size-two run on one GPU.
+
+Inspect `status.json`, `metrics.jsonl`, TensorBoard and `summary.json` per
+treatment; pretraining is complete only when summary status is `complete`,
+epoch five and all 6,019 final validation frames are present. Only then run
+the printed downstream commands, each in a separate ONE-GPU allocation.
+The primary result remains Simple-BEV-aligned Vehicle BEV IoU, not pretraining
+loss. Validation radar-depth MAE is at radar-supervised anchors, not dense GT.
 
 ## Resource authorization and diagnostic history
 
@@ -75,8 +156,8 @@ sbatch --test-only --nodes=1 --nodelist=arwen --gres=gpu:2 --cpus-per-task=8 --m
 It printed a predicted start with an illustrative job number, but account
 `squeue` was empty both before and after. Association `defaultusr` / QOS
 `normal` showed no explicit MaxTRES/GrpTRES values in that query; this does not
-prove exemption from site rules. Current trainer has no DDP implementation.
-Even an authorized two-card allocation would not accelerate it automatically.
+prove exemption from site rules. At that time the trainer had no DDP
+implementation, so allocation alone could not accelerate it.
 
 The next decision at that stage was to obtain temporary permission or retain
 single-GPU execution. Permission was subsequently confirmed for the short
@@ -134,6 +215,8 @@ env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NCCL_DEBUG=WARN \
 ```
 
 Retain the explicit three-minute Slurm limit. Do not run this on moria or use
-the temporary-test permission as an ongoing allocation exemption. The actual
-research trainer remains single-GPU. Full-model DDP, loss/sample-count handling,
-resume safety, depth-memory feasibility and speedup have NOT been established.
+the temporary-test permission as an ongoing allocation exemption. At the time
+of this diagnostic the actual research trainer remained single-GPU. The later
+local-only implementation described above passes CPU/Gloo sampling, gradient
+and resume checks; full-model CUDA depth-memory feasibility and speedup remain
+unmeasured. No new cluster execution is part of that implementation update.

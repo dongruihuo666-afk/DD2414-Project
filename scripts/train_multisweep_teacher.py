@@ -4,6 +4,7 @@
 import argparse
 import json
 import math
+import os
 import signal
 import sys
 import time
@@ -89,6 +90,8 @@ def parse_args():
     p.add_argument('--print-every', type=int, default=25)
     p.add_argument('--stop-after-updates', type=int, default=0)
     p.add_argument('--resume', action='store_true')
+    p.add_argument('--distributed', action='store_true',
+                   help='Opt-in two-rank full-data pretraining continuation; downstream remains single-GPU.')
     return p.parse_args()
 
 
@@ -186,6 +189,11 @@ def model_inputs(batch, device, velocity_mode):
 
 def main():
     args = parse_args()
+    if args.distributed:
+        from train_depth_ddp import run
+        return run(args)
+    if int(os.environ.get('WORLD_SIZE','1')) != 1:
+        raise ValueError('Multiple torchrun processes require --distributed; refusing duplicate single-GPU jobs')
     if min(args.epochs, args.batch_size, args.checkpoint_every, args.print_every) < 1:
         raise ValueError('epochs, batch size and intervals must be positive')
     if args.num_workers < 0 or not 0 <= args.train_samples <= 28130 or not 1 <= args.val_samples <= 6019:
@@ -256,6 +264,9 @@ def main():
         if (cfg['experiment'] != 'baseline_multisweep_double_distillation'
                 or cfg['mode'] != 'pretrain' or source['sampler']['epoch'] != cfg['epochs']):
             raise ValueError('source must be a completed double-distillation pretraining run')
+        if source.get('checkpoint_kind') == 'ddp_full_model':
+            from distributed_training import require_completed_ddp_pretraining
+            require_completed_ddp_pretraining(source)
         for key in ['nsweeps','depth_mode','seed','velocity_mode','image_resolution','teacher_resolution']:
             if key not in cfg and not args.official_camera_checkpoint:
                 continue  # Historical opt-in runs retain their defaults.

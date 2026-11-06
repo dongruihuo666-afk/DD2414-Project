@@ -1,10 +1,12 @@
 # RPL full-data double-distillation deployment
 
 On the isolated `experiment/rpl-depth-10sweep-velocity-study` branch, this guide
-describes the inherited single-GPU deployment, not a ready depth-study queue.
-See `CLUSTER_DEPTH_RUN_PLAN.md` for the approved continuation design, unfinished
-deployment gates and the subsequently authorized/passed temporary two-GPU
-diagnostic. The research trainer still has no DDP implementation.
+describes the inherited single-GPU deployment, not a ready automatic depth
+queue. The branch now adds opt-in two-GPU DDP PRETRAINING, a three-treatment
+preview and a signal-safe wrapper; downstream readouts remain single-GPU.
+See `CLUSTER_DEPTH_RUN_PLAN.md` for exact commands, changed global batch,
+CPU-only validation and unfinished CUDA/deployment gates. This code-preparation
+update does not update the cluster checkout or launch cluster jobs.
 
 Branch: `experiment/rpl-full-data-double-distill`.
 
@@ -34,8 +36,21 @@ The owner later confirmed permission for a temporary real two-GPU diagnostic;
 job `1250320` passed on arwen and released both cards after 16 seconds. This
 bounded exception is not assumed to authorize ongoing multi-GPU training.
 Do not use concurrent single-GPU jobs to circumvent that rule. Multiple
-independent jobs are an option only after explicit site authorization; DDP is
-not implemented, and GPU memories are not automatically pooled.
+independent jobs are an option only after explicit site authorization. The
+opt-in depth DDP path does not pool GPU memory. Formal long-running two-GPU
+allocation coverage still needs confirmation; diagnostic permission alone is
+not used as an ongoing exemption.
+
+Depth-study preview (no torch import, cluster access or allocation):
+
+```bash
+python cluster_rpl/depth_study.py --config cluster_rpl/depth_study.example.json
+```
+
+Do not use the inherited `control.py` task list or its old admission report as
+evidence that the depth DDP modes have passed full-model admission. The new
+matrix has three two-GPU continuations and twelve single-GPU readouts; it is
+not an automatic queue. Follow the depth plan's deployment gates first.
 
 ## Scientific scope
 

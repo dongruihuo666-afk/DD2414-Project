@@ -1,0 +1,11 @@
+{
+  "node": "arwen",
+  "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+  "run_root": "/local_storage/users/hongen/dd2414_runs/depth_continuation_10sweep_velocity_present_ddp",
+  "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+  "camera_checkpoint": "/local_storage/users/hongen/dd2414_assets/official_rgb.pth",
+  "bevcar_source": "/local_storage/users/hongen/dd2414_assets/BEVCar",
+  "parent_checkpoint": "/local_storage/users/hongen/dd2414_assets/velocity_present_five_epoch_pretrain.pt",
+  "parent_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520",
+  "workers_per_rank": 2
+}

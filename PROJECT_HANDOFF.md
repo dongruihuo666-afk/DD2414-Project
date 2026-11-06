@@ -7,6 +7,96 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Local-only two-GPU depth-continuation implementation
+
+- Scope: implemented on `experiment/rpl-depth-10sweep-velocity-study` in its
+  isolated worktree. The owner explicitly requested code preparation only:
+  NO SSH, cluster checkout update, asset transfer, Slurm submission or CUDA
+  training was performed in this update. The workstation checkout/queue and
+  unrelated staged `DD2414_Project_Plan.pdf` remain unchanged by this work.
+- Changed training files: `scripts/train_depth_ddp.py` implements the opt-in
+  single-node/two-rank NCCL loop. `scripts/train_multisweep_teacher.py` adds
+  explicit `--distributed` dispatch, refuses accidental duplicate non-DDP
+  torchrun workers, and rejects incomplete DDP parents for downstream use.
+  Official Simple-BEV execution/model tensors and existing single-GPU loss,
+  optimizer, sampler and checkpoint format are not changed. The experimental
+  single-GPU config now records `distributed=false`; this branch is not a
+  claim of cross-code-version exact resume for historical runs.
+- `scripts/depth_pretraining_objective.py` executes all trainable projection
+  heads INSIDE DDP forward, with frozen per-rank DINO / optional Depth Anything
+  teachers. Its losses and student gradients match the actual old single-GPU
+  closure under controlled CPU inputs for all three depth treatments.
+  `scripts/distributed_training.py` adds disjoint no-padding acknowledged
+  sampling, prefetch-independent sample RNG, collective finite/stop/error
+  handling, uneven validation shards and atomic schema-two checkpoints.
+  Rank-local training RNG starts at seed-plus-rank. Each rank's RNG, sampler,
+  scaler and BN buffers are preserved; model and
+  optimizer updates are synchronized, and only rank zero writes outputs.
+  Resume strictly rejects changed world size/configuration/implementation.
+  Completed checkpoint model keys stay unprefixed for single-GPU readouts.
+- Experiment recipe: the approved complete velocity-present parent
+  `ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520`
+  initializes all three treatments strictly. Each adds five full epochs with
+  fresh optimizer/sampler/schedule. RGB is 448x800, both teachers 448x798,
+  radar ten sweeps, BF16, seed 125, full official 28,130/6,019 split. Local
+  batch one / global batch TWO gives 14,065 updates per epoch / 70,325 per
+  continuation. Losses are averaged per-sample rank objectives, not global
+  valid-cell normalization. LR stays camera 1e-5 / student 2e-4. BatchNorm is
+  rank-local with rank-zero buffer broadcast, NOT SyncBatchNorm. This is a
+  matched new recipe across depth modes, not an identical trajectory to old
+  global-batch-one runs. Each readout branches independently from its own
+  completed continuation, not another downstream checkpoint.
+- New deployment preparation: `cluster_rpl/depth_study.py` and
+  `depth_study.example.json` preview three two-GPU continuation commands and
+  twelve ONE-GPU downstream commands. No automatic submit/queue/requeue/SSH.
+  `depth_ddp_job.sh` launches exactly one explicitly chosen treatment only
+  inside Slurm. The wrapper's pre-time-limit signal writes a checkpoint flag,
+  avoiding torchrun's terminate-workers handler; workers stop collectively.
+  The flag is cleared only before child startup, avoiding a lost early signal.
+  An output lock prevents duplicate wrapper launches. Partial completion exits
+  75, never dependency-success. `CLUSTER_DEPTH_RUN_PLAN.md` and the RPL README
+  document the new commands, resource/scientific differences and pending gates.
+- Actual verification: **87 CPU tests pass**, including 74 inherited tests,
+  eight DDP tests, one three-treatment loss/gradient equivalence test and four
+  matrix/launcher tests. Local Gloo processes verify gradient averaging,
+  multiple heads/unused parameters, parameter agreement, exact fresh-process
+  CPU stochastic resume (including AdamW/BN/RNG/sampler), complete train/val
+  coverage, changed-config rejection and incomplete-parent rejection. Preview
+  arguments for all fifteen tasks parse correctly. Python compilation,
+  shell syntax and `git diff --check` pass. The first sandboxed multiprocessing
+  attempt could not open loopback/shared memory; the CPU-only suite then passed
+  outside those restrictions. A find-unused graph-traversal warning in the toy
+  all-heads-active case is nonfatal; real dynamic VoxelNet use remains untested.
+- Reproduce tests from THIS branch's worktree (no data/GPU/cluster required):
+
+  ```bash
+  env PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES='' \
+    MPLCONFIGDIR=/tmp/dd2414-ddp-cpu-test PYTHONWARNINGS=ignore \
+    OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+    /home/students2026/miniconda3/envs/bev/bin/python -m unittest \
+    scripts.test_depth_continuation scripts.test_official_full_data \
+    scripts.test_full_data_protocol scripts.test_fullsize_training \
+    scripts.test_training_checkpoint scripts.test_multisweep_teacher \
+    scripts.test_distributed_training scripts.test_depth_objective \
+    cluster_rpl.test_cluster cluster_rpl.test_depth_study -q
+  python cluster_rpl/depth_study.py --config cluster_rpl/depth_study.example.json
+  bash -n cluster_rpl/depth_ddp_job.sh
+  ```
+
+- Limitations/next: CPU/Gloo tests and the earlier tiny CUDA probe do NOT
+  establish full-model CUDA correctness, GPU deterministic resume, memory fit
+  or speedup. Two RTX 3080 memories are not pooled; each rank holds its own
+  teacher/student, and high-resolution Depth Anything may still OOM. No
+  performance/resolution fallback is automatic. Confirm longer two-GPU site
+  authorization, deploy only after the owner lifts this turn's no-deployment
+  restriction, transfer/hash-check parent/teacher assets, extend the admission
+  audit, and run bounded update-two/new-process-update-three pilots in EACH
+  depth mode before formal five-epoch continuation. Automatic dispatch is not
+  implemented; downstream remains single-GPU. Hidden-velocity depth branches
+  remain deferred until their matching completed parent is available.
+
+### Earlier checkpoint — authorized diagnostic, before the implementation above
+
 2026-11-06 **temporary two-GPU diagnostic passed after permission confirmation**:
 the owner explicitly confirmed administrator permission for the bounded test,
 resolving the earlier missing-authorization condition for that test only. Real
