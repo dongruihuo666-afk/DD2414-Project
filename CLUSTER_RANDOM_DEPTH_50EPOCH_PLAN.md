@@ -107,6 +107,34 @@ mistaken for a completed epoch evaluation.
 
 ## Deployment and bounded launch procedure
 
+For the authorized 7 November deployment, use an immutable detached execution
+worktree at the reviewed implementation commit, under the cluster clone's
+`.cache/deployments/COMMIT`. The visible cluster clone remains on this feature
+branch and can receive handoff updates without changing queued jobs' source.
+Link the execution worktree's `.cache/torch` to the existing shared teacher
+cache. Keep data/output arwen-local and submit from the execution worktree
+with `--chdir` set to that SAME directory, so `SLURM_SUBMIT_DIR` is correct.
+
+The automatic job graph is CPU audit -> ONE five-GPU admission job -> TWO
+independent five-GPU formal jobs. `cluster_rpl/random_depth_pilot.py` runs each
+treatment through the real batch entry, stops at update two and starts a NEW
+torchrun process for update three. It checks finite model/optimizer tensors,
+all five acknowledged cursors and CUDA RNG states, actual weight changes,
+non-replayed metrics, unchanged config and identical initial students. Only
+after BOTH treatments pass does it publish `random_depth_pilot_passed.json`.
+Use `afterok` dependencies, and `--resume --require-pilot` for each formal job.
+Thus a failed pilot blocks long training without requiring someone to wake up
+and inspect the queue. This does not retry failures or requeue partial 47-hour
+jobs automatically. Three updates are engineering admission, not sustained
+throughput, convergence or quality evidence.
+
+The 40-minute admission job needs five GPUs/20 CPUs/80 GiB and no batch USR1
+signal (the bounded outer admission controller is not the long-run wrapper).
+Formal jobs retain the 47-hour limit and `--signal=B:USR1@300`. The formal
+groups share only the prerequisite admission; neither depends on completion
+of the other's 50-epoch training. Do not update/delete the execution snapshot
+while queued/running jobs refer to it.
+
 These commands are instructions, not evidence that a job was submitted. Run
 heavy audits, teacher inference and training ONLY in Slurm compute allocations.
 Keep the environment managed by the existing Miniforge/mamba installation.

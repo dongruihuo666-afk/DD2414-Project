@@ -81,12 +81,26 @@ def require_allocation(config, environment, hostname):
         raise RuntimeError('Explicit single-node arwen Slurm GPU allocation and four CPUs per rank required')
 
 
+def require_pilot(config, commit):
+    report = json.loads((Path(config['run_root'])/'random_depth_pilot_passed.json').read_text())
+    if (report.get('status') != 'passed' or report.get('settings') != config
+            or report.get('code_commit') != commit
+            or set(report.get('treatments', {})) != set(TREATMENTS)):
+        raise ValueError('Both matching real-model CUDA/resume pilots must pass before formal execution')
+    for treatment in TREATMENTS:
+        result = report['treatments'][treatment]
+        if (result.get('status') != 'passed' or result.get('resumed_update') != 3
+                or result.get('world_size') != config['gpus_per_experiment']):
+            raise ValueError('Incomplete CUDA pilot: ' + treatment)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--treatment', choices=TREATMENTS)
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--require-pilot', action='store_true', help='Formal execution gate for both CUDA/resume pilots')
     parser.add_argument('--stop-after-updates', type=int, default=0)
     args = parser.parse_args()
     config = load_config(args.config)
@@ -101,6 +115,8 @@ def main():
         commit = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
         if audit.get('status') != 'passed' or audit.get('settings') != config or audit.get('code_commit') != commit:
             raise ValueError('Fresh allocated-CPU asset/split audit required for this exact commit/config')
+        if args.require_pilot:
+            require_pilot(config, commit)
         task = treatment_plan(config, args.treatment)['pretrain']
         directory = Path(task['run_dir'])
         directory.mkdir(parents=True, exist_ok=True)

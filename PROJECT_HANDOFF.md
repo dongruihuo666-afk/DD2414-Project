@@ -7,6 +7,49 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Prepare automatic cluster admission and formal submission
+
+- Owner requested pushing the latest code, synchronizing the cluster and
+  submitting the NEW experiment. Also explicitly authorized clearing the old
+  experiment queue. Read-only SSH confirmed the clean hongen clone at c0e352f,
+  correct account/data node, 14.2 GiB of the 100 GiB home quota in use, all ten
+  arwen GPUs allocated, and only old pending jobs 1250363/1250364 in this account.
+  Their exact commands, owner and pending states were checked before cancelling
+  those two IDs; no other account/job was touched. Transfer of the distinct
+  pinned metric teacher weight uses an ignored temporary file, verified before
+  atomic rename. This does not replace the earlier relative teacher asset.
+- Added `cluster_rpl/random_depth_pilot.py` and its CPU contracts. A single
+  bounded five-GPU allocation runs BOTH real batch wrappers through update two
+  and fresh-process resume to update three. It verifies 50-epoch random student
+  provenance, full-data config, all five sampler/RNG states, finite model and
+  optimizer tensors, changed weights, contiguous metrics and identical initial
+  students. Combined success is written ONLY after both pass. It never submits
+  jobs, silently falls back, or calls this a quality/throughput result.
+- `random_depth_study.py --require-pilot` now gates formal execution on both
+  matching real-model reports, exact code commit/config/world size. Planned
+  scheduler graph: 2-CPU audit -> 5-GPU pilot -> two INDEPENDENT 5-GPU/20-CPU/
+  80-GiB/47-hour formal jobs, both resuming their three-update checkpoint.
+  Failures block the long jobs through `afterok`, without manual intervention.
+  Fifty epochs remain the total budget, not fifty extra epochs after pilots.
+- Execution will be pinned to an immutable detached worktree under the cluster
+  clone's `.cache/deployments/COMMIT`; the visible feature checkout can then
+  receive status documentation without invalidating audit/source guards or
+  changing queued code. Only the existing DINO cache is linked into the
+  snapshot; student data/output stay arwen-local. No workstation model/data/
+  queue or staged user PDF changes. The updated 50-epoch plan explains this.
+- Reproduce checks: `PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES=''
+  OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest
+  test_random_depth_pilot test_random_depth_study test_depth_pilot
+  test_depth_study`. Actual result: all 15 targeted CPU tests pass; static
+  compilation/diff checks pass. The previous 131 CPU regressions remain model
+  implementation evidence; this patch does not change model/loss/sampler code.
+- Limitations/next: GPUs are currently occupied. Deployment/audit/pilot/formal
+  job IDs and observed states will be recorded after actual submission. This
+  preparatory entry is not a claim of CUDA admission, a started epoch or a
+  semantic result. Formal 47-hour partial exits still require same-config
+  continuation; no indefinite resubmission loop is introduced.
+
 ### 2026-11-06 — Random ResNet101, two matched metric-depth studies, 50 epochs
 
 - Owner approved implementing the geometric depth-probability design and a
