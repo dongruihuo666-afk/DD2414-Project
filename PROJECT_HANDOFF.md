@@ -7,6 +7,47 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Withdraw velocity-hidden multi-GPU branch
+
+- Owner decision: abandon `experiment/rpl-velocity-hidden-multigpu` and resume
+  work exclusively on `experiment/rpl-depth-10sweep-velocity-study`. This does
+  not cancel the workstation's existing velocity-hidden experiment/queue.
+- Admission: the abandoned branch pointed to `612a428`, identical to the depth
+  branch, with no unique commits or upstream. Exact GitHub ref inspection found
+  no remote velocity-hidden branch. Its isolated worktree contained only two
+  modified tracked files (`scripts/train_depth_ddp.py` and
+  `scripts/train_multisweep_teacher.py`) and one untracked file
+  (`scripts/pretraining_budget.py`), with no ignored runtime assets. No training
+  process using that worktree was found during inspection.
+- Recovery before removal: saved those three complete working files under
+  `/home/students2026/dd2414/.cache/branch_backups/velocity-hidden-multigpu-20261106/uncommitted-files.tar.gz`.
+  All three extracted streams matched the original SHA-256 hashes. Saved and
+  verified incremental `branch.bundle` beside the archive; it retains the
+  abandoned ref at `612a428` and requires `157857c`, which remains in history.
+  These ignored local recovery files are not pushed and contain no credentials.
+- Completed: removed exactly the abandoned worktree and deleted its local
+  branch. The withdrawn multi-GPU velocity profile and timing-budget changes
+  were NOT applied to the retained depth branch. Its existing two-GPU depth
+  implementation remains unchanged at the code content from `612a428`.
+  Only this handoff entry changes on the retained branch. The main checkout's
+  staged user PDF, other branches, dataset, checkpoints and running queue are
+  untouched. No SSH, cluster update, job submission or cancellation occurred.
+- Verify: `git branch --list experiment/rpl-velocity-hidden-multigpu`,
+  `git worktree list`, and `git ls-remote --heads origin
+  refs/heads/experiment/rpl-velocity-hidden-multigpu` must show no abandoned
+  branch/worktree. `git diff 612a428 -- scripts cluster_rpl` must be empty.
+  Actual checks: bundle verification and archive hash checks passed; exact
+  local branch/worktree absence and unchanged depth implementation were checked;
+  `git diff --check` passed. No model tests were rerun for this metadata-only
+  withdrawal; the retained implementation's previous 87 CPU tests remain the
+  recorded evidence, not a new CUDA result.
+- Limitations/next: discarded edits are recoverable only from the local archive,
+  not GitHub. If recovery is explicitly requested, inspect the archive with
+  `tar -tzf` and extract into a NEW temporary directory, never over the active
+  depth worktree. Continue the existing depth plan and its pending admission
+  gates; the earlier no-cluster-deployment restriction remains in effect until
+  the owner explicitly authorizes deployment.
+
 ### 2026-11-06 — Local-only two-GPU depth-continuation implementation
 
 - Scope: implemented on `experiment/rpl-depth-10sweep-velocity-study` in its
