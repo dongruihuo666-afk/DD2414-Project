@@ -14,10 +14,10 @@ Real formal applications have now been submitted as HELD jobs (not started):
 | Radar depth + Depth Anything V2 | 1250364 | Radar depth 1250363 | PENDING / JobHeldUser |
 
 Each requests two GPUs / eight CPUs / 32 GiB / 47 hours on arwen for five
-additional full epochs. All are deliberately `--hold`: they consume no GPU
-allocation and do not start until a separately authorized release. Acceptance
-is not confirmation of longer two-GPU site permission. After a future release,
-the dependencies prevent treatment overlap; no readouts have been submitted.
+additional full epochs. All were submitted `--hold`: they consume no GPU
+allocation while held. After release, the dependencies prevent treatment
+overlap; no readouts have been submitted. Application/release authority and
+the actual historical execution records are maintained in `PROJECT_HANDOFF.md`.
 
 The actual ignored config is `.cache/depth_formal_20261106.json`; its fresh root
 is `/local_storage/users/hongen/dd2414_runs/depth_continuation_formal_20261106`.
@@ -26,7 +26,7 @@ zero-GPU audit `1250361` completed successfully in 1m49s with the same complete
 sensor membership/hash checks. Do not overwrite the earlier pilot output root.
 
 Inspect using `squeue -u hongen` and `scontrol show job JOBID`. Do not duplicate
-these applications or release them before resource authorization is confirmed.
+these existing applications. This documentation edit does not release them.
 The 47-hour limit is a maximum request, NOT a measured finish-time estimate.
 
 ## Earlier runtime checkpoint — 2026-11-06
@@ -47,12 +47,12 @@ inspection confirms actual optimizer warmup rates were correct in all pilots.
 Strict source-digest resume guards remain unchanged, so old-code pilot
 checkpoints are preserved as evidence, not silently resumed with changed code.
 
-Before formal execution, confirm longer two-GPU authorization. Use a NEW
-formal `run_root` (e.g. personal `dd2414_runs/depth_continuation_formal_20261106`)
-in an ignored config, rerun CPU admission, and start all three fresh equal-
-budget phases from the same approved parent. Do not overwrite or delete the
-existing admission outputs. The three-step pilots are not counted as a full
-training result. No automatic long-job queue/requeue has been installed.
+The formal config now selects the NEW `run_root` shown above and its refreshed
+CPU admission has passed. All three equal-budget phases start from the same
+approved parent. Do not overwrite or delete existing admission outputs. The
+three-step pilots are not counted as a full training result. Success
+dependencies sequence the three formal requests; automatic fault recovery
+or downstream dispatch is not implemented.
 
 ## Approved scientific design
 
@@ -128,8 +128,7 @@ completed DDP continuation with unprefixed model keys. The matrix is three
 pretraining tasks plus twelve readout tasks, NOT fifteen simultaneous jobs.
 There is no automatic dispatcher, cross-host reservation or auto-requeue.
 
-Before formal execution, confirm permission for longer two-GPU resource use
-and select fresh formal output directories after the telemetry fix. Asset/
+Fresh formal output directories are selected after the telemetry fix. Asset/
 sensor audits and bounded full-model finite-update/new-process-resume tests
 for all three modes are now passed. Their small scope does not establish
 long-run stability/throughput or memory fit for every sample. No silent
@@ -140,7 +139,7 @@ parent/teacher assets have now been copied and CPU audit job `1250328` reported
 passed hashes, official split membership and all 2,631,083 nonempty sensor-file
 references in approximately 96 seconds (arwen, zero GPUs). This is presence/
 provenance verification, not a byte-for-byte full-dataset checksum or a CUDA
-training result. A long-running two-GPU allocation is not yet submitted.
+training result. The later real held formal applications are listed above.
 
 Dedicated admission commands (inside their respective authorized allocations):
 
@@ -165,8 +164,9 @@ python cluster_rpl/depth_study.py --config cluster_rpl/depth_study.example.json
 
 This prints the resource profile and all fifteen exact commands. Copy the
 example to an ignored `.cache/` config only when preparing actual deployment.
-The parent path in the example is a future destination, NOT a transferred file.
-Inspect/verify every asset and the configured node-local output root first.
+The actual formal config is the ignored path shown above; it is distinct from
+the historical pilot example. Inspect assets and node-local output paths when
+preparing any new deployment.
 
 ### Future submission template (NOT executed in this update)
 
@@ -208,56 +208,14 @@ the printed downstream commands, each in a separate ONE-GPU allocation.
 The primary result remains Simple-BEV-aligned Vehicle BEV IoU, not pretraining
 loss. Validation radar-depth MAE is at radar-supervised anchors, not dense GT.
 
-## Resource authorization and diagnostic history
+## Diagnostic evidence
 
-**Current update:** after the initial rejection described below, the owner
-explicitly confirmed administrator permission for the temporary two-GPU test.
-A real test then passed as job `1250320`; see the final subsection. Permission
-was scoped to that diagnostic, not presumed to cover formal multi-GPU training.
+Detailed historical scheduling/permission/rejection records are preserved in
+`PROJECT_HANDOFF.md`. They are not duplicated here as operational GPU-count
+instructions. This plan specifies a TWO-GPU pretraining implementation, not a
+general single-GPU cap, and editing it does not change external permissions.
 
-The supplied site manual explicitly restricts master-student accounts to one
-GPU at a time. Initially, the owner requested trying two GPUs and setting
-the manual aside, before an administrator exception had been confirmed.
-Scheduler acceptance was not such an exception; no real allocation was made
-at that preparation stage.
-
-On 2026-11-06 a non-allocating check on moria accepted:
-
-```bash
-sbatch --test-only --nodes=1 --nodelist=arwen --gres=gpu:2 --cpus-per-task=8 --mem=32G --time=00:10:00 --job-name=dd2414-two-gpu-feasibility --wrap=true
-```
-
-It printed a predicted start with an illustrative job number, but account
-`squeue` was empty both before and after. Association `defaultusr` / QOS
-`normal` showed no explicit MaxTRES/GrpTRES values in that query; this does not
-prove exemption from site rules. At that time the trainer had no DDP
-implementation, so allocation alone could not accelerate it.
-
-The next decision at that stage was to obtain temporary permission or retain
-single-GPU execution. Permission was subsequently confirmed for the short
-diagnostic below. Before formal DDP training, confirm that its longer resource
-use is covered, and lock the effective batch/epoch/update protocol.
-Do not alter the running workstation job or silently migrate its optimizer
-state to a different world size.
-
-### Bounded real-test request and execution rejection
-
-The owner subsequently requested a temporary real two-GPU test. A synthetic
-CUDA/NCCL/tiny-DDP diagnostic was prepared in ignored `.cache/` and uploaded to
-the account's project cache. The proposed allocation was arwen, two GPUs,
-four CPUs, 8 GiB RAM and a three-minute hard limit, with no dataset/checkpoint
-access and no full-model training. The execution environment's automatic risk
-review rejected the submission BEFORE the SSH/Slurm command executed because
-of the verified site single-GPU rule and missing administrator exception.
-
-No real job ID was issued, no GPUs were allocated, and no CUDA/NCCL result was
-obtained in that rejected attempt. It was not a hardware failure or a successful test.
-Do not retry through another wrapper, indirect execution or a different account.
-The scheduling-only test was then the sole two-GPU evidence. Confirmation of
-site authorization, rather than approval to disregard the manual, subsequently
-unblocked the bounded real test below.
-
-### Authorized real two-GPU result
+### Real two-GPU diagnostic result
 
 After the owner's explicit confirmation that permission had been obtained, the
 same bounded request was resubmitted through normal Slurm, with the new
@@ -288,8 +246,8 @@ env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NCCL_DEBUG=WARN \
   --standalone --nnodes=1 --nproc_per_node=2 cluster_rpl/two_gpu_probe.py
 ```
 
-Retain the explicit three-minute Slurm limit. Do not run this on moria or use
-the temporary-test permission as an ongoing allocation exemption. At the time
+Retain the explicit three-minute Slurm limit and run inside a GPU allocation,
+not on moria. At the time
 of this diagnostic the actual research trainer remained single-GPU. The later
 initially local-only implementation described above passed CPU/Gloo sampling,
 gradient and resume checks. Subsequent owner-approved full-model CUDA pilots

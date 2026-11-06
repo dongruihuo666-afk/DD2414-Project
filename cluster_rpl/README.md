@@ -9,8 +9,9 @@ CPU-only validation and unfinished CUDA/deployment gates. After the owner's
 subsequent authorization, the cluster checkout was deployed, full data/asset
 audit passed, and all three bounded two-GPU update-two/new-process-update-three
 pilots passed. See `artifacts/rpl_depth_admission_20261106.json` and the depth
-plan's latest runtime checkpoint. This is not formal five-epoch training or a
-semantic result; long-running two-GPU permission coverage remains unconfirmed.
+plan's latest runtime checkpoint. This is not completed five-epoch training or
+a semantic result. The formal applications and their recorded hold state are
+listed in that plan and `PROJECT_HANDOFF.md`.
 
 Branch: `experiment/rpl-full-data-double-distill`.
 
@@ -19,7 +20,7 @@ systemd services, protocol and runs untouched. It does not restore the retired
 `experiment/official-rgb-double-distill-cluster` branch. The cluster checkout
 is `/Midgard/home/hongen/projects/DD2414-Project` (singular `Project`).
 
-## Approval and resource boundary
+## Execution scope and resource profiles
 
 On 2026-11-05 the owner replaced per-command prompts with standing approval
 for routine inspection, project synchronization, personal-directory environment
@@ -27,23 +28,19 @@ and data preparation, and the approved single-GPU workflow. **Ask before high-
 privilege operations, interference with existing jobs, other people's files,
 shared configuration or broader destructive operations.** The separate request
 to delete only `dd2414-hybrid` does not authorize deleting other environments.
-Keep commands/job logs and report failures. This guide separates steps for
-auditability; routine commands no longer need individual prompts. Site rules
-still apply: owner permission is not a multi-GPU account exemption.
+Keep commands/job logs and report failures. Routine commands no longer need
+individual prompts under that working agreement.
 
 No script here connects through SSH, pushes to GitHub, automatically submits a
 queue, cancels jobs, requeues jobs or chooses a node. Each real submission needs
 an explicit task and `--execute`. Default `plan` and `submit` only print.
-The initial deployment requests **one GPU**. The master-student one-GPU account
-rule still applies even though a two-GPU `sbatch --test-only` check succeeded.
-The owner later confirmed permission for a temporary real two-GPU diagnostic;
-job `1250320` passed on arwen and released both cards after 16 seconds. This
-bounded exception is not assumed to authorize ongoing multi-GPU training.
-Do not use concurrent single-GPU jobs to circumvent that rule. Multiple
-independent jobs are an option only after explicit site authorization. The
-opt-in depth DDP path does not pool GPU memory. Formal long-running two-GPU
-allocation coverage still needs confirmation; diagnostic permission alone is
-not used as an ongoing exemption.
+GPU counts describe implementation profiles, not a repository-wide single-GPU
+safety cap: inherited `control.py` requests one GPU; depth continuation uses
+two DDP processes/GPUs; downstream readouts use one GPU. GPU memory is not
+pooled. The repository's `AGENTS.md` and Stop hook do not impose a GPU-count
+limit. Site rules and platform/tool permissions are external to these files;
+editing this guide does not change them. Current application/release status
+and historical execution records have one entry point: `PROJECT_HANDOFF.md`.
 
 Depth-study preview (no torch import, cluster access or allocation):
 

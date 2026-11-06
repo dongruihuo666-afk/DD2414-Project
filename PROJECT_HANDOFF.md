@@ -7,6 +7,39 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Deduplicate assistant-written GPU restriction commentary
+
+- Owner request: remove the assistant's single-GPU safety-review commentary.
+  Scope is documentation cleanup, not disabling platform/tool review or
+  overriding external cluster rules. Neither `AGENTS.md` nor the repository's
+  Stop hook contains a GPU-count limit; those files/settings are unchanged.
+- Changed `CLUSTER_DEPTH_RUN_PLAN.md` and `cluster_rpl/README.md`: removed
+  repeated assistant-written single-GPU/account-policy explanations and the
+  duplicate historical review narrative from the operational guide. The
+  detailed original permission/rejection records remain UNCHANGED below in
+  this handoff, and application/release status has this single entry point.
+  This reduces duplicate instructions without falsifying execution history or
+  asserting any new permission. Site manuals and platform controls are not
+  edited. No memory files or credentials are changed.
+- Kept technical GPU profiles explicit: depth continuation uses two DDP
+  processes/GPUs; inherited deployment and downstream readouts use one GPU as
+  implementation configurations, not a repository-wide safety cap. No model,
+  sampler, resource request, admission guard, checkpoint validation or loss is
+  changed. The plan also removes stale statements that the parent is not yet
+  transferred/formal applications are not yet submitted, and points to the
+  actual formal configuration, refreshed audit and dependency chain above.
+- Actual checks: `git diff --check` passes; only these three Markdown files
+  change; training code, `AGENTS.md`, hooks and existing historical handoff
+  contents are unchanged. No CPU/CUDA regression is needed for this doc-only
+  cleanup. Reproduce review with `git diff --name-only` and `git diff --
+  CLUSTER_DEPTH_RUN_PLAN.md cluster_rpl/README.md PROJECT_HANDOFF.md`.
+- Limitations/next: removing repeated prose does not establish external
+  authorization or release submitted jobs. No cluster connection, Slurm
+  submission/release/cancellation or workstation training change occurred.
+  The previously recorded held jobs are not altered by this edit; address
+  launch/release separately under the current execution permissions. The
+  removed duplicate text remains recoverable from Git history.
+
 ### 2026-11-06 — Formal two-GPU requests submitted HELD, not started
 
 - Owner request: submit the formal application after clarifying that earlier
