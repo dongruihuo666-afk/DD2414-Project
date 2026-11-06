@@ -34,7 +34,7 @@ from radar_scaling_data import IndexedSubset, validate_scaling_manifest
 from train_fullsize_linear_probe import reset_seeds
 from train_nuscenes import SimpleLoss
 from training_checkpoint import load_training_checkpoint, save_training_checkpoint
-from source_provenance import check_camera_source_provenance
+from source_provenance import check_camera_source_provenance, check_continuation_source
 
 STOP = False
 
@@ -54,11 +54,16 @@ def parse_args():
     p.add_argument('--mode', choices=['pretrain','frozen-probe','unfrozen-probe',
                                     'finetune','object-motion'], required=True)
     p.add_argument('--checkpoint', type=Path)
+    p.add_argument('--pretrain-initial-checkpoint', type=Path,
+                   help='Opt-in NEW pretraining phase from a completed no-depth model; not resume.')
+    p.add_argument('--pretrain-initial-sha256',
+                   help='Required pinned SHA-256 for the pretraining-phase parent.')
     p.add_argument('--official-camera-checkpoint', type=Path)
     p.add_argument('--allow-source-relocation', action='store_true',
                    help='Allow a downstream parent to reference an identical official RGB file at a new path; exact resume stays strict.')
     p.add_argument('--image-resolution', type=int, nargs=2, default=[112,192])
     p.add_argument('--teacher-resolution', type=int, nargs=2, default=[196,336])
+    p.add_argument('--depth-teacher-resolution', type=int, nargs=2, default=[196,336])
     p.add_argument('--velocity-mode', choices=['full','zero'], default='full')
     p.add_argument('--probe-location', choices=['camera_bev','fused_bev'], default='fused_bev')
     p.add_argument('--initial-camera-probe', action='store_true')
@@ -193,6 +198,12 @@ def main():
         raise ValueError('Image dimensions must be positive')
     if any(size % 14 for size in args.teacher_resolution):
         raise ValueError('DINO dimensions must be divisible by 14')
+    if any(size < 14 or size % 14 for size in args.depth_teacher_resolution):
+        raise ValueError('Depth teacher dimensions must be positive multiples of 14')
+    if bool(args.pretrain_initial_checkpoint) != bool(args.pretrain_initial_sha256):
+        raise ValueError('Continuation requires both its checkpoint and pinned SHA-256')
+    if args.pretrain_initial_checkpoint and (args.mode != 'pretrain' or args.checkpoint):
+        raise ValueError('Continuation initialization is only for a new pretraining phase')
     if args.initial_camera_probe and not (args.mode == 'frozen-probe' and
             args.probe_location == 'camera_bev' and args.official_camera_checkpoint and not args.checkpoint):
         raise ValueError('Initial probe requires official encoder, frozen camera BEV and no student checkpoint')
@@ -219,6 +230,24 @@ def main():
     initialization = (load_official_camera_encoder(backbone.student.encoder,
         args.official_camera_checkpoint) if args.official_camera_checkpoint else None)
     source = None
+    continuation = None
+    if args.pretrain_initial_checkpoint:
+        actual_hash = digest_file(args.pretrain_initial_checkpoint)
+        if actual_hash != args.pretrain_initial_sha256:
+            raise ValueError('Continuation checkpoint SHA-256 mismatch')
+        source = torch.load(args.pretrain_initial_checkpoint, map_location='cpu', weights_only=False)
+        continuation = check_continuation_source(source,
+            dict(velocity_mode=args.velocity_mode), manifest['manifest_sha256'],
+            args.official_camera_checkpoint, initialization, args.allow_source_relocation)
+        if source['run_config']['bevcar_sha256'] != digest_file(args.bevcar_source/'nets/voxelnet.py'):
+            raise ValueError('Continuation BEVCar implementation mismatch')
+        for name, value in source['run_config']['model_data_implementation_sha256'].items():
+            if digest_file(ROOT/name) != value:
+                raise ValueError(f'Continuation model/data implementation mismatch: {name}')
+        backbone.load_state_dict(source['model'], strict=True)
+        continuation.update(sha256=actual_hash, path=str(args.pretrain_initial_checkpoint.resolve()),
+                            additional_epochs=args.epochs, total_pretraining_epochs=5+args.epochs)
+        del source
     if args.mode != 'pretrain' and not args.initial_camera_probe:
         if args.checkpoint is None:
             raise ValueError('downstream requires a completed new double-distillation checkpoint')
@@ -278,6 +307,7 @@ def main():
         manifest_sha256=manifest['manifest_sha256'], train_samples=count,
         bevcar_sha256=digest_file(args.bevcar_source/'nets/voxelnet.py'),
         official_camera_initialization=initialization,
+        pretraining_continuation=continuation,
         camera_initialization=('official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation'
                                if initialization else 'trainable random ResNet101; DINO image SSL'),
         data_protocol='official 700-scene train / 150-scene validation; no local blind test claim',
@@ -300,6 +330,9 @@ def main():
              'nuscenesdataset.py','utils/vox.py','utils/geom.py']}
     if args.depth_mode == 'radar-dav2':
         config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
+    if continuation:
+        config['camera_initialization'] = ('Complete five-epoch double-distillation model; '
+            'all model tensors loaded strictly for a new equal-budget pretraining phase')
     directory = args.run_dir
     directory.mkdir(parents=True, exist_ok=True)
     checkpoint = directory/'checkpoints/latest.pt'
@@ -368,7 +401,8 @@ def main():
             loss = loss+args.depth_weight*parts['radar_depth']
             if depth_teacher is not None:
                 with torch.no_grad():
-                    target = relative_depth_target(depth_teacher,batch[0][:,0],device)
+                    target = relative_depth_target(depth_teacher,batch[0][:,0],device,
+                                                   args.depth_teacher_resolution)
                 parts['relative_depth'] = relative_depth_loss(depth,target)
                 loss = loss+args.relative_depth_weight*parts['relative_depth']
         return loss, parts, info

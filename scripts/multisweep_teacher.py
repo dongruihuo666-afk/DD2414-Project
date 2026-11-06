@@ -245,9 +245,9 @@ def load_depth_teacher(device):
 
 
 @torch.no_grad()
-def relative_depth_target(teacher, images, device):
+def relative_depth_target(teacher, images, device, resolution=(196, 336)):
     # Preserve the wide-camera aspect ratio, dimensions divisible by ViT patch 14.
-    inputs = F.interpolate(images.flatten(0, 1).to(device), (196, 336),
+    inputs = F.interpolate(images.flatten(0, 1).to(device), tuple(resolution),
                            mode='bilinear', align_corners=False)
     mean = inputs.new_tensor([.485,.456,.406])[None,:,None,None]
     std = inputs.new_tensor([.229,.224,.225])[None,:,None,None]

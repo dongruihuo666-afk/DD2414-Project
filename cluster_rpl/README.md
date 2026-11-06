@@ -1,5 +1,10 @@
 # RPL full-data double-distillation deployment
 
+On the isolated `experiment/rpl-depth-10sweep-velocity-study` branch, this guide
+describes the inherited single-GPU deployment, not a ready depth-study queue.
+See `CLUSTER_DEPTH_RUN_PLAN.md` for the approved continuation design, unfinished
+deployment gates and the unresolved two-GPU authorization. No DDP is implemented.
+
 Branch: `experiment/rpl-full-data-double-distill`.
 
 This opt-in deployment leaves the workstation's `dd2414-mini-baseline` checkout,

@@ -7,6 +7,64 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-06 **isolated depth-study preparation only**: branch
+`experiment/rpl-depth-10sweep-velocity-study`, based on `f9f333f`, is in a new
+worktree. The owner approved using the completed velocity-present five-epoch
+double-DINO model as a common parent for no-depth, radar-depth and radar-plus-
+Depth-Anything-V2 continuation branches. All three add five equal-budget full
+epochs, with new optimizer/sampler/schedule; the no-depth branch must also
+continue training. This is not a comparison against the old 51.09% score with
+less pretraining exposure. Hidden-velocity depth branches are deferred until
+their completed parent is available. See `CLUSTER_DEPTH_RUN_PLAN.md`.
+
+Changed files: `scripts/source_provenance.py` adds fail-closed parent validation;
+`scripts/train_multisweep_teacher.py` adds opt-in
+`--pretrain-initial-checkpoint` plus required `--pretrain-initial-sha256`, loads
+all model tensors strictly, and records the fresh-phase initialization and
+total pretraining exposure; `scripts/multisweep_teacher.py` and its caller add
+explicit relative-depth teacher resolution while retaining the old default.
+`scripts/test_depth_continuation.py` tests complete-parent requirements, matched
+velocity/data/settings, relocation with preserved RGB identity, strict loading
+for all three depth modes, and teacher resolution/no-gradient behavior.
+`cluster_rpl/README.md` distinguishes the inherited runner from this unfinished
+depth deployment. Official Simple-BEV defaults and the running workstation
+checkout/service remain untouched; the staged user PDF is not included.
+
+Reproduction from this worktree:
+
+```bash
+PYTHONPATH=scripts python -m unittest scripts.test_depth_continuation -v
+PYTHONPATH=scripts python -m unittest scripts.test_official_full_data scripts.test_full_data_protocol scripts.test_fullsize_training scripts.test_training_checkpoint scripts.test_multisweep_teacher
+PYTHONPATH=scripts python -m unittest discover -s cluster_rpl -p test_cluster.py
+```
+
+Actual tests: seven new CPU tests, 41 inherited training tests and 25 inherited
+deployment tests passed (73 total); `git diff --check` passed. These are not
+real GPU continuation/depth/DDP checks. Parent checkpoint SHA-256 was measured
+as `ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520`.
+The locally cached Depth Anything V2 Small weight was measured as
+`715fade13be8f229f8a70cc02066f656f2423a59effd0579197bbf57860e1378`,
+with source commit `a561b849ebae10a6f5ef49e26c83cbbcd36c71bf`.
+
+Resource decision: after the single-GPU plan, the owner requested a real
+two-GPU attempt and asked to ignore the manual's master-account single-GPU
+rule. A non-allocating `sbatch --test-only` two-GPU check on arwen was accepted;
+`squeue -u hongen` was empty before and after. The reported hypothetical job
+number is not a submitted training job. The association query displayed
+`defaultusr` / `normal` with blank MaxTRES/GrpTRES, not proof of administrator
+permission. No administrator exception or obsolete-rule confirmation has been
+established, so no actual multi-GPU allocation or workaround is attempted.
+
+Limitations/next: this commit is tested initialization groundwork, NOT a
+complete cluster depth deployment. The three-treatment matrix, full-data audit
+extensions, parent/teacher transfer, actual continuation/resume pilots and
+persistent automatic dispatch remain unfinished. The cluster clone remains on
+the earlier branch; no formal depth training is started. Clarify whether the
+site permits two GPUs for this account, or retain single-GPU execution, before
+locking the execution path. If permitted, add genuine DDP and verify effective
+batch/loss normalization, data coverage, per-rank state and interruption safety;
+do not silently treat single-card checkpoints as exact multi-card resumes.
+
 2026-11-05 RPL deployment continuation: the owner has now authorized routine
 cluster queries, project sync, personal environment/data preparation and the
 approved single-GPU workflow without per-command prompts. Elevated privilege,
