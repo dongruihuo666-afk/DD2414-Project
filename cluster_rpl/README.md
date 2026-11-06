@@ -5,8 +5,12 @@ describes the inherited single-GPU deployment, not a ready automatic depth
 queue. The branch now adds opt-in two-GPU DDP PRETRAINING, a three-treatment
 preview and a signal-safe wrapper; downstream readouts remain single-GPU.
 See `CLUSTER_DEPTH_RUN_PLAN.md` for exact commands, changed global batch,
-CPU-only validation and unfinished CUDA/deployment gates. This code-preparation
-update does not update the cluster checkout or launch cluster jobs.
+CPU-only validation and unfinished CUDA/deployment gates. After the owner's
+subsequent authorization, the cluster checkout was deployed, full data/asset
+audit passed, and all three bounded two-GPU update-two/new-process-update-three
+pilots passed. See `artifacts/rpl_depth_admission_20261106.json` and the depth
+plan's latest runtime checkpoint. This is not formal five-epoch training or a
+semantic result; long-running two-GPU permission coverage remains unconfirmed.
 
 Branch: `experiment/rpl-full-data-double-distill`.
 

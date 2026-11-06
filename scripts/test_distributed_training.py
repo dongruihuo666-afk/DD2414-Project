@@ -1,5 +1,6 @@
 """CPU/Gloo tests; no CUDA allocation, dataset, SSH, Slurm, or external writes."""
 import copy
+import ast
 import datetime
 import os
 from pathlib import Path
@@ -130,6 +131,23 @@ def _worker(rank, directory, phase):
 
 
 class DistributedTrainingTests(unittest.TestCase):
+    def test_resumed_learning_rate_telemetry_reads_restored_optimizer_groups(self):
+        parameter = nn.Parameter(torch.ones(1))
+        groups = [dict(params=[parameter],name='camera',lr=1e-5)]
+        optimizer = torch.optim.AdamW(groups)
+        state = optimizer.state_dict()
+        state['param_groups'][0]['lr'] = 1.01e-6
+        optimizer.load_state_dict(state)
+        # load_state_dict replaces group dictionaries. Constructor-time groups
+        # are stale and must never be used to report a resumed schedule.
+        self.assertEqual(groups[0]['lr'],1e-5)
+        tree = ast.parse(Path(__file__).with_name('train_depth_ddp.py').read_text())
+        assignment = next(node for node in ast.walk(tree) if isinstance(node,ast.Assign)
+            and ast.unparse(node.targets[0]) == "progress['latest']")
+        expression = compile(ast.Expression(assignment.value),'<actual DDP telemetry>','eval')
+        latest = eval(expression,dict(metrics={},groups=groups,optimizer=optimizer))
+        self.assertEqual(latest['learning_rates']['camera'],1.01e-6)
+
     def test_full_training_shards_are_disjoint_complete_and_unpadded(self):
         samplers = [AcknowledgedDistributedSampler(range(28130),125,r,2) for r in range(2)]
         shards = [list(s) for s in samplers]

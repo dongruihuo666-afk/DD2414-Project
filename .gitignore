@@ -7,6 +7,7 @@ __pycache__
 artifacts/*
 !artifacts/full_data_protocol_audit.json
 !artifacts/official_full_data_results.json
+!artifacts/rpl_depth_admission_20261106.json
 !artifacts/meeting_20261016/
 artifacts/meeting_20261016/*
 !artifacts/meeting_20261016/*.png

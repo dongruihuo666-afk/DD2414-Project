@@ -3,6 +3,31 @@
 Branch: `experiment/rpl-depth-10sweep-velocity-study`.
 Workstation checkout, its eleven-task queue, and staged user PDF remain unchanged.
 
+## Latest runtime checkpoint — 2026-11-06
+
+The owner authorized deployment and short admission trials. Full data/asset
+audit `1250328` passed. Full-model two-GPU pilots `1250329` (no depth), `1250330`
+(radar depth) and `1250331` (radar + Depth Anything V2) all completed normally
+after updates one/two and a NEW-process resume to update three. GPUs were
+released, and no formal five-epoch phase has started. See the compact record
+`artifacts/rpl_depth_admission_20261106.json`; this is actual CUDA execution/
+restore evidence, not convergence, full validation or semantic accuracy.
+
+Peak rank-zero PyTorch memory observed was 6.83 / 7.80 / 7.89 GiB. The Depth
+Anything case had large pre-clipping gradient norms (557/768/305) under the
+unchanged clip-at-five policy; monitor this in longer training. A telemetry-only
+fix corrects stale learning-rate reporting after optimizer restore. Checkpoint
+inspection confirms actual optimizer warmup rates were correct in all pilots.
+Strict source-digest resume guards remain unchanged, so old-code pilot
+checkpoints are preserved as evidence, not silently resumed with changed code.
+
+Before formal execution, confirm longer two-GPU authorization. Use a NEW
+formal `run_root` (e.g. personal `dd2414_runs/depth_continuation_formal_20261106`)
+in an ignored config, rerun CPU admission, and start all three fresh equal-
+budget phases from the same approved parent. Do not overwrite or delete the
+existing admission outputs. The three-step pilots are not counted as a full
+training result. No automatic long-job queue/requeue has been installed.
+
 ## Approved scientific design
 
 On 2026-11-06 the owner selected the completed, velocity-present, five-epoch
@@ -42,8 +67,9 @@ substitute velocity-present weights for that future comparison.
 
 The branch now implements opt-in two-process DDP continuation pretraining,
 the three-treatment command matrix and a signal-safe Slurm batch wrapper.
-This is LOCAL CODE PREPARATION: this update does not connect to the cluster,
-update its checkout, copy assets, submit allocations or run full-model CUDA.
+The initial implementation was LOCAL CODE PREPARATION only. The later approved
+deployment and bounded CUDA results are recorded in the latest checkpoint
+above; they supersede the earlier no-deployment restriction for admission.
 The inherited `control.py` configuration still targets the old single-GPU
 no-depth study; do not submit it as if it were this new matrix.
 
@@ -76,12 +102,12 @@ completed DDP continuation with unprefixed model keys. The matrix is three
 pretraining tasks plus twelve readout tasks, NOT fifteen simultaneous jobs.
 There is no automatic dispatcher, cross-host reservation or auto-requeue.
 
-Before formal execution, confirm permission for the longer two-GPU resource
-use, copy/hash-check the parent and Depth Anything source/weights, extend the
-admission audit, audit every sensor reference on arwen, and pass real finite-
-update/new-process-resume tests for all three depth modes. CPU/Gloo tests are
-not a full-model CUDA/memory/throughput test. No silent resolution/sweep/model
-reductions after OOM. An automatic dispatch mechanism is still future work.
+Before formal execution, confirm permission for longer two-GPU resource use
+and select fresh formal output directories after the telemetry fix. Asset/
+sensor audits and bounded full-model finite-update/new-process-resume tests
+for all three modes are now passed. Their small scope does not establish
+long-run stability/throughput or memory fit for every sample. No silent
+resolution/sweep/model reductions after OOM. Automatic dispatch is future work.
 
 The owner subsequently authorized deployment and bounded admission. The exact
 parent/teacher assets have now been copied and CPU audit job `1250328` reported
@@ -239,6 +265,7 @@ env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NCCL_DEBUG=WARN \
 Retain the explicit three-minute Slurm limit. Do not run this on moria or use
 the temporary-test permission as an ongoing allocation exemption. At the time
 of this diagnostic the actual research trainer remained single-GPU. The later
-local-only implementation described above passes CPU/Gloo sampling, gradient
-and resume checks; full-model CUDA depth-memory feasibility and speedup remain
-unmeasured. No new cluster execution is part of that implementation update.
+initially local-only implementation described above passed CPU/Gloo sampling,
+gradient and resume checks. Subsequent owner-approved full-model CUDA pilots
+now pass in all three modes (latest checkpoint above). Sustained speedup,
+long-run stability and memory fit across every sample remain unmeasured.

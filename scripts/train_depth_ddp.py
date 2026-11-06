@@ -297,7 +297,7 @@ def run(args):
                 progress['training_seconds'] += float(elapsed)
                 progress['update'] += 1
                 progress['samples_seen'] += 2*len(positions)
-                progress['latest'] = dict(metrics,learning_rates={g['name']:g['lr'] for g in groups})
+                progress['latest'] = dict(metrics,learning_rates={g['name']:g['lr'] for g in optimizer.param_groups})
                 if rank == 0:
                     with (directory/'metrics.jsonl').open('a') as log:
                         log.write(json.dumps(dict(update=progress['update'],

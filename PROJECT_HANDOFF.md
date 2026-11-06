@@ -7,6 +7,61 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Three real two-GPU depth admission pilots passed
+
+- Actual cluster results: zero-GPU full-data audit `1250328` completed `0:0`
+  in 1m46s; two-GPU no-depth `1250329`, radar-depth `1250330` and radar-plus-
+  Depth-Anything `1250331` each completed `0:0` in 2m18s / 2m17s / 2m18s.
+  Each used arwen, two GPUs, eight CPUs, 32 GiB and a ten-minute hard cap,
+  sequentially, never overlapping own GPU allocations. Each ran two real
+  full-model updates, saved, launched NEW torchrun processes and completed
+  update three. Both rank-local cursors advanced 2 -> 3, global samples 4 -> 6;
+  finite checkpoint tensors, optimizer state, metrics exactly 1,2,3, and actual
+  changed model state passed verification. All allocations were released.
+- Evidence: compact `artifacts/rpl_depth_admission_20261106.json` records exact
+  commits/configuration, job IDs, hash/coverage evidence, memory/loss diagnostics
+  and limitations. Full reports/checkpoints remain under arwen's personal
+  `dd2414_runs/depth_continuation_10sweep_velocity_present_ddp`; stdout/stderr
+  are project `.cache/depth-{none,radar,dav2}-pilot-JOBID.{out,err}`. Tested code
+  is `0e628d7`. No five-epoch phase, full validation or downstream readout has
+  completed, and no semantic-performance result is claimed.
+- Observed rank-zero PyTorch peaks across initial/resumed steps: 6.83 GiB
+  no-depth, 7.80 GiB radar-depth, 7.89 GiB radar-plus-Depth-Anything. These are
+  NOT combined GPU memory or a guarantee that all later samples fit. Depth
+  Anything's PRE-clipping gradient norms were 557, 768, 305; finite but much
+  larger than other treatments. Existing global clipping at five remained
+  unchanged. Monitor clipping/relative-depth behavior in longer training;
+  three changing-input losses do not diagnose divergence or convergence.
+- Telemetry fix: a pilot exposed constructor-time optimizer group dictionaries
+  becoming stale after `optimizer.load_state_dict`. The DDP status logger now
+  reads `optimizer.param_groups`, just like the existing single-GPU trainer.
+  CPU inspection of ALL three saved optimizer states confirmed the REAL
+  update-three learning rates were camera `1.0076791808873722e-6`, student
+  `2.0153583617747444e-5`, not the stale base rates printed in old logs.
+  Optimizer/schedule/update math is unchanged. Added a regression using actual
+  optimizer restore and the real telemetry expression. The fix is not yet a
+  new full-model CUDA run; the artifact distinguishes code versions.
+- Checks: 92 CPU tests pass with the existing combined suite plus
+  `cluster_rpl.test_depth_assets` / `cluster_rpl.test_depth_pilot`; compilation,
+  shell syntax and diff checks pass. Changed files in this outcome are the
+  DDP telemetry line/test, the compact artifact and its exact `.gitignore`
+  exception, this handoff and the depth plan/README. The workstation source/
+  service/staged user PDF remain untouched.
+- Retrieval limitation: a binary rsync download through `srun --unbuffered`
+  failed with protocol/buffer-overflow code 22; no local report files were
+  produced, and the originals remain intact. Text JSON retrieval through a
+  CPU-only step succeeded. Do not infer the previously successful upload route
+  is reliable for binary downloads, or modify sensor files to address this.
+- Next/boundary: the owner authorized deployment/short trials; formal long
+  two-GPU permission coverage was asked for and is still unconfirmed. No
+  formal long training was submitted. Confirm that site coverage first.
+  The telemetry fix changes strict implementation digests: retain old pilot
+  directories as evidence, do NOT relax resume checks, and choose a NEW formal
+  output root with fresh five-epoch phases from the SAME approved complete
+  parent for all treatments. Refresh CPU admission for that config and run
+  matched formal continuations only after authorization. Downstream stays
+  single-GPU, with Vehicle BEV IoU primary. Hidden-velocity depths stay deferred.
+
 ### 2026-11-06 — Owner authorizes depth deployment and admission checks
 
 - The owner lifted the previous local-only restriction. Initial read-only
