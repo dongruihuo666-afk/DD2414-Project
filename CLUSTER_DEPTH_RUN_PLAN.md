@@ -78,3 +78,20 @@ single-GPU. If two-GPU permission is confirmed, implement single-node DDP and
 lock the new effective batch/epoch/update protocol before formal comparisons.
 Do not alter the running workstation job or silently migrate its optimizer
 state to a different world size.
+
+### Bounded real-test request and execution rejection
+
+The owner subsequently requested a temporary real two-GPU test. A synthetic
+CUDA/NCCL/tiny-DDP diagnostic was prepared in ignored `.cache/` and uploaded to
+the account's project cache. The proposed allocation was arwen, two GPUs,
+four CPUs, 8 GiB RAM and a three-minute hard limit, with no dataset/checkpoint
+access and no full-model training. The execution environment's automatic risk
+review rejected the submission BEFORE the SSH/Slurm command executed because
+of the verified site single-GPU rule and missing administrator exception.
+
+No real job ID was issued, no GPUs were allocated, and no CUDA/NCCL result was
+obtained. This must not be reported as a hardware failure or a successful test.
+Do not retry through another wrapper, indirect execution or a different account.
+The existing accepted scheduling-only test remains the sole two-GPU evidence.
+Unblock a real test with confirmation of site authorization, not another user
+approval to disregard the supplied manual.

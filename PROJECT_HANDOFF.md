@@ -7,6 +7,22 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+2026-11-06 two-GPU diagnostic follow-up: the owner requested a temporary real
+two-card check. A synthetic CUDA/NCCL/tiny-DDP script was prepared and uploaded
+only under ignored project `.cache/`. A proposed arwen allocation (two GPUs,
+four CPUs, 8 GiB, three minutes) was rejected by automatic execution risk review
+BEFORE the SSH/Slurm submission ran, citing the supplied site single-GPU rule
+and lack of an administrator exception. No real job ID/allocation or GPU test
+result exists. Do not bypass this rejection through an alternate execution
+path. The earlier `sbatch --test-only` result proves scheduling feasibility
+only; current deployment remains partial. See `CLUSTER_DEPTH_RUN_PLAN.md`.
+
+Changed files for this diagnostic outcome: this handoff and the depth plan;
+no tracked training code changed. Reproduce the non-allocating evidence using
+the documented `sbatch --test-only` command. The real test could not execute;
+`git diff --check` passed. Next: establish site authorization for a real two-GPU
+test, or retain single-GPU execution; existing workstation training is untouched.
+
 2026-11-06 **isolated depth-study preparation only**: branch
 `experiment/rpl-depth-10sweep-velocity-study`, based on `f9f333f`, is in a new
 worktree. The owner approved using the completed velocity-present five-epoch
