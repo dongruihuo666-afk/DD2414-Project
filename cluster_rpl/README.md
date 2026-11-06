@@ -1,5 +1,11 @@
 # RPL full-data double-distillation deployment
 
+For the current **random ResNet101 / 50-epoch / two-treatment metric BEV depth**
+study use [CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md](../CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md),
+`random_depth_study.example.json`, `audit_random_depth.py` and
+`random_depth_job.sh`. The older deployment/three-way continuation instructions
+below are historical alternatives, not the new experiment's initialization.
+
 On the isolated `experiment/rpl-depth-10sweep-velocity-study` branch, this guide
 describes the inherited single-GPU deployment, not a ready automatic depth
 queue. The branch now adds opt-in two-GPU DDP PRETRAINING, a three-treatment

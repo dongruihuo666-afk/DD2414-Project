@@ -69,7 +69,14 @@ def parse_args():
     p.add_argument('--probe-location', choices=['camera_bev','fused_bev'], default='fused_bev')
     p.add_argument('--initial-camera-probe', action='store_true')
     p.add_argument('--nsweeps', type=int, choices=[5,10], default=5)
-    p.add_argument('--depth-mode', choices=['none','radar','radar-dav2'], default='none')
+    p.add_argument('--depth-mode', choices=['none','radar','radar-dav2','metric-bev'], default='none')
+    p.add_argument('--training-profile', choices=['legacy-continuation','random-metric-bev'], default='legacy-continuation')
+    p.add_argument('--treatment', choices=['dino-only','dino-metric-depth-bev'])
+    p.add_argument('--metric-teacher-source', type=Path)
+    p.add_argument('--metric-teacher-weights', type=Path)
+    p.add_argument('--metric-teacher-sha256')
+    p.add_argument('--metric-depth-weight', type=float, default=.05)
+    p.add_argument('--metric-depth-sigma', type=float, default=2.)
     p.add_argument('--epochs', type=int, default=2)
     p.add_argument('--batch-size', type=int, default=3)
     p.add_argument('--num-workers', type=int, default=8)
@@ -192,6 +199,13 @@ def main():
     if args.distributed:
         from train_depth_ddp import run
         return run(args)
+    metric_profile = args.training_profile == 'random-metric-bev'
+    if metric_profile and args.mode == 'pretrain':
+        raise ValueError('Random metric-BEV pretraining requires --distributed; single-GPU downstream remains available')
+    if (args.depth_mode == 'metric-bev') != metric_profile:
+        raise ValueError('Metric probability lifting requires the explicit random-metric-bev profile')
+    if metric_profile and (args.official_camera_checkpoint or args.pretrain_initial_checkpoint or args.initial_camera_probe):
+        raise ValueError('Random metric-BEV downstream must use its completed student, without official RGB initialization')
     if int(os.environ.get('WORLD_SIZE','1')) != 1:
         raise ValueError('Multiple torchrun processes require --distributed; refusing duplicate single-GPU jobs')
     if min(args.epochs, args.batch_size, args.checkpoint_every, args.print_every) < 1:
@@ -234,7 +248,11 @@ def main():
     validate_scaling_manifest(manifest)
     if args.seed != manifest['seed']:
         raise ValueError('seed differs from manifest')
-    backbone = build_model(device, args.seed, args.bevcar_source, args.depth_mode)
+    if metric_profile:
+        from metric_depth_bev import build_metric_model
+        backbone = build_metric_model(device, args.seed, args.bevcar_source)
+    else:
+        backbone = build_model(device, args.seed, args.bevcar_source, args.depth_mode)
     initialization = (load_official_camera_encoder(backbone.student.encoder,
         args.official_camera_checkpoint) if args.official_camera_checkpoint else None)
     source = None
@@ -261,6 +279,11 @@ def main():
             raise ValueError('downstream requires a completed new double-distillation checkpoint')
         source = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
         cfg = source['run_config']
+        if metric_profile:
+            from metric_bev_profile import validate_metric_source
+            validate_metric_source(cfg, args, manifest, ROOT)
+        elif cfg.get('training_profile') == 'random-metric-bev':
+            raise ValueError('Metric-BEV checkpoint requires the matching model profile')
         if (cfg['experiment'] != 'baseline_multisweep_double_distillation'
                 or cfg['mode'] != 'pretrain' or source['sampler']['epoch'] != cfg['epochs']):
             raise ValueError('source must be a completed double-distillation pretraining run')
@@ -285,7 +308,7 @@ def main():
     frozen = args.mode in ['frozen-probe','object-motion']
     initial_digest = state_digest(backbone) if frozen else None
     datasets = load_datasets(args, manifest, args.nsweeps, resolution=args.image_resolution)
-    if initialization:
+    if initialization or metric_profile:
         for dataset in datasets:
             dataset.data_aug_conf['checkpoint_era_resize'] = True
     count = args.train_samples or 28130
@@ -323,7 +346,7 @@ def main():
                                if initialization else 'trainable random ResNet101; DINO image SSL'),
         data_protocol='official 700-scene train / 150-scene validation; no local blind test claim',
         camera_probe_pooling='fixed height mean, 128 channels; fused probe also 128 channels',
-        image_resize='Pillow RGB default (checkpoint-era)' if initialization else 'legacy nearest',
+        image_resize='Pillow RGB default (checkpoint-era)' if initialization or metric_profile else 'legacy nearest',
         losses='image_weight * image DINO + bev_weight * radar-soft-masked BEV DINO + motion_weight * radar velocity reconstruction auxiliary; optional depth',
         segmentation_readout_loss='official SimpleLoss(pos_weight=2.13); not legacy class-balanced BCE',
         bev_target_radar_age_seconds=.1,
@@ -339,6 +362,10 @@ def main():
         config['model_data_implementation_sha256'] = {name:digest_file(ROOT/name) for name in
             ['nets/segnet.py','nets/bevcar_voxel_adapter.py','nets/radar_encoder.py',
              'nuscenesdataset.py','utils/vox.py','utils/geom.py']}
+    if metric_profile:
+        config['camera_initialization'] = 'Completed random-initialized metric-BEV student; strict checkpoint load'
+        config['additional_implementation_sha256'] = {name:digest_file(ROOT/name) for name in
+            ['scripts/metric_depth_bev.py','scripts/metric_bev_profile.py','scripts/metric_bev_objective.py']}
     if args.depth_mode == 'radar-dav2':
         config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
     if continuation:

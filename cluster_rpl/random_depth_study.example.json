@@ -1,0 +1,12 @@
+{
+  "node": "arwen",
+  "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+  "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs",
+  "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+  "bevcar_source": "/local_storage/users/hongen/dd2414_assets/BEVCar",
+  "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+  "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+  "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+  "gpus_per_experiment": 5,
+  "workers_per_rank": 2
+}

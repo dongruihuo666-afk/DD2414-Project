@@ -1,4 +1,4 @@
-"""Opt-in, single-node two-GPU depth-continuation pretraining.
+"""Opt-in single-node depth pretraining: legacy continuation or random metric BEV.
 
 No automatic Slurm submission. The old single-GPU/downstream trainer stays
 available. Completed checkpoints expose unprefixed backbone tensors for it.
@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def validate_args(args, environment):
+    if getattr(args, 'training_profile', 'legacy-continuation') == 'random-metric-bev':
+        from metric_bev_profile import validate_metric_args
+        return validate_metric_args(args, environment)
     if (args.mode != 'pretrain' or args.batch_size != 1 or args.precision != 'bf16'
             or args.nsweeps != 10 or args.train_samples not in [0,28130]
             or args.val_samples != 6019 or args.epochs != 5
@@ -56,9 +59,16 @@ def validate_args(args, environment):
 
 def run(args):
     validate_args(args, os.environ)
+    metric_profile = getattr(args, 'training_profile', 'legacy-continuation') == 'random-metric-bev'
+    world_size = int(os.environ['WORLD_SIZE'])
+    updates_per_epoch = 28130 // world_size
+    objective = pretraining_loss
+    if metric_profile:
+        from metric_bev_objective import metric_pretraining_loss
+        objective = metric_pretraining_loss
     local_rank = int(os.environ['LOCAL_RANK'])
-    if not torch.cuda.is_available() or torch.cuda.device_count() != 2:
-        raise RuntimeError('Two Slurm-visible CUDA GPUs required; CPU checks are not a full-model pilot')
+    if not torch.cuda.is_available() or torch.cuda.device_count() != world_size:
+        raise RuntimeError('Slurm-visible CUDA device count must match local ranks; CPU checks are not a full-model pilot')
     device = torch.device('cuda',local_rank)
     torch.cuda.set_device(device)
     if torch.cuda.get_device_capability(device)[0] < 8 or not torch.cuda.is_bf16_supported():
@@ -91,29 +101,34 @@ def run(args):
         validate_scaling_manifest(manifest)
         if args.seed != manifest['seed']:
             raise ValueError('Manifest seed mismatch')
-        backbone = build_model(device,args.seed,args.bevcar_source,args.depth_mode)
-        initialization = load_official_camera_encoder(backbone.student.encoder,args.official_camera_checkpoint)
-        if digest_file(args.pretrain_initial_checkpoint) != args.pretrain_initial_sha256:
-            raise ValueError('Parent SHA-256 mismatch')
-        source = torch.load(args.pretrain_initial_checkpoint,map_location='cpu',weights_only=False)
-        continuation = check_continuation_source(source,dict(velocity_mode=args.velocity_mode),
-            manifest['manifest_sha256'],args.official_camera_checkpoint,initialization,args.allow_source_relocation)
-        if source['run_config']['bevcar_sha256'] != digest_file(args.bevcar_source/'nets/voxelnet.py'):
-            raise ValueError('Parent BEVCar implementation mismatch')
-        for name,value in source['run_config']['model_data_implementation_sha256'].items():
-            if digest_file(ROOT/name) != value:
-                raise ValueError('Parent model/data implementation mismatch: '+name)
-        backbone.load_state_dict(source['model'],strict=True)
-        del source
-        continuation.update(sha256=args.pretrain_initial_sha256,
-            path=str(args.pretrain_initial_checkpoint.resolve()),additional_epochs=5,
-            total_pretraining_epochs=10)
-        configure(backbone,'pretrain')
-        plain_forward = PretrainingForward(backbone)
+        if metric_profile:
+            from metric_bev_profile import prepare_metric
+            backbone, plain_forward, depth_teacher, initialization = prepare_metric(args, device)
+            continuation = None
+        else:
+            backbone = build_model(device,args.seed,args.bevcar_source,args.depth_mode)
+            initialization = load_official_camera_encoder(backbone.student.encoder,args.official_camera_checkpoint)
+            if digest_file(args.pretrain_initial_checkpoint) != args.pretrain_initial_sha256:
+                raise ValueError('Parent SHA-256 mismatch')
+            source = torch.load(args.pretrain_initial_checkpoint,map_location='cpu',weights_only=False)
+            continuation = check_continuation_source(source,dict(velocity_mode=args.velocity_mode),
+                manifest['manifest_sha256'],args.official_camera_checkpoint,initialization,args.allow_source_relocation)
+            if source['run_config']['bevcar_sha256'] != digest_file(args.bevcar_source/'nets/voxelnet.py'):
+                raise ValueError('Parent BEVCar implementation mismatch')
+            for name,value in source['run_config']['model_data_implementation_sha256'].items():
+                if digest_file(ROOT/name) != value:
+                    raise ValueError('Parent model/data implementation mismatch: '+name)
+            backbone.load_state_dict(source['model'],strict=True)
+            del source
+            continuation.update(sha256=args.pretrain_initial_sha256,
+                path=str(args.pretrain_initial_checkpoint.resolve()),additional_epochs=5,
+                total_pretraining_epochs=10)
+            configure(backbone,'pretrain')
+            plain_forward = PretrainingForward(backbone)
+            depth_teacher = load_depth_teacher(device) if args.depth_mode == 'radar-dav2' else None
         forward = DistributedDataParallel(plain_forward,device_ids=[local_rank],
             find_unused_parameters=True,broadcast_buffers=True)
         teacher = load_teacher('dinov2_vits14',device)
-        depth_teacher = load_depth_teacher(device) if args.depth_mode == 'radar-dav2' else None
         for model in [teacher,depth_teacher]:
             if model is not None and (model.training or any(p.requires_grad for p in model.parameters())):
                 raise RuntimeError('All teachers must remain frozen and in eval mode')
@@ -124,7 +139,7 @@ def run(args):
         # force identical dropout masks on the two different local examples.
         reset_seeds(args.seed+rank)
         subset = SeededEpochDataset(IndexedSubset(datasets[0],manifest['scales']['full']['dataset_indices']),args.seed)
-        sampler = AcknowledgedDistributedSampler(subset,args.seed,rank,2)
+        sampler = AcknowledgedDistributedSampler(subset,args.seed,rank,world_size)
         trainable = [p for p in backbone.parameters() if p.requires_grad]
         camera_ids = {id(p) for p in backbone.student.encoder.parameters()}
         groups = []
@@ -146,8 +161,8 @@ def run(args):
             data_protocol='official 700-scene train / 150-scene validation; no local blind test claim',
             losses='mean of rank-local per-sample objectives; image .2 + masked BEV .8 + radar motion .5; optional depth',
             bev_target_radar_age_seconds=.1,radar_depth_target_age_seconds=.1,input_voxel_guard=7000,
-            distributed_training=dict(world_size=2,local_batch_size=1,global_batch_size=2,
-                updates_per_epoch=14065,backend='nccl',padding=False,dropped_samples=False,
+            distributed_training=dict(world_size=world_size,local_batch_size=1,global_batch_size=world_size,
+                updates_per_epoch=updates_per_epoch,backend='nccl',padding=False,dropped_samples=False,
                 sample_rng='seed+1000003*epoch+7919*position; isolated CPU RNG per sample',
                 initial_training_rng='seed+rank; restored per rank on resume',
                 batch_norm='per-rank statistics; buffers broadcast from rank zero before each train forward'),
@@ -159,7 +174,10 @@ def run(args):
             model_data_implementation_sha256={name:digest_file(ROOT/name) for name in
                 ['nets/segnet.py','nets/bevcar_voxel_adapter.py','nets/radar_encoder.py',
                  'nuscenesdataset.py','utils/vox.py','utils/geom.py']})
-        if depth_teacher is not None:
+        if metric_profile:
+            from metric_bev_profile import metric_config
+            config.update(metric_config(args, ROOT, initialization))
+        elif depth_teacher is not None:
             config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
         checkpoint = directory/'checkpoints/latest.pt'
         progress = dict(epoch=0,update=0,samples_seen=0,training_seconds=0.,wall_seconds=0.,
@@ -174,7 +192,7 @@ def run(args):
         if rank == 0:
             writer = SummaryWriter(str(directory/'tensorboard'),purge_step=progress['update'])
         start,prior = time.monotonic(),progress['wall_seconds']
-        total_updates = 14065*args.epochs
+        total_updates = updates_per_epoch*args.epochs
 
         def requested():
             return any_rank(stopped or (rank == 0 and stop_file.exists()),device)
@@ -183,11 +201,14 @@ def run(args):
             if rank != 0:
                 return None
             value = dict(state=state,mode='pretrain',nsweeps=10,depth_mode=args.depth_mode,
+                training_profile=getattr(args,'training_profile','legacy-continuation'),
+                treatment=getattr(args,'treatment',None),
                 updated_unix_time=time.time(),epoch_progress=progress['samples_seen']/28130,
                 epochs=args.epochs,update=progress['update'],samples_seen=progress['samples_seen'],
                 samples_per_second=progress['samples_seen']/max(progress['training_seconds'],1e-9),
                 latest=progress['latest'],wall_seconds=prior+time.monotonic()-start,
-                world_size=2,global_batch_size=2,
+                total_updates=total_updates,
+                world_size=world_size,global_batch_size=world_size,
                 peak_allocated_gib=torch.cuda.max_memory_allocated(device)/2**30,**extra)
             atomic_json_write(value,directory/'status.json')
             return value
@@ -209,25 +230,25 @@ def run(args):
             for buffer in backbone.buffers():
                 dist.broadcast(buffer,src=0)
             selected = manifest['val']['dataset_indices']
-            local_indices = validation_shard(selected,rank,2)
+            local_indices = validation_shard(selected,rank,world_size)
             loader = DataLoader(IndexedSubset(datasets[1],local_indices),batch_size=1,
                 num_workers=args.num_workers,pin_memory=True,
                 generator=torch.Generator().manual_seed(args.seed))
             iterator = iter(loader)
             sums,samples,anchors,absolute,squared,relative = {},0,0,0.,0.,0.
-            keys = ['loss','image','bev','radar_motion_auxiliary']
-            if args.depth_mode != 'none':
+            keys = ['loss','image','bev'] if metric_profile else ['loss','image','bev','radar_motion_auxiliary']
+            if not metric_profile and args.depth_mode != 'none':
                 keys.append('radar_depth')
             if depth_teacher is not None:
-                keys.append('relative_depth')
-            for step in range(math.ceil(len(selected)/2)):
+                keys.append('metric_depth_bev' if metric_profile else 'relative_depth')
+            for step in range(math.ceil(len(selected)/world_size)):
                 if requested():
                     return False
                 loss = None
                 if step < len(local_indices):
                     _,batch = next(iterator)
                     with torch.autocast('cuda',dtype=torch.bfloat16):
-                        loss,parts,info = pretraining_loss(batch,plain_forward,teacher,depth_teacher,args,device)
+                        loss,parts,info = objective(batch,plain_forward,teacher,depth_teacher,args,device)
                     samples += 1
                     for key,value in dict(loss=loss,**parts).items():
                         sums[key] = sums.get(key,0.)+float(value)
@@ -240,7 +261,7 @@ def run(args):
                 if any_rank(loss is not None and not bool(torch.isfinite(loss)),device):
                     raise RuntimeError('Non-finite full validation loss')
                 if step % 100 == 0:
-                    status('validating_pretrain',validation_samples=min((step+1)*2,len(selected)))
+                    status('validating_pretrain',validation_samples=min((step+1)*world_size,len(selected)))
             totals = torch.tensor([sums.get(k,0.) for k in keys]+[samples,anchors,absolute,squared,relative],
                                   device=device,dtype=torch.float64)
             dist.all_reduce(totals)
@@ -252,10 +273,14 @@ def run(args):
                 depth_anchors=int(anchors),depth_mae_m=absolute/anchors if anchors else None,
                 depth_rmse_m=math.sqrt(squared/anchors) if anchors else None,
                 depth_abs_rel=relative/anchors if anchors else None,
-                scope='Frozen teacher and held-out radar-anchor diagnostics; NOT segmentation or dense GT')
+                scope='Held-out teacher objective diagnostics; NOT segmentation IoU or independent dense GT')
             rank_zero_call(lambda: atomic_json_write(result,directory/f'validation/epoch{sampler.epoch:03d}/summary.json'))
             progress['validations'][str(sampler.epoch)] = result
             save()
+            # Also retain milestones when resuming directly into pending
+            # validation after a time-limit checkpoint at the epoch boundary.
+            if not metric_profile or sampler.epoch in (5,10,20,30,40,50):
+                rank_zero_call(lambda: _copy_epoch(checkpoint,directory,sampler.epoch))
             return True
 
         torch.cuda.reset_peak_memory_stats(device)
@@ -279,10 +304,10 @@ def run(args):
                     break
                 for group in optimizer.param_groups:
                     group['lr'] = learning_rate_at_step(group['base_lr'],progress['update'],total_updates,
-                                                        round(14065*.25),.1)
+                                                        round(updates_per_epoch*(1. if metric_profile else .25)),.1)
                 optimizer.zero_grad(set_to_none=True)
                 with torch.autocast('cuda',dtype=torch.bfloat16):
-                    loss,parts,info = pretraining_loss(batch,forward,teacher,depth_teacher,args,device)
+                    loss,parts,info = objective(batch,forward,teacher,depth_teacher,args,device)
                 if any_rank(not bool(torch.isfinite(loss)),device):
                     raise RuntimeError('At least one DDP rank has non-finite loss')
                 loss.backward()
@@ -296,7 +321,7 @@ def run(args):
                 dist.all_reduce(elapsed,op=dist.ReduceOp.MAX)
                 progress['training_seconds'] += float(elapsed)
                 progress['update'] += 1
-                progress['samples_seen'] += 2*len(positions)
+                progress['samples_seen'] += world_size*len(positions)
                 progress['latest'] = dict(metrics,learning_rates={g['name']:g['lr'] for g in optimizer.param_groups})
                 if rank == 0:
                     with (directory/'metrics.jsonl').open('a') as log:
@@ -318,8 +343,6 @@ def run(args):
             if sampler.epoch != before:
                 if not validate_pending():
                     state = 'partial'
-                else:
-                    rank_zero_call(lambda: _copy_epoch(checkpoint,directory,sampler.epoch))
         if sampler.epoch >= args.epochs and str(args.epochs) in progress['validations']:
             state = 'complete'
         else:

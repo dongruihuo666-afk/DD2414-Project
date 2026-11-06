@@ -1,9 +1,18 @@
 # Isolated cluster depth-continuation study
 
+> Superseded for NEW runs by [the random-student 50-epoch plan](CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md).
+> The owner approved two random-ResNet101 treatments with shared probability
+> lifting, full velocity input, and optional metric BEV depth supervision.
+> This document's three warm-start treatments remain historical. A later
+> read-only check confirmed old job 1250362 FAILED before training because the
+> spool script resolved the repository incorrectly; 1250363/1250364 remain
+> blocked by its failure. The launch-root bug is fixed on this branch, but old
+> spool copies are not changed retroactively. Do not restart the obsolete matrix.
+
 Branch: `experiment/rpl-depth-10sweep-velocity-study`.
 Workstation checkout, its eleven-task queue, and staged user PDF remain unchanged.
 
-## Latest execution checkpoint — 2026-11-06
+## Historical release checkpoint — 2026-11-06
 
 The owner requested execution and all three holds have been released. No job
 was duplicated and the original success dependencies remain:

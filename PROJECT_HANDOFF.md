@@ -7,6 +7,112 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Random ResNet101, two matched metric-depth studies, 50 epochs
+
+- Owner approved implementing the geometric depth-probability design and a
+  50-full-epoch first budget, with configurable multi-GPU training. Work is
+  isolated to `experiment/rpl-depth-10sweep-velocity-study` in its worktree.
+  The workstation branch/queue and its unrelated staged `DD2414_Project_Plan.pdf`
+  are untouched. Original `nets/segnet.py`, official defaults and checkpoints
+  are unchanged; this is an opt-in model/profile.
+- NEW scientific matrix supersedes the three warm-start continuations below:
+  `dino-only` versus `dino-metric-depth-bev`. Both students are entirely random
+  (seed 125), RGB 448x800, 10 radar sweeps, velocity PROVIDED, and identical
+  80-bin probability-weighted camera lifting. Both use frozen DINO image and
+  radar-supported fused-BEV terms (0.2/0.8). Only the second adds frozen outdoor
+  metric Depth Anything supervision, CE weight 0.05, AFTER calibrated camera
+  BEV-volume projection and BEFORE radar fusion. No velocity-hidden group,
+  official RGB/previous student initialization, radar-depth loss or velocity
+  reconstruction auxiliary is used. The last two exclusions implement the
+  owner's DINO-only control; velocity still remains an input feature.
+- `scripts/metric_depth_bev.py`, `metric_bev_objective.py`, and
+  `metric_bev_profile.py` implement this profile. The single 1x1 depth head
+  predicts 80 probabilities from 1 to 80 m, and remains at inference. Teacher
+  metric depths become soft targets (2 m width), compared against student log
+  probabilities sampled onto the same camera geometry. Depth-axis bin centers
+  honor `align_corners=False`; existing image XY sampling is retained. A 20 m
+  target increases mass near 20 m and softmax suppresses alternate distances
+  along that ray. No extra semantic decoder or student transformer is added.
+- Frozen teacher is the genuine `metric_depth` VKITTI Small implementation,
+  not the earlier relative teacher. Downloaded ignored metric weights, verified
+  SHA-256 `9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb`,
+  strictly loaded and ran TWO synthetic CPU images (84x126): finite [2,1,84,126]
+  output, eval mode, zero trainable teacher parameters. This does not measure
+  real-scene depth accuracy. Relative teacher weights remain separate.
+- Extended `scripts/train_depth_ddp.py` and `train_multisweep_teacher.py` behind
+  explicit `--training-profile random-metric-bev`. New profile requires 50
+  epochs, full train/validation, BF16, random provenance and matched AdamW
+  rates 2e-4, one-epoch warmup/cosine, clipping 5. Supports 2/5/10 local ranks,
+  without padding/dropping, per-rank batch 1. Default candidate is FIVE GPUs
+  per model (20 CPUs/80 GiB); two separate five-GPU experiments may overlap
+  when resources permit. Four/eight ranks deliberately fail on indivisible
+  28,130 samples. Same-world exact resume preserves optimizer/sampler/RNG/BN.
+- Every full epoch validates ALL 6,019 frames and writes telemetry/TensorBoard;
+  retains validated epochs 5/10/20/30/40/50 plus periodic/signal latest saves.
+  Milestone retention also handles resuming into pending epoch-end validation.
+  Fifty epochs mean 1,406,500 training visits per model; this is a budget, not
+  proof of convergence. Downstream strictly rebuilds/loads the new head and
+  requires completed pretraining AND final full validation. Frozen camera/fused
+  1x1 probes and supervised Simple-BEV decoder adaptation remain SINGLE GPU;
+  primary score is GT Vehicle IoU. DINO/depth losses are auxiliary diagnostics.
+- New `cluster_rpl/random_depth_study.py`, example config, batch wrapper, and
+  `audit_random_depth.py` provide stdlib previews, explicit allocated execution
+  and a fresh exact-commit/config CPU admission gate. They never submit jobs
+  automatically and do not require an old official RGB/parent checkpoint.
+  The audit checks official scene/sample/log membership, pinned source/teacher
+  content and all metadata sensor references. Absolute arwen-local paths and
+  resource checks are explicit. No system/mamba environment mutation occurs.
+- Fixed `cluster_rpl/depth_ddp_job.sh` repository resolution using explicit root
+  or `SLURM_SUBMIT_DIR`, instead of the Slurm spool script location. NEW batch
+  wrapper uses the same correction. Read-only SSH confirmed old job 1250362
+  failed exit 2 in one second on that exact path error; 1250363 is blocked by
+  `DependencyNeverSatisfied`, 1250364 by `Dependency`. Those jobs/spool copies
+  were NOT modified, cancelled or resubmitted. The earlier resource-waiting
+  entry below is historical. Current arwen inspection: ten of ten GPUs
+  allocated, CPUAlloc 44/48; no new CUDA pilot or formal run was started.
+- Actual checks: new calibrated geometry/20 m counterexample/gradient tests,
+  real TWO-process Gloo gradients for BOTH new forward paths (two optimizer
+  updates each), legacy objective equivalence and fresh-process resume tests,
+  launch/asset/matrix/downstream regressions pass. Both batch wrappers execute
+  from relocated temporary spool copies (including paths with spaces), with
+  wrong roots rejected. Shell syntax, Python compilation, plan preview and
+  `git diff --check` pass. The full combined unit command below passes **131
+  tests**; see `artifacts/random_metric_bev_implementation_20261106.json` for
+  construction/teacher/split/old-job evidence.
+- Full real student CPU CONSTRUCTION check: both states hash identically to
+  `077315f67731a31e7d1389926d83e2bfdc220d9c4a3a0cf89740a042ab958587`;
+  42,767,929 parameters, 38,936,880 pretraining trainable, [80,128,1,1] depth
+  head; decoder/motion head frozen. Checkpoint/hub loading was forbidden in
+  that check. Inherited Segnet allocates its coordinate grid on CUDA, so only
+  that allocation was redirected to CPU for this construction check; no full
+  model forward/CUDA memory/throughput claim follows from it.
+- Live local official metadata check passes: 700/150 scenes, 28,130/6,019
+  samples, 50/18 logs and ZERO train/validation scene/sample/log overlaps;
+  manifest hash `dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d`.
+  Existing official validation is not renamed a blind test. Depth pseudo
+  targets can have metric/domain bias; they are not dense GT or occupancy.
+- Reproduction (from this worktree, no CUDA):
+  `PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1
+  MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest
+  test_metric_depth_bev test_random_depth_study test_distributed_training
+  test_depth_objective test_depth_study test_depth_assets test_depth_pilot
+  test_cluster test_multisweep_teacher test_depth_continuation
+  test_official_full_data test_training_checkpoint test_fullsize_training
+  test_full_data_protocol test_radar_scaling_data test_baseline_followup
+  test_radar_velocity_rotation test_radar_evaluation test_trainval_configuration`.
+  Plan preview: `python3 cluster_rpl/random_depth_study.py --config
+  cluster_rpl/random_depth_study.example.json` (no allocations/model imports).
+- Detailed deployment, asset transfer/hash, CPU audit, bounded two-update
+  pilot, new-process resume and 47-hour formal/resume commands are in
+  `CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md`; legacy plan/README now route there.
+  Next: deploy the committed branch, transfer the metric weight, refresh CPU
+  admission, then run BOTH finite-update/resume CUDA pilots with the actual
+  batch wrapper and candidate world size. Lock the same world size for the
+  formal pair only after memory/throughput evidence. No implicit requeue or
+  automatic OOM/config changes; a partial signal exit 75 needs another
+  same-config allocation. No finish-time or semantic gain is claimed yet.
+
 ### 2026-11-06 — Formal holds released; first treatment awaits resources
 
 - Owner explicitly requested removing all three holds and starting the

@@ -2,7 +2,10 @@
 # Submitted explicitly later: no SSH, sbatch, queue, requeue, or job cancellation.
 set -euo pipefail
 [[ -n "${SLURM_JOB_ID:-}" ]] || { echo 'Slurm allocation required' >&2; exit 2; }
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# sbatch runs a spool copy; BASH_SOURCE points into /var/lib/slurm, not the repo.
+ROOT="${DD2414_PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
+ROOT="$(cd "${ROOT}" && pwd -P)"
+[[ -f "${ROOT}/cluster_rpl/depth_study.py" ]] || { echo 'Explicit project root required' >&2; exit 2; }
 CONFIG="$1"
 TREATMENT="$2"
 shift 2
