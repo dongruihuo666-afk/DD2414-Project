@@ -7,6 +7,56 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Formal two-GPU requests submitted HELD, not started
+
+- Owner request: submit the formal application after clarifying that earlier
+  jobs were bounded pilots only. Real Slurm applications are now submitted,
+  NOT merely `--test-only`. They were deliberately submitted `--hold`, as
+  announced before execution: longer two-GPU site-permission coverage remains
+  unconfirmed. No hold was released and no formal GPU allocation/training has
+  started. Scheduler acceptance must not be called administrator approval.
+- New ignored configuration, on both workstation and cluster:
+  `.cache/depth_formal_20261106.json`. It preserves every scientific setting
+  from `cluster_rpl/depth_study.example.json`, changing ONLY `run_root` to
+  `/local_storage/users/hongen/dd2414_runs/depth_continuation_formal_20261106`.
+  The three fresh five-epoch continuations load the SAME completed parent;
+  previous pilot outputs/checkpoints are preserved, not resumed or overwritten.
+- Refreshed zero-GPU CPU audit `1250361` completed `0:0` in 1m49s (audit work
+  98.7 seconds), validating the formal config's full metadata/sensor references
+  and parent/teacher assets. Report: formal root `depth_assets_audit.json`;
+  logs: project `.cache/depth-formal-audit-1250361.{out,err}`. The preceding
+  scheduler-only check printed hypothetical `1250360`; that is NOT a real job.
+- Actual held job inventory, verified with `squeue` and `scontrol show job`:
+  `1250362` no depth, initially `afterok:1250361` (CPU audit);
+  `1250363` radar depth, `afterok:1250362`;
+  `1250364` radar depth + Depth Anything V2, `afterok:1250363`.
+  All are `PENDING`, reason `JobHeldUser`, priority zero, runtime zero and no
+  allocated node. Each requests arwen, ONE node/task, TWO GPUs, eight CPUs,
+  32 GiB, a 47-hour maximum and `--signal=B:USR1@300`. After a future explicit
+  release, success dependencies prevent concurrent treatments and stop the
+  chain after failure/partial exit. No downstream readout jobs were submitted.
+- Submission/reproduction: use `sbatch --hold --dependency=afterok:PRIOR_JOB`
+  with the resource/signal settings above and the ABSOLUTE script path
+  `/Midgard/home/hongen/projects/DD2414-Project/cluster_rpl/depth_ddp_job.sh`,
+  followed by the absolute ignored config path and `none`, `radar` or
+  `radar-dav2`. The first relative-script submission failed to open the file
+  and issued no job ID; switching to the verified absolute path resolved it.
+  `--chdir` controls execution cwd, not where sbatch finds its input script.
+- Checks: all three formal commands/configurations passed local stdlib
+  validation; shell syntax and `git diff --check` pass. Actual scheduler
+  records confirm resources, dependency chain and holds. These are submission
+  checks, NOT new model tests; the previously recorded 92 CPU tests and three
+  real CUDA pilots remain the training implementation evidence. Only this
+  handoff and the depth plan change in this outcome; no model/data code,
+  environments, other users' jobs or workstation queue/PDF are altered.
+- Next/boundaries: report these real IDs transparently. Confirm longer two-GPU
+  site authorization before any `scontrol release`; no automatic release,
+  retries or cancellation are part of this task. Keep research code/config
+  stable and recheck admission before launch. Slurm's default `Requeue=1` is
+  recorded, but the launcher does not automatically add `--resume` after a
+  restart: do not claim unattended fault recovery. A partial/failed dependency
+  requires inspection and a separately authorized resume application.
+
 ### 2026-11-06 — Three real two-GPU depth admission pilots passed
 
 - Actual cluster results: zero-GPU full-data audit `1250328` completed `0:0`

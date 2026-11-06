@@ -3,7 +3,33 @@
 Branch: `experiment/rpl-depth-10sweep-velocity-study`.
 Workstation checkout, its eleven-task queue, and staged user PDF remain unchanged.
 
-## Latest runtime checkpoint — 2026-11-06
+## Latest submission checkpoint — 2026-11-06
+
+Real formal applications have now been submitted as HELD jobs (not started):
+
+| Treatment | Real Slurm job | Success dependency | State at inspection |
+| --- | --- | --- | --- |
+| No depth | 1250362 | CPU audit 1250361 | PENDING / JobHeldUser |
+| Radar depth | 1250363 | No depth 1250362 | PENDING / JobHeldUser |
+| Radar depth + Depth Anything V2 | 1250364 | Radar depth 1250363 | PENDING / JobHeldUser |
+
+Each requests two GPUs / eight CPUs / 32 GiB / 47 hours on arwen for five
+additional full epochs. All are deliberately `--hold`: they consume no GPU
+allocation and do not start until a separately authorized release. Acceptance
+is not confirmation of longer two-GPU site permission. After a future release,
+the dependencies prevent treatment overlap; no readouts have been submitted.
+
+The actual ignored config is `.cache/depth_formal_20261106.json`; its fresh root
+is `/local_storage/users/hongen/dd2414_runs/depth_continuation_formal_20261106`.
+All other scientific/asset settings match the approved example. Refreshed
+zero-GPU audit `1250361` completed successfully in 1m49s with the same complete
+sensor membership/hash checks. Do not overwrite the earlier pilot output root.
+
+Inspect using `squeue -u hongen` and `scontrol show job JOBID`. Do not duplicate
+these applications or release them before resource authorization is confirmed.
+The 47-hour limit is a maximum request, NOT a measured finish-time estimate.
+
+## Earlier runtime checkpoint — 2026-11-06
 
 The owner authorized deployment and short admission trials. Full data/asset
 audit `1250328` passed. Full-model two-GPU pilots `1250329` (no depth), `1250330`
@@ -153,7 +179,7 @@ sbatch --nodes=1 --ntasks=1 --nodelist=arwen --gres=gpu:2 \
   --job-name=dd2414-depth-none \
   --output=/Midgard/home/hongen/projects/DD2414-Project/.cache/depth-none-%j.out \
   --error=/Midgard/home/hongen/projects/DD2414-Project/.cache/depth-none-%j.err \
-  cluster_rpl/depth_ddp_job.sh \
+  /Midgard/home/hongen/projects/DD2414-Project/cluster_rpl/depth_ddp_job.sh \
   /Midgard/home/hongen/projects/DD2414-Project/.cache/depth_study.json none
 ```
 
