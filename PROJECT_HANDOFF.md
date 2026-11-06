@@ -46,6 +46,25 @@ reproduction method, evidence, limitations, and handoff decisions.
   coverage is confirmed and all three full-model gates pass. No claim of
   semantic results, CUDA memory feasibility or training completion is made.
 
+Deployment follow-up: CPU audit job `1250328` on arwen reported `passed` in
+96.0 seconds. It verified all 2,631,083 metadata-referenced sensor files present
+and nonempty, official full split membership/disjointness, original RGB,
+BEVCar, DINO and Depth Anything hashes, and the complete 727-tensor parent.
+The detailed node-local report is `RUN_ROOT/depth_assets_audit.json`; logs are
+project `.cache/depth-assets-audit-1250328.{out,err}`. This is file-presence and
+provenance evidence, not a bytewise dataset audit or full-model CUDA evidence.
+
+Added `cluster_rpl/depth_pilot.py` and `test_depth_pilot.py`: within ONE approved
+bounded two-GPU allocation it runs one treatment to update two, preserves that
+checkpoint, restarts torchrun from it, and requires update three with both rank
+states/finite tensors/changed model state and metrics exactly 1,2,3. It requires
+the passed data audit and a fresh run directory; it neither submits nor starts
+formal training. Reproduce: `python cluster_rpl/depth_pilot.py --config
+.cache/depth_study.json --treatment none` inside the selected allocation; repeat
+for the other two modes. Actual local checks: 41 CPU tests passed including
+the two pilot-verifier tests; compilation and diff checks pass. The depth plan
+documents both admission commands. Actual GPU pilot results are still pending.
+
 ### 2026-11-06 — Withdraw velocity-hidden multi-GPU branch
 
 - Owner decision: abandon `experiment/rpl-velocity-hidden-multigpu` and resume

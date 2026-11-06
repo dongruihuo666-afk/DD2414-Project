@@ -83,6 +83,28 @@ update/new-process-resume tests for all three depth modes. CPU/Gloo tests are
 not a full-model CUDA/memory/throughput test. No silent resolution/sweep/model
 reductions after OOM. An automatic dispatch mechanism is still future work.
 
+The owner subsequently authorized deployment and bounded admission. The exact
+parent/teacher assets have now been copied and CPU audit job `1250328` reported
+passed hashes, official split membership and all 2,631,083 nonempty sensor-file
+references in approximately 96 seconds (arwen, zero GPUs). This is presence/
+provenance verification, not a byte-for-byte full-dataset checksum or a CUDA
+training result. A long-running two-GPU allocation is not yet submitted.
+
+Dedicated admission commands (inside their respective authorized allocations):
+
+```bash
+python cluster_rpl/check_depth_assets.py --config .cache/depth_study.json
+python cluster_rpl/depth_pilot.py --config .cache/depth_study.json --treatment none
+```
+
+The pilot requires the passed audit and a fresh treatment output; it launches
+two updates, saves both rank states, starts a NEW torchrun process, completes
+update three and verifies sampler/global progress, finite checkpoint tensors,
+changed model tensors and no replayed/skipped metrics. It writes
+`admission_none.json`; repeat independently for `radar` and `radar-dav2`.
+It never submits another job or starts formal training. The preserved
+`pilot_update002.pt` is a local recovery/verification artifact, not a result.
+
 ### Local preview (no training or allocation)
 
 ```bash
