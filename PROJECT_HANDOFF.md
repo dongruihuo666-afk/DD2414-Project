@@ -7,6 +7,51 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Formal holds released; first treatment awaits resources
+
+- Owner explicitly requested removing all three holds and starting the
+  experiments. After checking the exact own job IDs/commands/configuration,
+  unchanged clean deployed implementation (`c0e352f`) and successful formal
+  audit `1250361`, ordinary Slurm `scontrol release` succeeded for `1250364`,
+  `1250363` and `1250362`, in that order. No job was resubmitted, cancelled,
+  reprioritized, moved to another account/node, or given different resources.
+  This records the owner's execution request and actual scheduler operation,
+  not a new assertion about external administrator approval.
+- Verified post-release state: `1250362` no depth is `PENDING / Resources`
+  with no remaining dependency; `1250363` radar depth is `PENDING / Dependency`
+  on `afterok:1250362`; `1250364` radar-plus-Depth-Anything is `PENDING /
+  Dependency` on `afterok:1250363`. Priority is nonzero (3893 at inspection),
+  and NONE is `JobHeldUser`. Every job retains two GPUs, eight CPUs, 32 GiB,
+  arwen pinning, the 47-hour cap and original signal/checkpoint configuration.
+- Resource evidence: `scontrol show node arwen` reports ten configured GPUs
+  and ten allocated GPUs, with no free pair. The first job therefore has not
+  started, has runtime zero/no allocated node and no verified formal optimizer
+  update. This is scheduler resource waiting, NOT a new manual pause or model
+  failure. Other nodes' free GPUs do not make arwen's local dataset shared;
+  no data migration or arbitrary node change was attempted.
+- Persistence: Slurm can start the first job automatically when scheduling
+  allows; successful completion then enables the next treatment. All holds
+  were removed, so no further user-hold release is needed for this chain.
+  No interactive session/agent must remain connected for scheduling/execution.
+  A failure/partial exit still blocks dependent jobs and needs inspection;
+  this is not a promise of automatic fault recovery or a full downstream queue.
+- Monitor on moria: `squeue -j 1250362,1250363,1250364 -o
+  "%.18i %.45j %.10T %.10M %R"`. First-treatment logs, created only once the
+  job actually starts, are project `.cache/depth-none-formal-1250362.out` and
+  `.err`; run telemetry is node-local formal root `depth_none/pretrain/` with
+  `status.json`, `metrics.jsonl` and TensorBoard. Do not call missing pre-start
+  logs a training crash or execute node-local compute on moria.
+- Changed only this handoff and `CLUSTER_DEPTH_RUN_PLAN.md` to replace stale
+  current-held status with the observed release/resource-waiting status;
+  earlier dated records remain history. Actual checks: all three post-release
+  scheduler records/dependencies verified; `git diff --check` passes and
+  model/launch code is unchanged. No new CPU/CUDA regression is required for
+  this documentation-only record. Workstation queue and staged PDF untouched.
+- Next: let the existing scheduler requests obtain resources. On RUNNING,
+  verify a real finite optimizer update and logs before reporting training
+  progress/throughput. No exact start/finish time is guaranteed; no formal
+  epoch/validation or new semantic result has completed at this checkpoint.
+
 ### 2026-11-06 — Deduplicate assistant-written GPU restriction commentary
 
 - Owner request: remove the assistant's single-GPU safety-review commentary.

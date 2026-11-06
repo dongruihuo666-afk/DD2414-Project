@@ -3,21 +3,24 @@
 Branch: `experiment/rpl-depth-10sweep-velocity-study`.
 Workstation checkout, its eleven-task queue, and staged user PDF remain unchanged.
 
-## Latest submission checkpoint — 2026-11-06
+## Latest execution checkpoint — 2026-11-06
 
-Real formal applications have now been submitted as HELD jobs (not started):
+The owner requested execution and all three holds have been released. No job
+was duplicated and the original success dependencies remain:
 
 | Treatment | Real Slurm job | Success dependency | State at inspection |
 | --- | --- | --- | --- |
-| No depth | 1250362 | CPU audit 1250361 | PENDING / JobHeldUser |
-| Radar depth | 1250363 | No depth 1250362 | PENDING / JobHeldUser |
-| Radar depth + Depth Anything V2 | 1250364 | Radar depth 1250363 | PENDING / JobHeldUser |
+| No depth | 1250362 | None; CPU audit 1250361 passed | PENDING / Resources |
+| Radar depth | 1250363 | No depth 1250362 | PENDING / Dependency |
+| Radar depth + Depth Anything V2 | 1250364 | Radar depth 1250363 | PENDING / Dependency |
 
 Each requests two GPUs / eight CPUs / 32 GiB / 47 hours on arwen for five
-additional full epochs. All were submitted `--hold`: they consume no GPU
-allocation while held. After release, the dependencies prevent treatment
-overlap; no readouts have been submitted. Application/release authority and
-the actual historical execution records are maintained in `PROJECT_HANDOFF.md`.
+additional full epochs. The success dependencies prevent treatment overlap;
+no readouts have been submitted. At inspection arwen had ten GPUs configured
+and all ten allocated, so the first treatment is waiting for a free pair. It
+has not started and has no verified formal update yet. This is ordinary
+resource waiting, not `JobHeldUser`. All three jobs can advance automatically
+under Slurm scheduling/dependencies without another hold release.
 
 The actual ignored config is `.cache/depth_formal_20261106.json`; its fresh root
 is `/local_storage/users/hongen/dd2414_runs/depth_continuation_formal_20261106`.
@@ -26,7 +29,10 @@ zero-GPU audit `1250361` completed successfully in 1m49s with the same complete
 sensor membership/hash checks. Do not overwrite the earlier pilot output root.
 
 Inspect using `squeue -u hongen` and `scontrol show job JOBID`. Do not duplicate
-these existing applications. This documentation edit does not release them.
+these existing applications or change their node just because another node
+has free GPUs: the dataset is local to arwen. First-treatment logs appear
+only once it starts: project `.cache/depth-none-formal-1250362.{out,err}`.
+The source checkout is kept stable; monitoring does not require a live agent.
 The 47-hour limit is a maximum request, NOT a measured finish-time estimate.
 
 ## Earlier runtime checkpoint — 2026-11-06
