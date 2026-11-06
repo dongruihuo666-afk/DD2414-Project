@@ -7,6 +7,45 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-06 — Owner authorizes depth deployment and admission checks
+
+- The owner lifted the previous local-only restriction. Initial read-only
+  cluster inspection found the account queue empty and the old project clone
+  clean at `f9f333f`. The singular-path clone
+  `/Midgard/home/hongen/projects/DD2414-Project` was switched to the retained
+  depth branch at `39ed99e`, preserving existing remote fetch mappings. The
+  abandoned velocity-hidden multi-GPU branch is not restored or deployed.
+- Transferred the completed immutable parent (483,346,682 bytes) to arwen's
+  personal assets directory and the Depth Anything V2 Small weight (99,218,434
+  bytes) plus exact Python source/license to the shared project cache. All
+  transfers finished with exit zero; remote hash verification is a required
+  next gate, not inferred from transfer success. A CPU-only allocated check
+  found the expected dataset directories, original RGB/BEVCar assets, about
+  2.9 TiB node-local free disk, and `pip check` passed in the existing mamba
+  environment. No environment replacement or workstation queue change.
+- New files: `cluster_rpl/check_depth_assets.py` audits full sensor references,
+  official split/manifest membership, pinned parent completion/provenance,
+  original encoder/BEVCar and both frozen teachers, environment and model/data
+  source hashes. It refuses login-node/out-of-allocation execution and writes
+  the compact admission report under the personal study output root.
+  `test_depth_assets.py` checks the allocation and exact-coverage guards.
+  `assets.json` now pins the actual Depth Anything weight/Python-tree hash and
+  source commit; runtime weights/source remain ignored and outside Git.
+- Reproduce CPU admission (only in an allocated arwen CPU job, zero GPUs):
+  `python cluster_rpl/check_depth_assets.py --config .cache/depth_study.json`.
+  CPU regression: `PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES=''
+  python -m unittest cluster_rpl.test_depth_assets cluster_rpl.test_depth_study
+  cluster_rpl.test_cluster scripts.test_depth_continuation -q`.
+- Actual local checks: 39 CPU tests passed; Python compilation and
+  `git diff --check` passed. Full remote sensor/hash audit and actual two-GPU
+  finite-update/resume pilots are still pending at this preparation checkpoint.
+  Prior diagnostic permission is not silently broadened to long formal jobs.
+- Next: deploy this committed audit, run zero-GPU admission, then bounded
+  real-model update-two/new-process-update-three tests for each treatment.
+  Do not launch formal long-running two-GPU training until resource permission
+  coverage is confirmed and all three full-model gates pass. No claim of
+  semantic results, CUDA memory feasibility or training completion is made.
+
 ### 2026-11-06 — Withdraw velocity-hidden multi-GPU branch
 
 - Owner decision: abandon `experiment/rpl-velocity-hidden-multigpu` and resume
