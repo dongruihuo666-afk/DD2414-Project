@@ -53,12 +53,18 @@ all three depth modes. No silent resolution/sweep/model reductions after OOM.
 The inherited low-resolution teacher size is not silently a formal choice:
 lock the desired teacher resolution in the new matrix and record it explicitly.
 
-## Resource authorization and current blocker
+## Resource authorization and diagnostic history
+
+**Current update:** after the initial rejection described below, the owner
+explicitly confirmed administrator permission for the temporary two-GPU test.
+A real test then passed as job `1250320`; see the final subsection. Permission
+was scoped to that diagnostic, not presumed to cover formal multi-GPU training.
 
 The supplied site manual explicitly restricts master-student accounts to one
-GPU at a time. The owner subsequently requested trying two GPUs and setting
-the manual aside. No administrator exception has been established. Scheduler
-acceptance is not such an exception; no real two-GPU allocation is submitted.
+GPU at a time. Initially, the owner requested trying two GPUs and setting
+the manual aside, before an administrator exception had been confirmed.
+Scheduler acceptance was not such an exception; no real allocation was made
+at that preparation stage.
 
 On 2026-11-06 a non-allocating check on moria accepted:
 
@@ -72,10 +78,10 @@ It printed a predicted start with an illustrative job number, but account
 prove exemption from site rules. Current trainer has no DDP implementation.
 Even an authorized two-card allocation would not accelerate it automatically.
 
-Next decision: obtain confirmation that the account has temporary two-GPU
-permission (or that the supplied rule is obsolete), or keep the deployment
-single-GPU. If two-GPU permission is confirmed, implement single-node DDP and
-lock the new effective batch/epoch/update protocol before formal comparisons.
+The next decision at that stage was to obtain temporary permission or retain
+single-GPU execution. Permission was subsequently confirmed for the short
+diagnostic below. Before formal DDP training, confirm that its longer resource
+use is covered, and lock the effective batch/epoch/update protocol.
 Do not alter the running workstation job or silently migrate its optimizer
 state to a different world size.
 
@@ -90,8 +96,44 @@ review rejected the submission BEFORE the SSH/Slurm command executed because
 of the verified site single-GPU rule and missing administrator exception.
 
 No real job ID was issued, no GPUs were allocated, and no CUDA/NCCL result was
-obtained. This must not be reported as a hardware failure or a successful test.
+obtained in that rejected attempt. It was not a hardware failure or a successful test.
 Do not retry through another wrapper, indirect execution or a different account.
-The existing accepted scheduling-only test remains the sole two-GPU evidence.
-Unblock a real test with confirmation of site authorization, not another user
-approval to disregard the supplied manual.
+The scheduling-only test was then the sole two-GPU evidence. Confirmation of
+site authorization, rather than approval to disregard the manual, subsequently
+unblocked the bounded real test below.
+
+### Authorized real two-GPU result
+
+After the owner's explicit confirmation that permission had been obtained, the
+same bounded request was resubmitted through normal Slurm, with the new
+authorization stated in the execution approval. Job `1250320` allocated
+`gres/gpu=2`, four CPUs and 8 GiB on arwen, with a three-minute hard limit.
+It completed in **16 seconds**, state `COMPLETED`, exit code `0:0`.
+The account queue was empty afterward; both GPUs were released normally.
+
+Both ranks saw distinct RTX 3080 devices (9.64 GiB each), torch 2.5.1+cu121,
+and native BF16. NCCL all-reduce returned 3 on both ranks from inputs 1 and 2.
+A tiny DDP linear model completed finite BF16 forward/backward/SGD, and a
+post-update parameter-sum check agreed between ranks. The log ended with
+`TWO_GPU_PROBE_PASSED`. The ranks' individual losses differed because they
+used different inputs; synchronized updates, not identical local losses,
+were the checked property. This small check is not an exhaustive tensor audit.
+
+Cluster log (runtime-only):
+`/Midgard/home/hongen/projects/DD2414-Project/.cache/rpl_two_gpu_probe-1250320.log`.
+The tested script was the ignored cache copy prepared before permission;
+`cluster_rpl/two_gpu_probe.py` preserves its test logic and additionally refuses
+execution outside a Slurm allocation. It does not load project data or weights.
+
+To reproduce within another specifically authorized two-GPU allocation:
+
+```bash
+env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NCCL_DEBUG=WARN \
+  /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python -m torch.distributed.run \
+  --standalone --nnodes=1 --nproc_per_node=2 cluster_rpl/two_gpu_probe.py
+```
+
+Retain the explicit three-minute Slurm limit. Do not run this on moria or use
+the temporary-test permission as an ongoing allocation exemption. The actual
+research trainer remains single-GPU. Full-model DDP, loss/sample-count handling,
+resume safety, depth-memory feasibility and speedup have NOT been established.

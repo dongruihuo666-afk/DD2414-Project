@@ -3,7 +3,8 @@
 On the isolated `experiment/rpl-depth-10sweep-velocity-study` branch, this guide
 describes the inherited single-GPU deployment, not a ready depth-study queue.
 See `CLUSTER_DEPTH_RUN_PLAN.md` for the approved continuation design, unfinished
-deployment gates and the unresolved two-GPU authorization. No DDP is implemented.
+deployment gates and the subsequently authorized/passed temporary two-GPU
+diagnostic. The research trainer still has no DDP implementation.
 
 Branch: `experiment/rpl-full-data-double-distill`.
 
@@ -29,6 +30,9 @@ queue, cancels jobs, requeues jobs or chooses a node. Each real submission needs
 an explicit task and `--execute`. Default `plan` and `submit` only print.
 The initial deployment requests **one GPU**. The master-student one-GPU account
 rule still applies even though a two-GPU `sbatch --test-only` check succeeded.
+The owner later confirmed permission for a temporary real two-GPU diagnostic;
+job `1250320` passed on arwen and released both cards after 16 seconds. This
+bounded exception is not assumed to authorize ongoing multi-GPU training.
 Do not use concurrent single-GPU jobs to circumvent that rule. Multiple
 independent jobs are an option only after explicit site authorization; DDP is
 not implemented, and GPU memories are not automatically pooled.

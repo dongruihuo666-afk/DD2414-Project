@@ -7,13 +7,43 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
-2026-11-06 two-GPU diagnostic follow-up: the owner requested a temporary real
+2026-11-06 **temporary two-GPU diagnostic passed after permission confirmation**:
+the owner explicitly confirmed administrator permission for the bounded test,
+resolving the earlier missing-authorization condition for that test only. Real
+Slurm job `1250320` allocated two RTX 3080 GPUs, four CPUs and 8 GiB on arwen,
+with a three-minute limit. It completed in 16 seconds (`COMPLETED`, `0:0`),
+printed `TWO_GPU_PROBE_PASSED`, and released both GPUs; own `squeue` was empty.
+Both ranks had distinct GPU UUIDs and 9.64 GiB per card, finite native-BF16
+compute, a correct NCCL all-reduce (1+2=3), and matching post-update parameter
+sums in a tiny DDP example. This is actual GPU/communication evidence, not
+merely scheduler admission, but is NOT full-model DDP or a speedup benchmark.
+
+Changed files: `cluster_rpl/two_gpu_probe.py` retains the runtime diagnostic's
+logic with an additional Slurm guard; `cluster_rpl/test_cluster.py` tests that
+guard without GPUs; the README and depth plan distinguish the completed
+temporary test from unfinished formal deployment. Reproduction: use the
+two-process torch.distributed command in `CLUSTER_DEPTH_RUN_PLAN.md` only in
+another specifically authorized, three-minute two-GPU allocation. Actual
+runtime log: cluster project `.cache/rpl_two_gpu_probe-1250320.log`.
+
+Checks: seven continuation CPU tests, 41 inherited training tests and 26
+deployment CPU tests pass (74 total); Python compilation and `git diff --check`
+pass. The GPU-tested cache copy and tracked copy differ only in descriptive
+header and the tracked copy's extra allocation guard; the tracked version has
+not itself consumed another GPU allocation. Next: adapt and validate the
+research trainer for genuine DDP if formal two-GPU execution is authorized;
+the temporary permission is not broadened to ongoing training. The depth
+matrix/deployment gates below remain unfinished. Workstation code, queue and
+staged PDF remain untouched. No formal cluster training is running.
+
+Earlier 2026-11-06 rejected attempt (superseded by the authorized result above):
+the owner requested a temporary real
 two-card check. A synthetic CUDA/NCCL/tiny-DDP script was prepared and uploaded
 only under ignored project `.cache/`. A proposed arwen allocation (two GPUs,
 four CPUs, 8 GiB, three minutes) was rejected by automatic execution risk review
 BEFORE the SSH/Slurm submission ran, citing the supplied site single-GPU rule
 and lack of an administrator exception. No real job ID/allocation or GPU test
-result exists. Do not bypass this rejection through an alternate execution
+result was obtained in that attempt. Do not bypass a rejection through an alternate execution
 path. The earlier `sbatch --test-only` result proves scheduling feasibility
 only; current deployment remains partial. See `CLUSTER_DEPTH_RUN_PLAN.md`.
 
@@ -68,8 +98,9 @@ rule. A non-allocating `sbatch --test-only` two-GPU check on arwen was accepted;
 `squeue -u hongen` was empty before and after. The reported hypothetical job
 number is not a submitted training job. The association query displayed
 `defaultusr` / `normal` with blank MaxTRES/GrpTRES, not proof of administrator
-permission. No administrator exception or obsolete-rule confirmation has been
-established, so no actual multi-GPU allocation or workaround is attempted.
+permission. At that preparation stage, no administrator exception had been
+confirmed and no actual allocation was attempted. The later authorized
+temporary diagnostic is recorded at the top of this handoff.
 
 Limitations/next: this commit is tested initialization groundwork, NOT a
 complete cluster depth deployment. The three-treatment matrix, full-data audit

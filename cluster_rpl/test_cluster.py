@@ -39,6 +39,12 @@ class ClusterTests(unittest.TestCase):
         self.cfg = settings(HERE/'config.example.json')
         self.cfg['node'] = 'arwen'
 
+    def test_two_gpu_probe_refuses_execution_outside_slurm(self):
+        from two_gpu_probe import main
+        with patch.dict('os.environ', {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, 'Slurm allocation'):
+                main()
+
     def test_reverse_priority_respects_pretraining_dependencies(self):
         rows = tasks(self.cfg)
         self.assertEqual(len(rows),11)
