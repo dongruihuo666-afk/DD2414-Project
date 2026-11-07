@@ -7,6 +7,65 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Full arwen retirement authorized; prepared, execution blocked by SSH
+
+- Owner clarified that the earlier dataset-only retirement is insufficient:
+  future training will not use arwen. Authorization now covers ALL own files
+  under arwen's `/local_storage/users/hongen`, including old assets, caches,
+  results, checkpoints and empty directories. Shared Home/project/environment
+  and the IDENTICALLY NAMED path on eowyn are separate and must be preserved.
+  Valuable remaining files will first be backed up off arwen; this removes the
+  node-local copies while retaining the previously requested checkpoint history.
+- `cluster_rpl/retire_arwen.py` is a CPU-only retirement entry point pinned to
+  account hongen, physical hostname arwen, one Slurm node and the exact owner
+  root; no arbitrary deletion-path option is exposed. It inventories ownership,
+  mounts, files/directories and symlinks without following links. Any other own
+  queued/running arwen job blocks it. Default mode only inspects. `--execute`
+  copies the ENTIRE remainder to the shared project's already-ignored
+  `fullsize_baseline/runs/arwen_retirement/job-JOBID/files`, checks every file's
+  SHA-256/link/entry list against the original, rechecks source stability and
+  idle state, then removes the owner root and verifies it is absent. Backup
+  manifest/retirement evidence stay on shared storage. A surprising remaining
+  full dataset blocks copying it into the 100-GiB Home quota. Source is not
+  deleted if backup/copy/quota/verification fails. A deletion-time filesystem
+  error can leave partial removal and must be reported as incomplete.
+- Actual tests: `PYTHONPATH=cluster_rpl
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest
+  test_retire_arwen` passed TEN temporary-filesystem checks: actual verified
+  backup/deletion, outside symlink-target preservation, inspection-only mode,
+  refusal to overwrite backups, corruption and source-change failures, active
+  job guards, owner/symlink/special-file rejection, unexpected dataset and wrong
+  node handling. This is NOT evidence of actual arwen deletion.
+- Actual connection probe used the hongen SSH config/key and bounded timeout;
+  it again ended `Timeout, server moria.csc.kth.se not responding`. Earlier
+  debug reached public-key authentication but stalled opening a remote session;
+  owner also reports their existing terminal is stuck. Therefore NO new arwen
+  retirement job has been submitted and the remaining ~2.8-GiB runs/~960-MiB
+  assets have NOT been freshly inventoried or removed. Those sizes and the
+  earlier dataset deletion are historical verified observations. Current DDP
+  progress/utilization cannot be reverified during this access outage.
+- Once access recovers, fast-forward the visible feature clone, verify its
+  clean branch/source and inspect own arwen jobs/quota. Submit the following
+  one-CPU, zero-GPU job FROM MORIA (normal partition/time restrictions apply):
+
+  ```bash
+  cd /Midgard/home/hongen/projects/DD2414-Project
+  sbatch --partition=pdebug --job-name=dd2414-retire-arwen-owner \
+    --nodes=1 --ntasks=1 --nodelist=arwen --cpus-per-task=1 --mem=2G \
+    --time=00:30:00 --chdir=/Midgard/home/hongen/projects/DD2414-Project \
+    --output=/Midgard/home/hongen/projects/DD2414-Project/.cache/retire-arwen-%j.out \
+    --error=/Midgard/home/hongen/projects/DD2414-Project/.cache/retire-arwen-%j.err \
+    --wrap='/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/cluster_rpl/retire_arwen.py --execute'
+  ```
+
+- Next: execute that authorized retirement only after live scope/idle/quota
+  checks, retain the resulting job/backup/hash evidence, verify owner-root
+  absence, and inspect any project remnants outside this known root rather
+  than claiming the whole node was searched already. Do not repeat dataset
+  migration or affect eowyn's two training jobs/queued evaluations. The running
+  training snapshot stays at `a31f9039f9fe`; this helper/docs addition does not
+  modify its model, objective, checkpoint hashes or experiment budget.
+
 ### 2026-11-07 — Repaired five-GPU DDP admitted; both formal jobs now updating
 
 - Memory repair commit `a31f9039f9fe3e265a503a1ffdedc03b71e361a0` was pushed,
