@@ -6,6 +6,16 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
+Actual jobs are now submitted: migration **1250541**, target audit **1250542**,
+source retirement **1250543**, both-model admission **1250544**, formal
+pretraining **1250545 / 1250549**, six GT readouts **1250546–1250548 /
+1250550–1250552**, and final verified backup/cleanup **1250553**. Execution is
+pinned at `e97dace40f3d`; see the current handoff and
+[submission record](artifacts/rpl_random_depth_submission_20261107.json) for
+resources, exact argv and dependencies. Observed state at submission: transfer
+running, downstream jobs waiting for successful dependencies; no formal
+training update is claimed yet.
+
 On 7 November the owner approved staging the dataset from busy arwen to free
 eowyn. A real CPU inspection found eowyn has ten free RTX 3080 GPUs, about
 1,912 GiB local free space, no existing hongen data directory, and the shared

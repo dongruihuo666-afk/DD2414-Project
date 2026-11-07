@@ -7,6 +7,86 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Latest cluster code synchronized; eowyn pipeline actually submitted
+
+- User-authorized push and cluster `git pull --ff-only` succeeded. Reviewed
+  implementation is `e97dace40f3d6270d33cecfc5285d32e3f15c649`; visible cluster
+  clone stays on `experiment/rpl-depth-10sweep-velocity-study`. Queued jobs use
+  immutable execution worktree
+  `/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/e97dace40f3d`.
+  Subsequent handoff-only commits may update the visible clone without changing
+  this execution snapshot or its admission/source digests. DINO cache is linked;
+  the distinct metric depth weight is installed with the pinned SHA-256. The
+  workstation feature checkout remains separate from its unchanged main queue
+  and unrelated staged PDF.
+- Actual target GPU compatibility job **1250540 COMPLETED** on eowyn, with
+  TWO RTX 3080s (9.77 GiB each), torch 2.5.1+cu121/CUDA runtime 12.1. Native
+  BF16, NCCL reduction, finite SGD gradients and DDP parameter synchronization
+  passed on both ranks; GPUs released. This is synthetic compatibility, NOT
+  the new full-model admission, convergence or quality evidence.
+- Actual config: visible cluster `.cache/random_depth_50epochs_20261107.json`;
+  eowyn data `/local_storage/users/hongen/datasets/nuscenes`, runs
+  `/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_20261107`,
+  shared result backup under the visible clone's
+  `fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_20261107`.
+  Shared pinned BEVCar cache was cloned successfully from the old arwen asset.
+- ALL thirteen jobs were accepted; current observed state is migration RUNNING
+  and twelve downstream jobs PENDING / Dependency. No new training epoch or
+  full-model update is verified. Pending GRES requests do NOT allocate GPUs.
+  Exact jobs/dependencies/resources:
+
+  | Phase | Job | Node/resources | Requires success |
+  | --- | --- | --- | --- |
+  | Dataset stream | 1250541 | arwen + eowyn; 2 CPUs/4 GiB EACH; 6 h; 0 GPUs | None |
+  | Target full asset/sensor/split audit | 1250542 | eowyn; 2 CPUs/16 GiB; 30 min | 1250541 |
+  | Retire old arwen dataset | 1250543 | arwen; 1 CPU/2 GiB; 30 min | 1250542 + target evidence guard |
+  | Both new model/resume pilots | 1250544 | eowyn; 5 GPUs/20 CPUs/80 GiB; 40 min | 1250542 |
+  | DINO-only 50 epochs | 1250545 | eowyn; 5 GPUs/20 CPUs/80 GiB; 47 h | 1250544 + both-pilot guard |
+  | DINO-only camera/fused probes, segmentation | 1250546 / 1250547 / 1250548 | eowyn; EACH 1 GPU/4 CPUs/16 GiB; 47 h | 1250545 |
+  | DINO + projected metric depth 50 epochs | 1250549 | eowyn; 5 GPUs/20 CPUs/80 GiB; 47 h | 1250544 + both-pilot guard |
+  | Depth camera/fused probes, segmentation | 1250550 / 1250551 / 1250552 | eowyn; EACH 1 GPU/4 CPUs/16 GiB; 47 h | 1250549 |
+  | Verify durable backup, retire eowyn dataset | 1250553 | eowyn; 1 CPU/2 GiB; 2 h | ALL six readouts + all eight result/backup guards |
+
+- The two pretraining jobs are independent after shared admission; neither
+  waits for the other's 50 epochs. Each group has identical random student,
+  full data, seed/budget/global batch; the only added objective is projected
+  metric teacher supervision in the depth treatment. Frozen probes are ten
+  epochs each, supervised decoder adaptation five, with full 6,019-frame
+  validation and standard GT Vehicle IoU. Their launch wrapper returns 75 on
+  partial completion rather than releasing success dependencies incorrectly.
+- Migration has genuinely entered `STREAMING_DATASET_ARWEN_TO_EOWYN`, with
+  tar checkpoints 500000 and 1000000 observed (roughly 10.24 GB archive output,
+  not a full-data completion claim). Temporary destination is
+  `nuscenes.incoming-1250541`; source has NOT been deleted. No dataset passes
+  through Home or moria. Arwen appears in the NEW graph only for CPU copying
+  and verified source retirement, never for the obsolete GPU experiments.
+- The account-wide inspection is complete: cancelled old IDs 1250363/1250364
+  remain CANCELLED; prior 1250539 audit is COMPLETED and has released its two
+  CPUs. No old queued/held/orphan training tasks remain. New pending jobs above
+  are intentional success dependencies. Other accounts' jobs were not changed.
+- Actual new CPU validation: 21 focused node/path, transfer-admission, cleanup
+  backup/result, partial-readout, pilot and launch tests pass; compilation and
+  diff checks pass. Earlier model implementation had 131 passing CPU checks.
+  Real five-GPU full-model/resume admission is still pending, not substituted
+  by these CPU or synthetic CUDA checks. Raw audit/submission ledgers remain
+  ignored; the scoped permanent record with exact submitted argv is
+  `artifacts/rpl_random_depth_submission_20261107.json`.
+- Monitor from moria: `squeue -u hongen`; transfer stderr is execution-root
+  `.cache/stage-1250541.err`, stdout `.cache/stage-1250541.out`. Audit/pilot
+  logs use `audit-1250542` / `pilot-1250544`; formal logs use
+  `dino_pretrain-1250545` / `depth_pretrain-1250549`, all `.out`/`.err` under
+  that execution cache. Submission ledger is the visible clone's
+  `.cache/random_depth_submission_20261107.json`. Do NOT resubmit duplicate
+  writers or modify the immutable snapshot while jobs reference it.
+- Limits/next: let transfer/audit/pilots advance through Slurm, inspect actual
+  finite model updates before claiming training health, then read full GT
+  results. A partial/failing phase blocks dependent training/cleanup safely.
+  A formal 47-hour signal exit saves state and returns 75; if 50 epochs do not
+  fit, explicit same-config continuation and dependency repair are required.
+  No unbounded automatic requeue, finish-time guarantee or semantic gain claim.
+  Target cleanup cannot delete data before all required results and verified
+  shared backups exist. Workstation data and old/new checkpoints are retained.
+
 ### 2026-11-07 — Full account audit, eowyn staging and explicitly bounded cleanup
 
 - Owner asked to cancel ALL old arwen queues and comprehensively inspect
