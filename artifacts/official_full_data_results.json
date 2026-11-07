@@ -1607,14 +1607,186 @@
         "--checkpoint",
         "/home/students2026/dd2414/fullsize_baseline/runs/official_rgb_full_10sweep_20261103/official_rgb_double_dino_10sweep_velocity_zero_pretrain/checkpoints/latest.pt"
       ],
-      "status": "pending",
-      "config": null,
-      "final_validation": null,
+      "status": "complete",
+      "config": {
+        "data_root": "/home/students2026/datasets/nuscenes",
+        "bevcar_source": "/home/students2026/dd2414/external/BEVCar",
+        "manifest": "/home/students2026/dd2414/configs/radar_scaling_manifest_seed125.json",
+        "run_dir": "/home/students2026/dd2414/fullsize_baseline/runs/official_rgb_full_10sweep_20261103/official_rgb_double_dino_10sweep_velocity_zero_pretrain_object_velocity_readout",
+        "mode": "object-motion",
+        "checkpoint": "/home/students2026/dd2414/fullsize_baseline/runs/official_rgb_full_10sweep_20261103/official_rgb_double_dino_10sweep_velocity_zero_pretrain/checkpoints/latest.pt",
+        "official_camera_checkpoint": "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "teacher_resolution": [
+          448,
+          798
+        ],
+        "velocity_mode": "zero",
+        "probe_location": "fused_bev",
+        "initial_camera_probe": false,
+        "nsweeps": 10,
+        "depth_mode": "none",
+        "epochs": 5,
+        "batch_size": 1,
+        "num_workers": 8,
+        "seed": 125,
+        "learning_rate": 0.0002,
+        "camera_lr": 1e-05,
+        "probe_lr": 0.001,
+        "image_weight": 0.2,
+        "bev_weight": 0.8,
+        "motion_weight": 0.5,
+        "depth_weight": 0.2,
+        "relative_depth_weight": 0.05,
+        "precision": "bf16",
+        "train_samples": 28130,
+        "val_samples": 6019,
+        "experiment": "baseline_multisweep_double_distillation",
+        "source_checkpoint_sha256": "2b4fca73d2a068793de812f498d065add83ec6d95af1451fb04b91aabcf9c2f1",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "bevcar_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac",
+        "official_camera_initialization": {
+          "path": "/home/students2026/dd2414/checkpoints/8x5_5e-4_rgb12_22:43:46/model-000025000.pth",
+          "sha256": "ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e",
+          "tensors": 568,
+          "scope": "encoder.* only; no decoder/fusion weights"
+        },
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "data_protocol": "official 700-scene train / 150-scene validation; no local blind test claim",
+        "camera_probe_pooling": "fixed height mean, 128 channels; fused probe also 128 channels",
+        "image_resize": "Pillow RGB default (checkpoint-era)",
+        "losses": "image_weight * image DINO + bev_weight * radar-soft-masked BEV DINO + motion_weight * radar velocity reconstruction auxiliary; optional depth",
+        "segmentation_readout_loss": "official SimpleLoss(pos_weight=2.13); not legacy class-balanced BCE",
+        "bev_target_radar_age_seconds": 0.1,
+        "radar_depth_target_age_seconds": 0.1,
+        "input_voxel_guard": 7000,
+        "source_code_commit": "08f246e1cd6fd5aa31086babe0bcc53d7c43b326",
+        "frozen_initial_sha256": "e503ac11b3196b85b573411db7db6f369bae8d895166bc9adc9dcbc9a36438b8",
+        "implementation_sha256": {
+          "multisweep_teacher.py": "f353ee41a346e9806b015a87896d73bddcdcaa653cf63f91d2e1143a1dd67a6c",
+          "train_multisweep_teacher.py": "b44cecb44718eab9eb7962755f57bec1111343f44514be5d164a8a380165dd55",
+          "baseline_followup.py": "df8d96a63a33bf539681b639bdc61df394ce37dd9ef04c1898cccb4321e9f65c",
+          "fullsize_training.py": "aaa11ea80a9c8a1239ca1a6d09eb817455bd4dd47230c18d5c5a003c7f087598",
+          "radar_evaluation.py": "a773ac8b0d6958859b77f49293a2016e932c7972ea98c39d2697f4850d202a1b",
+          "radar_scaling_data.py": "2df0b7b5fae687368f05d5f1b1c948f2b9d829e1f722e1250d098d23bae08c35",
+          "training_checkpoint.py": "65a8a99b074e7ac5be26274825ab0acf808bbb29981d5cecc60fb0eafe15d623"
+        },
+        "dino_weight_sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+        "model_data_implementation_sha256": {
+          "nets/segnet.py": "c258c9d17b2b3cdd2a045ad864639cef993672913bb614f5d5c57c18767109b2",
+          "nets/bevcar_voxel_adapter.py": "4602e8682988d0b23e69167bdaeb5d67bc4f88ff8571876c89033f21ce29e3c5",
+          "nets/radar_encoder.py": "11b5b45085f7954d0d453076a6a601a065b3797a0a843ff749013474b66bf4a3",
+          "nuscenesdataset.py": "44c7bfe8c103e78c44c3564a31fb87289fd8ff8bc9a0ac9bd43576fc68aa9209",
+          "utils/vox.py": "e8d1b3b2c56a7cfbb715c0455013c473d0edda7cd3210a9d6b35f0ce9e548f72",
+          "utils/geom.py": "02469a167a55e5ab92e11ca83391f796e46e228f50ff9f536782e96e2072b32f"
+        }
+      },
+      "final_validation": {
+        "samples": 6019,
+        "metrics": {
+          "matched": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.686276872728457,
+              "velocity_rmse_mps": 2.9373443497018803,
+              "speed_mae_mps": 1.5478597574605386
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.4189228292190705,
+              "velocity_rmse_mps": 5.465736667436509,
+              "speed_mae_mps": 4.103389095420631
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.7258823609273884,
+              "velocity_rmse_mps": 1.0774680695431833,
+              "speed_mae_mps": 0.6497132759911898
+            }
+          },
+          "zero_velocity": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.686276872728457,
+              "velocity_rmse_mps": 2.9373443497018803,
+              "speed_mae_mps": 1.5478597574605386
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.4189228292190705,
+              "velocity_rmse_mps": 5.465736667436509,
+              "speed_mae_mps": 4.103389095420631
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.7258823609273884,
+              "velocity_rmse_mps": 1.0774680695431833,
+              "speed_mae_mps": 0.6497132759911898
+            }
+          },
+          "empty": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.9520186800838157,
+              "velocity_rmse_mps": 3.1761883562959494,
+              "speed_mae_mps": 1.7680636965665297
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.695179429742922,
+              "velocity_rmse_mps": 5.724746405275105,
+              "speed_mae_mps": 4.215072150579616
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.9879287207888053,
+              "velocity_rmse_mps": 1.4545230128651623,
+              "speed_mae_mps": 0.9080571216265871
+            }
+          },
+          "wrong_scene": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.9059006613746048,
+              "velocity_rmse_mps": 3.1695719933178803,
+              "speed_mae_mps": 1.735478100878174
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.781320643147183,
+              "velocity_rmse_mps": 5.804683313563494,
+              "speed_mae_mps": 4.350767171852425
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.8953279001801752,
+              "velocity_rmse_mps": 1.3171892301039205,
+              "speed_mae_mps": 0.8163289280513257
+            }
+          }
+        },
+        "baselines": {
+          "zero_prediction": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8083585922993164
+          },
+          "train_mean": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8354531063418549
+          }
+        },
+        "protocol": "Supervised linear readout of frozen BEV features at GT box locations; not detection/mAVE/NDS",
+        "targets": "nuScenes box_velocity from temporal GT annotations; camera-XZ m/s; finite visible vehicles in ROI",
+        "wrong_scene_map": "full validation cross-scene bijection; fixed camera, calibration and GT targets"
+      },
       "progress": {
-        "epoch": null,
-        "update": null,
-        "samples_seen": null,
-        "training_seconds": null
+        "epoch": 5,
+        "update": 140650,
+        "samples_seen": 140650,
+        "training_seconds": 17764.54621569207
       }
     },
     {
