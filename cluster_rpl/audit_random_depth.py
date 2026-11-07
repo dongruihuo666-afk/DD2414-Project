@@ -65,7 +65,7 @@ def main():
     args = parser.parse_args()
     config = load_config(args.config)
     if not os.environ.get('SLURM_JOB_ID') or socket.gethostname().split('.')[0] != config['node']:
-        raise ValueError('Audit requires an arwen CPU Slurm allocation, never login-node compute')
+        raise ValueError('Audit requires a CPU Slurm allocation on the configured data node, never login-node compute')
     if subprocess.check_output(['git', '-C', str(ROOT), 'status', '--porcelain'], text=True).strip():
         raise ValueError('A committed clean deployment is required')
     versions = {name:importlib.metadata.version(name).split('+')[0] for name in
@@ -83,10 +83,14 @@ def main():
         if not (Path(config['data_root'])/record['filename']).is_file():
             raise ValueError('Missing referenced map')
     result = dict(status='passed', settings=config, membership=membership, assets=assets,
+        node=socket.gethostname(), slurm_job_id=os.environ['SLURM_JOB_ID'],
         sensor_files=counts, versions=versions, elapsed_seconds=time.monotonic()-started,
         code_commit=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
         scope='CPU presence/hash/split audit; not bytewise dataset checksums, CUDA admission or blind test')
     write(Path(config['run_root'])/'random_depth_assets_audit.json', result)
+    # Shared evidence lets a separate arwen CPU job retire only the old source
+    # after this node-local destination has passed complete admission.
+    write(ROOT/'.cache/target_random_depth_assets_audit.json', result)
     print(json.dumps(result, indent=2), flush=True)
 
 

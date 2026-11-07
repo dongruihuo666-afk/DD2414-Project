@@ -23,8 +23,8 @@ def load_config(path):
                  'metric_teacher_source', 'metric_teacher_weights']:
         if not Path(config[name]).is_absolute():
             raise ValueError(name + ' must be absolute')
-    if config['node'] != 'arwen' or config['gpus_per_experiment'] not in (2, 5, 10):
-        raise ValueError('Arwen-local data, with 2/5/10 GPUs per experiment; never pad/drop full data')
+    if config['node'] not in ('arwen', 'eowyn', 'galadriel') or config['gpus_per_experiment'] not in (2, 5, 10):
+        raise ValueError('Select a staged Ampere node and 2/5/10 GPUs; never pad/drop full data')
     if config['workers_per_rank'] not in (0, 1, 2) or config['metric_teacher_sha256'] != METRIC_SHA256:
         raise ValueError('Changed loader or unpinned metric teacher')
     if any(key in config for key in ('camera_checkpoint', 'parent_checkpoint', 'parent_sha256')):
@@ -78,7 +78,7 @@ def require_allocation(config, environment, hostname):
             or int(environment.get('SLURM_JOB_NUM_NODES', '0')) != 1
             or int(environment.get('SLURM_CPUS_PER_TASK', '0')) < 4*world
             or not environment.get('SLURM_JOB_GPUS')):
-        raise RuntimeError('Explicit single-node arwen Slurm GPU allocation and four CPUs per rank required')
+        raise RuntimeError('Explicit single-node Slurm GPU allocation on the configured data node and four CPUs per rank required')
 
 
 def require_pilot(config, commit):
@@ -126,7 +126,7 @@ def main():
     world = config['gpus_per_experiment']
     plans = [treatment_plan(config, t) for t in ([args.treatment] if args.treatment else TREATMENTS)]
     print(json.dumps(dict(scope='PREVIEW; no submission or allocation',
-        resources=dict(node='arwen', nodes=1, ntasks=1, gpus=world, cpus_per_task=4*world,
+        resources=dict(node=config['node'], nodes=1, ntasks=1, gpus=world, cpus_per_task=4*world,
                        memory_gib=16*world, time_limit='47:00:00'), treatments=plans), indent=2))
     for plan in plans:
         print('\n# ' + plan['treatment'] + '\n' + shlex.join(plan['pretrain']['argv']))

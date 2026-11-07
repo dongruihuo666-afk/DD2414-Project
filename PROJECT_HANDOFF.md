@@ -7,6 +7,59 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Full account audit, eowyn staging and explicitly bounded cleanup
+
+- Owner asked to cancel ALL old arwen queues and comprehensively inspect
+  cluster changes/waiting work. Actual audit: hongen queue empty; old IDs
+  1250363/1250364 are CANCELLED, 1250362 remains historical FAILED. No cron,
+  at, user systemd timers/jobs, tmux/screen sessions or orphan training workers
+  were found. Login processes are normal SSH/VS Code and this audit itself.
+  One clean project clone, three historical local branches, no extra worktrees
+  and only mamba env `dd2414` were present; `dd2414-hybrid` is absent. Home uses
+  about 14.2/100 GiB. This inventories current own-account state and retained
+  Slurm history, not an impossible reconstruction of previously deleted files.
+- CPU inspections 1250538 (eowyn import/space) and 1250539 (two-node file/process
+  inventory) COMPLETED with zero GPUs. The latter is ONE Slurm allocation with
+  `.extern` and `.0` steps, not three training jobs; duration 2m28s, two CPUs
+  total. Arwen: approximately 397 GiB dataset, 2.8 GiB old runs, 960 MiB model
+  assets, root owned by hongen; no lingering training processes. Eowyn: no own
+  data directory, about 1,912 GiB free, shared torch 2.5.1+cu121 imports. Other
+  users' GPU jobs were only read, never modified. Raw own-account/node audit
+  reports are in the cluster clone's ignored `.cache/cluster_*_20261107.json`.
+- Owner approved migrating to eowyn and explicitly selected deletion of the
+  arwen DATASET only after the destination is verified, then deletion of the
+  eowyn dataset only after experiments finish. Workstation data/checkpoints
+  are retained. The earlier sync helper failed on moria's system Python 3.6
+  BEFORE any mutation; all further login orchestration uses existing Miniforge
+  Python 3.12.10. No system Python/environment change is needed.
+- NEW `stage_random_depth.py` streams the complete dataset inside a CPU-only
+  two-node Slurm allocation, writes to a fresh temporary target, checks
+  extraction and atomically promotes it. No dataset staging into 100-GiB Home,
+  deletion of source, overwrite of existing target, or GPU idle reservation.
+  Pinned BEVCar source is cloned from arwen into the shared cache for eowyn.
+  `random_depth_study.py` accepts staged Ampere nodes arwen/eowyn/galadriel;
+  default example selects eowyn. Model/loss/sampling remains unchanged.
+- `audit_random_depth.py` records actual node/job and mirrors passed admission
+  into the frozen shared execution cache. `cleanup_random_depth.py` can retire
+  the exact hongen source only after matching target transfer/admission; target
+  retirement waits for ALL eight full-data pretraining/GT results and a
+  byte-hash-verified shared run backup. Owner/path/hostname/active-job guards
+  preserve unrelated data and checkpoints. No deletion has occurred yet.
+- `random_depth_readout.py` runs the existing planned frozen camera/fused 1x1
+  probes and full decoder GT adaptation, with partial exit 75 and safe signal
+  forwarding. This enables an automatic end-of-experiments backup/cleanup
+  dependency, rather than prematurely deleting data after pretraining alone.
+  Every readout still requires a completed matching 50-epoch checkpoint.
+- Reproduce CPU checks with the previous interpreter/env and `python -m
+  unittest test_random_depth_migration test_random_depth_pilot
+  test_random_depth_study test_depth_pilot test_depth_study`; also compile new
+  launch/migration/cleanup modules and run `git diff --check`. All 21 targeted
+  CPU tests and static checks pass. Next: push/sync, pin execution snapshot and submit migration,
+  audit, both-pilot admission, both formal pretrains, GT readouts and cleanup
+  with afterok dependencies. Failed/partial phases must preserve data and block
+  downstream work. No GPU admission, transferred target or new epoch is claimed
+  by this preparatory entry; actual IDs/status follow in a deployment entry.
+
 ### 2026-11-07 — Prepare automatic cluster admission and formal submission
 
 - Owner requested pushing the latest code, synchronizing the cluster and

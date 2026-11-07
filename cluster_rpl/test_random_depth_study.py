@@ -30,9 +30,9 @@ class RandomDepthLaunchTests(unittest.TestCase):
         config = load_config(ROOT/'cluster_rpl/random_depth_study.example.json')
         environment = dict(SLURM_JOB_ID='test', SLURM_JOB_NUM_NODES='1',
                            SLURM_JOB_GPUS='0,1,2,3,4', SLURM_CPUS_PER_TASK='20')
-        require_allocation(config, environment, 'arwen')
-        for changes, host in [({}, 'moria'), ({'SLURM_JOB_ID': ''}, 'arwen'),
-                               ({'SLURM_CPUS_PER_TASK': '8'}, 'arwen')]:
+        require_allocation(config, environment, config['node'])
+        for changes, host in [({}, 'moria'), ({'SLURM_JOB_ID': ''}, config['node']),
+                               ({'SLURM_CPUS_PER_TASK': '8'}, config['node'])]:
             with self.assertRaises(RuntimeError):
                 require_allocation(config, dict(environment, **changes), host)
 

@@ -4,6 +4,49 @@ Branch: `experiment/rpl-depth-10sweep-velocity-study`. This replaces the earlier
 three-way, five-epoch warm-start continuation for the NEW cluster experiment.
 The workstation branch/queue and official Simple-BEV path are unchanged.
 
+## Current execution choice: eowyn after validated migration
+
+On 7 November the owner approved staging the dataset from busy arwen to free
+eowyn. A real CPU inspection found eowyn has ten free RTX 3080 GPUs, about
+1,912 GiB local free space, no existing hongen data directory, and the shared
+mamba environment imports torch 2.5.1+cu121 there. The example now selects
+eowyn and a shared, pinned BEVCar source cache. Native BF16/NCCL/full-model
+compatibility still requires the actual target CUDA pilot.
+
+`stage_random_depth.py` runs in a TWO-NODE, CPU-only Slurm batch job on
+arwen/eowyn. It streams a tar archive directly from the arwen batch node into
+an eowyn Slurm step; no 397 GiB dataset is stored in Home or processed by moria.
+Use two CPUs and 4 GiB RAM per node, and a bounded six-hour transfer limit.
+The source remains read-only. Existing target/partial directories are rejected;
+the temporary target is promoted only after successful extraction. The next
+target CPU audit verifies all 2,631,083 references, official split membership
+and teacher/source hashes before any training is admitted.
+
+The owner explicitly chose: retire the arwen dataset AFTER eowyn admission;
+retire the eowyn dataset only AFTER both experiments and all GT evaluations
+complete. `cleanup_random_depth.py --phase source --execute` requires matching
+transfer/audit evidence on the selected target. `--phase target --execute`
+requires both 50-epoch pretrains, both pairs of 10-epoch frozen probes and both
+5-epoch segmentation runs, ALL with final 6,019-frame validation. It then copies
+the whole run tree to `durable_backup_root` under the shared project's
+`fullsize_baseline/runs/`, verifies SHA-256 of every copied file, and only then
+removes the exact owner-scoped local dataset directory. Workstation data,
+old checkpoints and new durable results remain intact. Other own active jobs
+on the cleanup node block removal. Neither cleanup phase follows symlinked
+roots or removes another account's data. Missing/partial results block cleanup.
+
+The submission graph is transfer -> target audit -> pilot -> two independent
+five-GPU formal pretrains -> three single-GPU GT readouts per group -> target
+backup/cleanup. Source cleanup depends only on successful target admission and
+can run on arwen while the new eowyn experiments proceed. Readout launcher
+`random_depth_readout.py` returns 75 for partial training, preserving Slurm
+dependency semantics and forwarding graceful-stop signals to the single trainer.
+
+The older arwen-only command examples below describe the original deployment
+profile. The actual 7 November submission uses eowyn, a frozen execution root,
+dated config/output/backup directories and the recorded job dependency graph;
+do not reuse an old arwen formal config or restart the cancelled old matrix.
+
 ## Two matched experiments
 
 | Setting | DINO-only control | DINO + metric depth experiment |
