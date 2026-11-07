@@ -1,0 +1,210 @@
+{
+  "code_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+  "formal_training_observation": {
+    "source": "CPU-only read of both node-local metrics/config files inside existing allocation 1250637",
+    "dino-only": {
+      "job_id": "1250637",
+      "state": "RUNNING",
+      "verified_update": 56,
+      "epoch_progress": 0.009953785993601137,
+      "loss": 0.782038688659668,
+      "gradient_norm": 0.45750361680984497
+    },
+    "dino-metric-depth-bev": {
+      "job_id": "1250641",
+      "state": "RUNNING",
+      "verified_update": 44,
+      "epoch_progress": 0.007820831852115179,
+      "loss": 1.0407035112380982,
+      "gradient_norm": 0.5271410346031189,
+      "metric_depth_bev": 4.3638042449951175
+    },
+    "persisted_image_resolution": [448, 800],
+    "persisted_nsweeps": 10,
+    "persisted_epochs": 50,
+    "scope": "Finite formal training updates, not held-out validation or semantic performance"
+  },
+  "execution_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+  "collected_unix_time": 1794060855.8760178,
+  "audit": {
+    "status": "passed",
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 2
+    },
+    "membership": {
+      "splits": {
+        "train": {
+          "scenes": 700,
+          "samples": 28130,
+          "logs": 50
+        },
+        "val": {
+          "scenes": 150,
+          "samples": 6019,
+          "logs": 18
+        }
+      },
+      "overlaps": {
+        "scenes": 0,
+        "samples": 0,
+        "logs": 0
+      },
+      "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+    },
+    "assets": {
+      "dino_weight_sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+      "dino_python_tree_sha256": "88b35b92ca99c27c3bd9c650d930f43e78c7e6341fb13ecfffdc26272fbf80a5",
+      "bevcar_voxelnet_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac",
+      "dav2_python_tree_sha256": "80c3e70f62cbf905792dfd8ae1a70f65af69835d78da151425dcf66beec6f81b",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb"
+    },
+    "node": "eowyn",
+    "slurm_job_id": "1250635",
+    "sensor_files": {
+      "referenced": 2631083,
+      "missing": 0,
+      "empty": 0,
+      "unsafe": 0,
+      "examples": []
+    },
+    "versions": {
+      "torch": "2.5.1",
+      "torchvision": "0.20.1",
+      "numpy": "1.23.5",
+      "Pillow": "9.4.0",
+      "nuscenes-devkit": "1.1.11"
+    },
+    "elapsed_seconds": 68.71066875755787,
+    "code_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+    "scope": "CPU presence/hash/split audit; not bytewise dataset checksums, CUDA admission or blind test"
+  },
+  "pilot": {
+    "job_id": "1250636",
+    "status": "passed",
+    "treatments": [
+      {
+        "treatment": "dino-only",
+        "status": "passed",
+        "resumed_update": 3,
+        "world_size": 5,
+        "samples_seen": 15,
+        "changed_float_tensors": 517,
+        "initial_student_sha256": "077315f67731a31e7d1389926d83e2bfdc220d9c4a3a0cf89740a042ab958587",
+        "checkpoint_sha256": "ed008bf76db46b42a4c345333993f34125e67f247a2a2bc06ffca80f3af8b06c",
+        "peak_allocated_gib_rank_zero": 4.786959648132324,
+        "latest": {
+          "bev": 0.989824914932251,
+          "gradient_norm": 1.3028795719146729,
+          "image": 0.9646548271179199,
+          "loss": 0.9847909092903138,
+          "learning_rates": {
+            "camera": 2.009598293636687e-05,
+            "student": 2.009598293636687e-05
+          }
+        },
+        "memory_all_ranks_at_last_save": [
+          {
+            "rank": 0,
+            "peak_allocated_gib": 4.786959648132324,
+            "peak_reserved_gib": 5.322265625,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 1,
+            "peak_allocated_gib": 4.79685115814209,
+            "peak_reserved_gib": 5.330078125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 2,
+            "peak_allocated_gib": 4.783502578735352,
+            "peak_reserved_gib": 5.314453125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 3,
+            "peak_allocated_gib": 4.794347763061523,
+            "peak_reserved_gib": 5.31640625,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 4,
+            "peak_allocated_gib": 4.799733638763428,
+            "peak_reserved_gib": 5.322265625,
+            "device_total_gib": 9.77484130859375
+          }
+        ],
+        "elapsed_seconds": 140.14652211032808,
+        "scope": "Real full-model finite updates and new-process resume, not convergence or semantic accuracy"
+      },
+      {
+        "treatment": "dino-metric-depth-bev",
+        "status": "passed",
+        "resumed_update": 3,
+        "world_size": 5,
+        "samples_seen": 15,
+        "changed_float_tensors": 517,
+        "initial_student_sha256": "077315f67731a31e7d1389926d83e2bfdc220d9c4a3a0cf89740a042ab958587",
+        "checkpoint_sha256": "d62751d1281ef86357c6449f40c5bc579148a3ff9edc44e137e4688609022fb3",
+        "peak_allocated_gib_rank_zero": 4.906514644622803,
+        "latest": {
+          "bev": 0.9898678421974183,
+          "gradient_norm": 1.2720221281051636,
+          "image": 0.9667992472648621,
+          "loss": 1.205897641181946,
+          "metric_depth_bev": 4.412869644165039,
+          "learning_rates": {
+            "camera": 2.009598293636687e-05,
+            "student": 2.009598293636687e-05
+          }
+        },
+        "memory_all_ranks_at_last_save": [
+          {
+            "rank": 0,
+            "peak_allocated_gib": 4.906514644622803,
+            "peak_reserved_gib": 5.45703125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 1,
+            "peak_allocated_gib": 4.916961193084717,
+            "peak_reserved_gib": 5.4609375,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 2,
+            "peak_allocated_gib": 4.904201030731201,
+            "peak_reserved_gib": 5.412109375,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 3,
+            "peak_allocated_gib": 4.914527416229248,
+            "peak_reserved_gib": 5.453125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 4,
+            "peak_allocated_gib": 4.918686866760254,
+            "peak_reserved_gib": 5.419921875,
+            "device_total_gib": 9.77484130859375
+          }
+        ],
+        "elapsed_seconds": 127.63329203613102,
+        "scope": "Real full-model finite updates and new-process resume, not convergence or semantic accuracy"
+      }
+    ]
+  },
+  "scheduler_snapshot": "JobID|JobName|State|Elapsed|ExitCode\n1250635|dd2414-streamed-data-audit|COMPLETED|00:01:22|0:0\n1250635.batch|batch|COMPLETED|00:01:22|0:0\n1250635.extern|extern|COMPLETED|00:01:24|0:0\n1250636|dd2414-streamed-both-pilots|COMPLETED|00:04:32|0:0\n1250636.batch|batch|COMPLETED|00:04:32|0:0\n1250636.extern|extern|COMPLETED|00:04:33|0:0\n1250637|dd2414-streamed-dino-50ep|RUNNING|00:00:36|0:0\n1250637.extern|extern|RUNNING|00:00:36|0:0\n1250641|dd2414-streamed-depth-50ep|RUNNING|00:00:36|0:0\n1250641.extern|extern|RUNNING|00:00:36|0:0\n",
+  "scope": "Real five-GPU finite updates and fresh-process resume in both treatments; not full validation, convergence or semantic performance."
+}

@@ -7,6 +7,68 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Repaired five-GPU DDP admitted; both formal jobs now updating
+
+- Memory repair commit `a31f9039f9fe3e265a503a1ffdedc03b71e361a0` was pushed,
+  remote ref verified, and the clean hongen feature clone fast-forwarded. Actual
+  jobs use NEW immutable snapshot `.cache/deployments/a31f9039f9fe` beneath
+  `/Midgard/home/hongen/projects/DD2414-Project`; later evidence/docs commits
+  must not change this pinned execution source. The initial sync helper hit
+  old Git's unsupported `branch --show-current` before any mutation; using
+  `rev-parse --abbrev-ref HEAD` fixed that orchestration compatibility check.
+- Exactly the nine verified PENDING own jobs 1250545–1250553 were cancelled
+  and replaced. Old dataset migration/audit/source cleanup were NOT rerun.
+  Existing eowyn data, the failed pilot/source and all old checkpoints remain.
+  New settings are `.cache/random_depth_ddp_streamed_20261107.json`; fresh run
+  root is `/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107`;
+  durable backup has the same name under the shared clone's
+  `fullsize_baseline/runs/`. No old checkpoint is resumed with changed hashes.
+- NEW CPU audit **1250635 COMPLETED**: all 2,631,083 referenced sensor files
+  are present/nonempty/safe, exact official 28,130/6,019 train/val membership
+  and zero scene/sample/log overlap, matching model hashes and mamba packages.
+- NEW real-model pilot **1250636 COMPLETED**: BOTH treatments ran optimizer
+  updates 1/2, saved, exited partial intentionally, and completed update 3 in
+  fresh torchrun processes. Full five-rank optimizer/RNG/sampler state passed;
+  517 floating state tensors changed in each resumed update, losses/gradients
+  finite, and both students started with the SAME SHA-256
+  `077315f67731a31e7d1389926d83e2bfdc220d9c4a3a0cf89740a042ab958587`.
+  Across all five ranks, peak PyTorch allocated memory was 4.800 GiB maximum
+  for DINO-only and 4.919 GiB for DINO + metric depth; maximum reserved memory
+  5.330 / 5.461 GiB. Each RTX 3080 exposes 9.775 GiB. These are actual pilot
+  measurements, not predicted savings, convergence or full-validation scores.
+- Both formal jobs started AUTOMATICALLY after shared admission:
+
+  | Experiment/phase | Job | Actual observed state |
+  | --- | --- | --- |
+  | DINO-only, 50 epochs, five-GPU DDP | 1250637 | RUNNING; update 56 verified |
+  | DINO + metric depth, 50 epochs, five-GPU DDP | 1250641 | RUNNING; update 44 verified |
+  | Control camera/fused probes and segmentation | 1250638 / 1250639 / 1250640 | PENDING; after 1250637 |
+  | Depth camera/fused probes and segmentation | 1250642 / 1250643 / 1250644 | PENDING; after 1250641 |
+  | Verified durable backup / eowyn data retirement | 1250645 | PENDING; after ALL six readouts plus result/backup guards |
+
+- A short CPU-only step inside existing job 1250637 read both node-local run
+  files: actual persisted configs are RGB **448x800**, ten sweeps, fifty epochs
+  and the same streamed memory recipe. At the sampled updates, control loss /
+  gradient norm were 0.7820 / 0.4575; depth loss / gradient norm 1.0407 / 0.5271,
+  with depth CE 4.3638. Different total objectives MUST NOT be compared as model
+  quality. Constructor logs print legacy 112x192 BEFORE `load_datasets` sets
+  each actual dataset instance to 448x800; that banner is not the run config.
+- Evidence: `artifacts/rpl_ddp_streamed_submission_20261107.json` records exact
+  submitted argv/dependencies and retired IDs;
+  `artifacts/rpl_ddp_streamed_admission_20261107.json` records full CPU audit,
+  both real pilot/checkpoint hashes, per-rank memory and scheduler snapshot.
+  All 77 CPU regressions, compilation, shell syntax and diff checks passed.
+- Monitor from moria: `squeue -u hongen`; tail `dino_pretrain-1250637.out` or
+  `depth_pretrain-1250641.out` under the NEW execution snapshot's `.cache`.
+  The two jobs use five GPUs, twenty CPUs and 80 GiB RAM EACH; exact per-epoch
+  sample coverage, equal global batch five and original objectives stay fixed.
+  Next: monitor sustained finite updates/first full validation and estimate
+  duration from steady throughput. The 47-hour graceful-stop/partial-exit-75
+  limit remains; explicit same-config continuation/dependency repair is needed
+  if fifty epochs do not fit. No finish-time or semantic improvement guarantee.
+  Target data cannot be deleted before all eight completed full-validation
+  results plus verified durable backup. Workstation queue/data/PDF are unchanged.
+
 ### 2026-11-07 — Repair DDP projection memory without changing the study
 
 - Owner chose to continue DDP. Live checks confirmed migration 1250541 and

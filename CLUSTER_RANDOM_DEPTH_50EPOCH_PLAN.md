@@ -6,6 +6,19 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
+**Repair admitted and training active:** runtime commit `a31f9039f9fe` now uses
+new full-data audit 1250635 and BOTH successful five-GPU/resume pilots 1250636.
+The blocked old jobs 1250545–1250553 were replaced. Formal DINO-only 1250637
+and DINO + metric depth 1250641 are RUNNING (updates 56 and 44 verified at the
+status snapshot). Maximum allocated GPU memory across pilot ranks was
+4.800 / 4.919 GiB, respectively. New run/backup name:
+`random_resnet101_metric_bev_50epochs_ddp_streamed_20261107`. Readouts are
+1250638–1250640 / 1250642–1250644; final guarded backup/cleanup is 1250645.
+See [replacement submissions](artifacts/rpl_ddp_streamed_submission_20261107.json)
+and [actual admission evidence](artifacts/rpl_ddp_streamed_admission_20261107.json).
+The historical attempt below failed before formal training; its data migration
+and verified arwen source retirement succeeded and are not repeated.
+
 **DDP memory repair, 7 November:** migration 1250541, full audit 1250542 and
 authorized arwen source retirement 1250543 completed. The five-GPU full-model
 pilot 1250544 failed with CUDA OOM on its second backward; one control update
