@@ -2431,7 +2431,7 @@ chat transcripts, secrets, or unreviewed generated data.
 ### Official-split full-data runtime
 
 - Changed: compact `artifacts/official_full_data_results.json` and this runtime block.
-- Queue state: `running`; last stage: `official_rgb_double_dino_10sweep_velocity_zero_pretrain_camera_bev_frozen_probe`.
+- Queue state: `running`; last stage: `official_rgb_double_dino_10sweep_velocity_zero_pretrain_fused_bev_frozen_probe`.
 - Reproduce/resume: `bash scripts/start_official_full_data.sh`.
 - Evidence: completed summaries require a successful worker exit and full validation;
   the JSON records exact commands, initialization, epochs and actual metrics.
