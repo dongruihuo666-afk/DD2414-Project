@@ -6,6 +6,20 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
+**DDP memory repair, 7 November:** migration 1250541, full audit 1250542 and
+authorized arwen source retirement 1250543 completed. The five-GPU full-model
+pilot 1250544 failed with CUDA OOM on its second backward; one control update
+was logged, the depth treatment and formal pretraining never started. The nine
+old dependent jobs cannot advance automatically. The repair streams camera
+projection with the same per-channel masked mean and recomputes only stateless
+projection during backward; ResNet/BatchNorm, 448x800 RGB, the BEV grid, 10 sweeps,
+50 epochs and both objectives remain the same. Frozen metric teacher inference
+precedes student activations. A fresh immutable source/config/output admission
+and BOTH real CUDA/resume pilots are required before new formal jobs. Existing
+eowyn data are reused; the old failure evidence is preserved. CPU equivalence
+and saved-tensor tests do not establish GPU fit. The submission below records
+the original attempt and must not be read as live status.
+
 Actual jobs are now submitted: migration **1250541**, target audit **1250542**,
 source retirement **1250543**, both-model admission **1250544**, formal
 pretraining **1250545 / 1250549**, six GT readouts **1250546–1250548 /

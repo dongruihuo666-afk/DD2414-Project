@@ -60,6 +60,10 @@ def metric_config(args, root, initialization):
             scope='Frozen outdoor metric pseudo-depth; not independent ground truth',
             inference='Keep student probability head; discard frozen teachers'),
         warmup_epochs=1., minimum_lr_fraction=.1, milestone_epochs=[5, 10, 20, 30, 40, 50],
+        memory_recipe=dict(camera_lifting='one view at a time; exact channel-wise masked mean',
+            activation_checkpoint='non-reentrant stateless projection only',
+            encoder_batch_norm='unchanged six-view encoder forward; no recomputation',
+            projection_precision='float32; unchanged depth weights and geometry'),
         additional_implementation_sha256={name:digest_file(root/name) for name in files})
     if args.treatment == 'dino-metric-depth-bev':
         import hashlib

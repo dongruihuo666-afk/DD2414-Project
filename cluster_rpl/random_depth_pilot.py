@@ -83,6 +83,7 @@ def run_treatment(config, config_path, treatment):
         initial_student_sha256=after['run_config']['random_student_initialization']['student_state_sha256'],
         checkpoint_sha256=digest(directory/'checkpoints/latest.pt'),
         peak_allocated_gib_rank_zero=status['peak_allocated_gib'], latest=status['latest'],
+        memory_all_ranks_at_last_save=status.get('memory_all_ranks_at_last_save'),
         elapsed_seconds=time.monotonic()-started,
         scope='Real full-model finite updates and new-process resume, not convergence or semantic accuracy')
     write(Path(config['run_root'])/('admission_'+treatment+'.json'), result)

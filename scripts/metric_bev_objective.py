@@ -31,12 +31,15 @@ def metric_pretraining_loss(batch, forward, teacher, depth_teacher, args, device
     # Teacher extraction uses inference tensors in existing utilities; clone
     # targets before autograd needs to save them for the student's backward.
     features, bev, mask = features.clone(), bev.clone(), mask.clone()
+    # Frozen teacher inference must finish before student activations are live.
+    # The teacher is eval-only; this changes memory lifetime, not its targets.
+    depth = (metric_teacher_depth(depth_teacher, batch[0][:, 0], device,
+             args.depth_teacher_resolution) if depth_teacher is not None else None)
     outputs = forward(prepare_bevcar_inputs(batch, device))  # Full velocity; never zeroed.
     parts = dict(image=image_cosine_loss(outputs['image'], features),
                  bev=semantic_loss_batched(outputs['bev'], bev, mask))
     loss = args.image_weight * parts['image'] + args.bev_weight * parts['bev']
     if depth_teacher is not None:
-        depth = metric_teacher_depth(depth_teacher, batch[0][:, 0], device, args.depth_teacher_resolution)
         q = project_teacher_depth(depth, outputs['grid'], outputs['valid'],
                                   outputs['feature_size'], args.metric_depth_sigma)
         parts['metric_depth_bev'] = projected_depth_loss(outputs['log_probability_bev'], q)

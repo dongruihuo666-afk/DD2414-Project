@@ -36,8 +36,9 @@ class BaseVox:
 
 
 class TinyMetricBackbone(nn.Module):
-    def __init__(self):
+    def __init__(self, streamed=False):
         super().__init__()
+        self.streamed = streamed
         self.camera = nn.Conv2d(3, 128, 1)
         self.depth_head = nn.Conv2d(128, 80, 1)
         self.image_head = nn.Conv2d(128, 4, 1)
@@ -47,8 +48,12 @@ class TinyMetricBackbone(nn.Module):
         image = self.camera(inputs)
         wrapper = metric.DepthProbabilityVox(BaseVox(), self.depth_head, retain_geometry)
         identity = torch.eye(4)[None]
-        volume = wrapper.unproject_image_to_mem(image, identity, identity, 3, 1, 1,
-                                                xyz_camA=ray_points((10., 20., 30.)))
+        if self.streamed:
+            volume = wrapper.reduce_camera_features(image, identity, identity, 3, 1, 1,
+                batch_size=1, camera_count=1, xyz_camA=ray_points((10., 20., 30.)))
+        else:
+            volume = wrapper.unproject_image_to_mem(image, identity, identity, 3, 1, 1,
+                                                    xyz_camA=ray_points((10., 20., 30.)))
         self.geometry = wrapper.geometry
         return volume.mean(3), image, None
 
@@ -57,9 +62,9 @@ def metric_gloo_worker(rank, rendezvous):
     torch.set_num_threads(1)
     dist.init_process_group('gloo', init_method=rendezvous, rank=rank, world_size=2)
     try:
-        for supervised in (False, True):
+        for supervised, streamed in ((False, False), (False, True), (True, False), (True, True)):
             torch.manual_seed(125)
-            model = TinyMetricBackbone()
+            model = TinyMetricBackbone(streamed=streamed)
             forward = DistributedDataParallel(objective.MetricPretrainingForward(model, supervised))
             optimizer = torch.optim.AdamW(model.parameters(), lr=2e-4)
             for step in range(2):
@@ -180,8 +185,10 @@ class MetricDepthTests(unittest.TestCase):
             b.load_state_dict(metric.MultiSweepTeacher(TinyStudent()).state_dict(), strict=True)
 
     def test_only_dino_terms_in_control_and_optional_depth_in_treatment(self):
+        calls = []
         class TinyForward:
             def __call__(self, inputs):
+                calls.append('student')
                 value = torch.ones(1, 2, 2, 2, requires_grad=True)
                 return dict(image=value, bev=value, grid=None, valid=None,
                             feature_size=(2, 2), log_probability_bev=value)
@@ -193,14 +200,17 @@ class MetricDepthTests(unittest.TestCase):
             build_targets_from_features_batched=lambda *a, **k: (target, torch.ones_like(target)),
             recent_radar_target_batch=lambda a: a, prepare_bevcar_inputs=lambda *a: (),
             image_cosine_loss=mse, semantic_loss_batched=mse,
-            metric_teacher_depth=lambda *a: target, project_teacher_depth=lambda *a: target,
+            metric_teacher_depth=lambda *a: calls.append('depth-teacher') or target,
+            project_teacher_depth=lambda *a: target,
             projected_depth_loss=lambda *a: torch.tensor(2.))
         with patch.multiple(objective, **dependencies):
             for teacher, expected in [(None, 1.), (object(), 1.1)]:
+                calls.clear()
                 loss, parts, _ = objective.metric_pretraining_loss([torch.zeros(1, 1)], TinyForward(),
                                                                   object(), teacher, args, 'cpu')
                 self.assertAlmostEqual(float(loss), expected, places=6)
                 self.assertEqual(set(parts), {'image', 'bev'} | ({'metric_depth_bev'} if teacher else set()))
+                self.assertEqual(calls, ['depth-teacher', 'student'] if teacher else ['student'])
 
     def test_new_plans_parse_and_require_random_fifty_epoch_protocol(self):
         config = load_config(ROOT/'cluster_rpl/random_depth_study.example.json')

@@ -12,6 +12,7 @@ import sys
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
 
 from baseline_followup import digest_file
 from multisweep_teacher import MultiSweepTeacher, build_model
@@ -95,6 +96,14 @@ class DepthProbabilityVox:
 
     def unproject_image_to_mem(self, features, pixels, cameras, z, y, x,
                                assert_cube=False, xyz_camA=None):
+        volume, geometry = self._project(features, pixels, cameras, z, y, x,
+                                         assert_cube, xyz_camA)
+        self.geometry = geometry
+        return volume
+
+    def _project(self, features, pixels, cameras, z, y, x,
+                 assert_cube=False, xyz_camA=None):
+        # No state mutation here: activation checkpointing replays this function.
         logits = self.head(features).float()
         log_probability = F.log_softmax(logits, dim=1)
         grid, valid = ray_grid(self.base, features, pixels, cameras, z, y, x,
@@ -105,11 +114,59 @@ class DepthProbabilityVox:
         # A tiny floor preserves the legacy nonzero-feature camera visibility
         # mask under probability underflow; geometric validity remains explicit.
         volume = volume * (weights.clamp_min(1e-6) * valid)
+        geometry = None
         if self.retain_geometry:
-            self.geometry = dict(log_probability_bev=sample_ray_volume(
+            geometry = dict(log_probability_bev=sample_ray_volume(
                 log_probability[:, None], grid), grid=grid, valid=valid,
                 feature_size=features.shape[-2:])
-        return volume
+        return volume, geometry
+
+    def reduce_camera_features(self, features, pixels, cameras, z, y, x,
+                               batch_size, camera_count, xyz_camA=None):
+        """Stream the SAME per-channel masked mean; checkpoint stateless lifting.
+
+        Encoder forward/BatchNorm are untouched. Only one view's full volume is
+        materialized per projection, including backward recomputation. Boolean
+        visibility counts and the final denominator preserve legacy zero-cell
+        gradients and EPS; no camera/height/channel is dropped or approximated.
+        """
+        if len(features) != batch_size * camera_count or camera_count < 1:
+            raise ValueError('Packed camera features do not match batch/view counts')
+
+        def project_view(image, pixel, camera, coordinates):
+            volume, geometry = self._project(image, pixel, camera, z, y, x,
+                                              xyz_camA=coordinates)
+            visible = volume.abs() > 0
+            outputs = (volume * visible, visible)
+            if geometry is not None:
+                outputs += (geometry['log_probability_bev'], geometry['grid'], geometry['valid'])
+            return outputs
+
+        numerator, denominator, geometry_parts = None, None, []
+        recompute = torch.is_grad_enabled() and (
+            features.requires_grad or any(p.requires_grad for p in self.head.parameters()))
+        for view in range(camera_count):
+            indices = torch.arange(batch_size, device=features.device) * camera_count + view
+            inputs = (features.index_select(0, indices), pixels.index_select(0, indices),
+                      cameras.index_select(0, indices),
+                      None if xyz_camA is None else xyz_camA.index_select(0, indices))
+            outputs = (checkpoint(project_view, *inputs, use_reentrant=False)
+                       if recompute else project_view(*inputs))
+            contribution, visible = outputs[:2]
+            numerator = contribution if numerator is None else numerator + contribution
+            if denominator is None:
+                denominator = visible.float()
+            else:
+                denominator.add_(visible)
+            if self.retain_geometry:
+                geometry_parts.append(outputs[2:])
+        self.geometry = None
+        if self.retain_geometry:
+            self.geometry = {
+                key: torch.stack([part[i] for part in geometry_parts], dim=1).flatten(0, 1)
+                for i, key in enumerate(('log_probability_bev', 'grid', 'valid'))}
+            self.geometry['feature_size'] = features.shape[-2:]
+        return numerator / (denominator + utils.basic.EPS)
 
 
 class MetricBEVStudent(MultiSweepTeacher):

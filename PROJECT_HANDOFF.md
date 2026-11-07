@@ -7,6 +7,50 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-07 — Repair DDP projection memory without changing the study
+
+- Owner chose to continue DDP. Live checks confirmed migration 1250541 and
+  full target audit 1250542 COMPLETED; source retirement 1250543 COMPLETED and
+  only arwen's authorized dataset was removed. Eowyn data remain available.
+  Five-GPU pilot 1250544 FAILED during the second backward: CUDA requested
+  another 938 MiB on a 9.77-GiB RTX 3080. One control update was logged; the
+  depth treatment and BOTH formal pretrains did not start. Nine dependent jobs
+  1250545–1250553 remain pending and cannot recover from that failed dependency.
+  The older submission entries below are historical, not current run status.
+- `metric_depth_bev.py` now projects one camera at a time and immediately
+  accumulates the SAME per-channel nonzero-masked mean, including its EPS and
+  zero-cell gradient convention. Stateless projection alone uses non-reentrant
+  activation checkpointing; the six-view ResNet forward and BatchNorm updates
+  are untouched. `nets/segnet.py` exposes an opt-in reducer; ordinary Vox objects
+  retain the original official projection path and state-dict keys. No image,
+  depth-bin, BEV-grid, sweep, loss, learning-rate or epoch reduction is applied.
+- `metric_bev_objective.py` runs frozen metric teacher inference before student
+  activations become live; teacher targets and loss location stay unchanged.
+  The strict run config records the memory recipe. Collective checkpoint/status
+  telemetry now records peak allocated/reserved/total memory for EVERY rank in
+  this profile; the pilot report retains it. Old strict checkpoints/source
+  admissions are not silently reused with changed implementation hashes.
+- Reproduce from this branch: `PYTHONPATH=scripts:cluster_rpl
+  CUDA_VISIBLE_DEVICES='' MPLCONFIGDIR=/tmp/dd2414-metric-tests OMP_NUM_THREADS=1
+  MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONWARNINGS=ignore
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest test_metric_memory
+  test_metric_depth_bev test_distributed_training test_depth_objective
+  test_depth_continuation test_random_depth_pilot test_random_depth_study
+  test_random_depth_migration test_depth_pilot test_depth_study
+  test_baseline_followup test_multisweep_teacher test_bevcar_voxel_adapter`.
+  Actual CPU result: 77 tests passed, including output/geometry/input/head
+  gradient equivalence, zero features, frozen inference, local two-rank DDP and
+  checkpoint/resume checks. The six-view fixture saves less than HALF the
+  reference autograd tensor bytes and recomputes individual views in backward;
+  this is NOT a CUDA peak-memory or throughput result.
+- Next: push this scoped fix, make a NEW immutable deployment and fresh matched
+  output/backup roots, rerun full CPU admission on the EXISTING eowyn dataset,
+  then both real five-GPU/resume pilots before releasing formal jobs. Replace
+  only the nine blocked own-account jobs; preserve the failed run/logs and old
+  snapshot. Do NOT remigrate/redelete arwen data. Target cleanup stays gated by
+  all eight completed full-validation results and verified durable backup.
+  Workstation training, original dataset and staged user PDF are unchanged.
+
 ### 2026-11-07 — Latest cluster code synchronized; eowyn pipeline actually submitted
 
 - User-authorized push and cluster `git pull --ff-only` succeeded. Reviewed

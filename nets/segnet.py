@@ -508,15 +508,24 @@ class Segnet(nn.Module):
             xyz_camA = self.xyz_camA.to(feat_camXs_.device).repeat(B*S,1,1)
         else:
             xyz_camA = None
-        feat_mems_ = vox_util.unproject_image_to_mem(
-            feat_camXs_,
-            utils.basic.matmul2(featpix_T_cams_, camXs_T_cam0_),
-            camXs_T_cam0_, Z, Y, X,
-            xyz_camA=xyz_camA)
-        feat_mems = __u(feat_mems_) # B, S, C, Z, Y, X
+        reduce_cameras = getattr(vox_util, 'reduce_camera_features', None)
+        if reduce_cameras is not None:
+            # Opt-in experimental lifting can aggregate views without keeping
+            # all six full feature volumes alive. The official path is below.
+            feat_mem = reduce_cameras(feat_camXs_,
+                utils.basic.matmul2(featpix_T_cams_, camXs_T_cam0_),
+                camXs_T_cam0_, Z, Y, X, batch_size=B, camera_count=S,
+                xyz_camA=xyz_camA)
+        else:
+            feat_mems_ = vox_util.unproject_image_to_mem(
+                feat_camXs_,
+                utils.basic.matmul2(featpix_T_cams_, camXs_T_cam0_),
+                camXs_T_cam0_, Z, Y, X,
+                xyz_camA=xyz_camA)
+            feat_mems = __u(feat_mems_) # B, S, C, Z, Y, X
 
-        mask_mems = (torch.abs(feat_mems) > 0).float()
-        feat_mem = utils.basic.reduce_masked_mean(feat_mems, mask_mems, dim=1) # B, C, Z, Y, X
+            mask_mems = (torch.abs(feat_mems) > 0).float()
+            feat_mem = utils.basic.reduce_masked_mean(feat_mems, mask_mems, dim=1) # B, C, Z, Y, X
 
         if self.rand_flip:
             self.bev_flip1_index = np.random.choice([0,1], B).astype(bool)
@@ -596,7 +605,7 @@ class Segnet(nn.Module):
         if return_shared_bev:
             self.last_forward_shapes = {
                 'image_features_packed': tuple(feat_camXs_.shape),
-                'camera_features_3d': tuple(feat_mems.shape),
+                'camera_features_3d': (B, S, C, Z, Y, X),
                 **(
                     {'radar_features_bev': tuple(radar_bev.shape)}
                     if self.use_radar_encoder else {}
@@ -617,7 +626,7 @@ class Segnet(nn.Module):
 
         self.last_forward_shapes = {
             'image_features_packed': tuple(feat_camXs_.shape),
-            'camera_features_3d': tuple(feat_mems.shape),
+            'camera_features_3d': (B, S, C, Z, Y, X),
             **(
                 {'radar_features_bev': tuple(radar_bev.shape)}
                 if self.use_radar_encoder else {}

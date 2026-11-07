@@ -210,6 +210,8 @@ def run(args):
                 total_updates=total_updates,
                 world_size=world_size,global_batch_size=world_size,
                 peak_allocated_gib=torch.cuda.max_memory_allocated(device)/2**30,**extra)
+            if metric_profile:
+                value['memory_all_ranks_at_last_save'] = progress.get('memory_all_ranks_at_last_save')
             atomic_json_write(value,directory/'status.json')
             return value
 
@@ -217,6 +219,14 @@ def run(args):
             progress['epoch'] = sampler.epoch
             elapsed = rank_zero_call(lambda: prior+time.monotonic()-start)
             progress['wall_seconds'] = elapsed
+            if metric_profile:
+                local_memory = dict(rank=rank,
+                    peak_allocated_gib=torch.cuda.max_memory_allocated(device)/2**30,
+                    peak_reserved_gib=torch.cuda.max_memory_reserved(device)/2**30,
+                    device_total_gib=torch.cuda.get_device_properties(device).total_memory/2**30)
+                memory = [None]*world_size
+                dist.all_gather_object(memory, local_memory)
+                progress['memory_all_ranks_at_last_save'] = memory
             save_ddp_checkpoint(checkpoint,model=backbone,optimizer=optimizer,scaler=scaler,
                 sampler=sampler,progress=progress,config=config,device=device)
 
