@@ -1,0 +1,28 @@
+{
+  "device": "NVIDIA GeForce RTX 3090 Ti",
+  "seed": 125,
+  "total_updates": 8,
+  "interrupt_after": 4,
+  "checkpoint": "artifacts/trainval/checkpoint_resume_smoke/latest.pt",
+  "checkpoint_config_sha256": "d56d91e01e2aee3d36dcc62b8a2d401cc73336b908b2e0e7db767589bd38da09",
+  "resumed_from": {
+    "epoch": 0,
+    "update": 4
+  },
+  "final_sampler": {
+    "seed": 125,
+    "dataset_size": 5,
+    "epoch": 1,
+    "position": 3
+  },
+  "max_parameter_abs_difference": 0.0,
+  "max_loss_abs_difference": 0.0,
+  "tolerance": 1e-07,
+  "parameter_differences": {
+    "0.weight": 0.0,
+    "0.bias": 0.0,
+    "3.weight": 0.0,
+    "3.bias": 0.0
+  },
+  "acceptance": "interrupted AMP training matches uninterrupted training"
+}

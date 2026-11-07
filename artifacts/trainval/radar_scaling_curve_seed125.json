@@ -1,0 +1,733 @@
+{
+  "schema_version": 1,
+  "protocol": {
+    "dataset": "v1.0-trainval",
+    "seed": 125,
+    "radar_sweeps": 1,
+    "updates_per_scale": 30000,
+    "validation_frames": 6019,
+    "validation_scenes": 150,
+    "bootstrap_unit": "scene",
+    "bootstrap_iterations": 10000,
+    "bootstrap_seed": 20261007,
+    "bootstrap_interval": "percentile 95%",
+    "aggregation": "paired per-scene penalties, resampled by scene and weighted by frames, moving frames, or covered cells to match each stored metric"
+  },
+  "scales": [
+    {
+      "label": "64",
+      "train_samples": 64,
+      "source": "artifacts/trainval/radar_scaling_scale64_seed125.json",
+      "validation_samples": 6019,
+      "validation_scenes": 150,
+      "matched": {
+        "semantic_loss": 0.4619944721663349,
+        "motion_loss": 1.586628037981228,
+        "moving_frame_motion_loss": 1.7917287355739235,
+        "cell_weighted_motion_loss": 1.7280931982313064
+      },
+      "penalties": {
+        "semantic_loss": {
+          "zero_velocity": {
+            "estimate": 0.0030410710482685066,
+            "ci95_low": 0.002600501737404795,
+            "ci95_high": 0.003483883724687187,
+            "positive_scenes": 137,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.0021372093752702326,
+            "ci95_low": 0.0014259103818940065,
+            "ci95_high": 0.002855921352481032,
+            "positive_scenes": 101,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.00016728496111828584,
+            "ci95_low": -0.0004977832424089578,
+            "ci95_high": 0.0008402281917519138,
+            "positive_scenes": 74,
+            "eligible_scenes": 150
+          }
+        },
+        "motion_loss": {
+          "zero_velocity": {
+            "estimate": 0.7072207510306479,
+            "ci95_low": 0.6023517800343781,
+            "ci95_high": 0.8166567304231213,
+            "positive_scenes": 143,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.7923215521098532,
+            "ci95_low": 0.707460986319235,
+            "ci95_high": 0.8803648868141276,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.7771463646844894,
+            "ci95_low": 0.6942887577089081,
+            "ci95_high": 0.8628353165992861,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          }
+        },
+        "moving_frame_motion_loss": {
+          "zero_velocity": {
+            "estimate": 0.798641970066317,
+            "ci95_low": 0.6852139087488697,
+            "ci95_high": 0.9173456849404876,
+            "positive_scenes": 143,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.8947436064069803,
+            "ci95_low": 0.8076218041743195,
+            "ci95_high": 0.9821242114678778,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.8776067484119965,
+            "ci95_low": 0.7922631084350865,
+            "ci95_high": 0.9625773070970328,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          }
+        },
+        "cell_weighted_motion_loss": {
+          "zero_velocity": {
+            "estimate": 0.8840402379135495,
+            "ci95_low": 0.7441892198636868,
+            "ci95_high": 1.0298687558906674,
+            "positive_scenes": 140,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.9841039754114376,
+            "ci95_low": 0.8875780932489435,
+            "ci95_high": 1.0839074931428772,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.96961220333263,
+            "ci95_low": 0.8751772481163644,
+            "ci95_high": 1.0673422823631418,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "256",
+      "train_samples": 256,
+      "source": "artifacts/trainval/radar_scaling_scale256_seed125.json",
+      "validation_samples": 6019,
+      "validation_scenes": 150,
+      "matched": {
+        "semantic_loss": 0.3804528085045451,
+        "motion_loss": 1.2564559855135067,
+        "moving_frame_motion_loss": 1.4188759055920819,
+        "cell_weighted_motion_loss": 1.3433194297898483
+      },
+      "penalties": {
+        "semantic_loss": {
+          "zero_velocity": {
+            "estimate": 0.006944446317439346,
+            "ci95_low": 0.006110593873740533,
+            "ci95_high": 0.007759678899537746,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.0097406005459304,
+            "ci95_low": 0.008227725368430975,
+            "ci95_high": 0.011237211155836252,
+            "positive_scenes": 127,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.004495400876613875,
+            "ci95_low": 0.0031868303926471013,
+            "ci95_high": 0.0058156553246068495,
+            "positive_scenes": 111,
+            "eligible_scenes": 150
+          }
+        },
+        "motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.105596931492404,
+            "ci95_low": 0.9458991129224471,
+            "ci95_high": 1.2726095160448583,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.1201031444186396,
+            "ci95_low": 0.97615614111448,
+            "ci95_high": 1.2626349415115805,
+            "positive_scenes": 136,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.1071354517993868,
+            "ci95_low": 0.9656630441428314,
+            "ci95_high": 1.2479962926278776,
+            "positive_scenes": 136,
+            "eligible_scenes": 150
+          }
+        },
+        "moving_frame_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.2485155592219097,
+            "ci95_low": 1.0738770350253397,
+            "ci95_high": 1.429178573196108,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.2648969655264148,
+            "ci95_low": 1.1156595808281329,
+            "ci95_high": 1.4084501130136853,
+            "positive_scenes": 136,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.2502529614222346,
+            "ci95_low": 1.1037240811140887,
+            "ci95_high": 1.392980837367536,
+            "positive_scenes": 136,
+            "eligible_scenes": 150
+          }
+        },
+        "cell_weighted_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.370979961918775,
+            "ci95_low": 1.162169922539582,
+            "ci95_high": 1.5913642983337566,
+            "positive_scenes": 147,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.3800844462331203,
+            "ci95_low": 1.2302050892965153,
+            "ci95_high": 1.5327437194489388,
+            "positive_scenes": 137,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.3690763183445456,
+            "ci95_low": 1.2178610870351225,
+            "ci95_high": 1.5223413346940313,
+            "positive_scenes": 138,
+            "eligible_scenes": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "1024",
+      "train_samples": 1024,
+      "source": "artifacts/trainval/radar_scaling_scale1024_seed125.json",
+      "validation_samples": 6019,
+      "validation_scenes": 150,
+      "matched": {
+        "semantic_loss": 0.314516752393841,
+        "motion_loss": 0.9869428181909358,
+        "moving_frame_motion_loss": 1.1145232312741544,
+        "cell_weighted_motion_loss": 1.0589988468817217
+      },
+      "penalties": {
+        "semantic_loss": {
+          "zero_velocity": {
+            "estimate": 0.003893643714181827,
+            "ci95_low": 0.0032174968363767108,
+            "ci95_high": 0.0045931749884173196,
+            "positive_scenes": 123,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.03330391002743127,
+            "ci95_low": 0.03154895319958202,
+            "ci95_high": 0.03510761898728482,
+            "positive_scenes": 150,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.020926771562625124,
+            "ci95_low": 0.019506196996023,
+            "ci95_high": 0.02234262967271506,
+            "positive_scenes": 149,
+            "eligible_scenes": 150
+          }
+        },
+        "motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.2900760163134066,
+            "ci95_low": 1.117416247906512,
+            "ci95_high": 1.4727484776589719,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.4423731225548622,
+            "ci95_low": 1.2969890801910706,
+            "ci95_high": 1.5870949797720562,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.417649853345031,
+            "ci95_low": 1.2739222792506422,
+            "ci95_high": 1.5595224834453183,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          }
+        },
+        "moving_frame_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.4568419403734325,
+            "ci95_low": 1.2667083210116798,
+            "ci95_high": 1.6575012256057904,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.6288262335192714,
+            "ci95_low": 1.4861519763608266,
+            "ci95_high": 1.773197845691246,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.6009070295091445,
+            "ci95_low": 1.4604527870685884,
+            "ci95_high": 1.7430742786453257,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          }
+        },
+        "cell_weighted_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.5496939669618535,
+            "ci95_low": 1.3257700931585534,
+            "ci95_high": 1.7828193039718057,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.7303535241954886,
+            "ci95_low": 1.5828300134729176,
+            "ci95_high": 1.8843614618223663,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.7049117673872634,
+            "ci95_low": 1.558928522304101,
+            "ci95_high": 1.8572231714185612,
+            "positive_scenes": 146,
+            "eligible_scenes": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "4096",
+      "train_samples": 4096,
+      "source": "artifacts/trainval/radar_scaling_scale4096_seed125.json",
+      "validation_samples": 6019,
+      "validation_scenes": 150,
+      "matched": {
+        "semantic_loss": 0.3025635570178774,
+        "motion_loss": 0.7970694498203225,
+        "moving_frame_motion_loss": 0.9001052567483154,
+        "cell_weighted_motion_loss": 0.8495441906491921
+      },
+      "penalties": {
+        "semantic_loss": {
+          "zero_velocity": {
+            "estimate": 0.0060923268359688865,
+            "ci95_low": 0.00512932008080902,
+            "ci95_high": 0.0071014588603557334,
+            "positive_scenes": 135,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.04281059506130014,
+            "ci95_low": 0.04087488987101534,
+            "ci95_high": 0.04473871235056447,
+            "positive_scenes": 150,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.02853632963789049,
+            "ci95_low": 0.02681434181320599,
+            "ci95_high": 0.03028795765763952,
+            "positive_scenes": 150,
+            "eligible_scenes": 150
+          }
+        },
+        "motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.554770768598912,
+            "ci95_low": 1.3662061220809287,
+            "ci95_high": 1.7495029642761117,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.6247205216504201,
+            "ci95_low": 1.446640875139595,
+            "ci95_high": 1.80070169525399,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.591956716627564,
+            "ci95_low": 1.415487492355244,
+            "ci95_high": 1.7672216269381895,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          }
+        },
+        "moving_frame_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.7557533313690152,
+            "ci95_low": 1.5509335825004626,
+            "ci95_high": 1.9648608189198602,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.8347453695710838,
+            "ci95_low": 1.6558129148232497,
+            "ci95_high": 2.009066733424138,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.7977462434111269,
+            "ci95_low": 1.620024312162043,
+            "ci95_high": 1.9697084132477758,
+            "positive_scenes": 142,
+            "eligible_scenes": 150
+          }
+        },
+        "cell_weighted_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.825745289295593,
+            "ci95_low": 1.5819604630509552,
+            "ci95_high": 2.071240084130428,
+            "positive_scenes": 147,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.9306763046347795,
+            "ci95_low": 1.7560393524413278,
+            "ci95_high": 2.1100760374137884,
+            "positive_scenes": 140,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.8996852795718329,
+            "ci95_low": 1.7239124523824978,
+            "ci95_high": 2.0793165251199364,
+            "positive_scenes": 140,
+            "eligible_scenes": 150
+          }
+        }
+      }
+    },
+    {
+      "label": "full",
+      "train_samples": 28130,
+      "source": "artifacts/trainval/radar_scaling_full_seed125.json",
+      "validation_samples": 6019,
+      "validation_scenes": 150,
+      "matched": {
+        "semantic_loss": 0.30538038182325944,
+        "motion_loss": 0.7963946018635921,
+        "moving_frame_motion_loss": 0.899343172348398,
+        "cell_weighted_motion_loss": 0.852722965416646
+      },
+      "penalties": {
+        "semantic_loss": {
+          "zero_velocity": {
+            "estimate": 0.00428040180318795,
+            "ci95_low": 0.003487574948061128,
+            "ci95_high": 0.005105035453388218,
+            "positive_scenes": 129,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 0.039639266110334026,
+            "ci95_low": 0.03799868558414998,
+            "ci95_high": 0.04130809286672386,
+            "positive_scenes": 150,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 0.024702232097704002,
+            "ci95_low": 0.023220233040936247,
+            "ci95_high": 0.026210655687149084,
+            "positive_scenes": 150,
+            "eligible_scenes": 150
+          }
+        },
+        "motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.5357125427998803,
+            "ci95_low": 1.3450910892518917,
+            "ci95_high": 1.732347309399967,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.6061936188729806,
+            "ci95_low": 1.4385256792415027,
+            "ci95_high": 1.7745473223549846,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.5668981666566455,
+            "ci95_low": 1.398870996182342,
+            "ci95_high": 1.7336896805954038,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          }
+        },
+        "moving_frame_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.7342314812593773,
+            "ci95_low": 1.5254527592498595,
+            "ci95_high": 1.9485509738737585,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.813823525702902,
+            "ci95_low": 1.64523028480925,
+            "ci95_high": 1.9796574920106402,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.769448417468358,
+            "ci95_low": 1.603692410156103,
+            "ci95_high": 1.9354817627557326,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          }
+        },
+        "cell_weighted_motion_loss": {
+          "zero_velocity": {
+            "estimate": 1.805517816122979,
+            "ci95_low": 1.5629313257595079,
+            "ci95_high": 2.0507363243859738,
+            "positive_scenes": 145,
+            "eligible_scenes": 150
+          },
+          "empty": {
+            "estimate": 1.9073002797254377,
+            "ci95_low": 1.738759682221933,
+            "ci95_high": 2.0787963061097403,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          },
+          "wrong_scene": {
+            "estimate": 1.8713744315679954,
+            "ci95_low": 1.7021553134606708,
+            "ci95_high": 2.0418970664337475,
+            "positive_scenes": 144,
+            "eligible_scenes": 150
+          }
+        }
+      }
+    }
+  ],
+  "findings": {
+    "persistent_positive_ci_onset": {
+      "semantic_loss": {
+        "zero_velocity": "64",
+        "empty": "64",
+        "wrong_scene": "256"
+      },
+      "motion_loss": {
+        "zero_velocity": "64",
+        "empty": "64",
+        "wrong_scene": "64"
+      },
+      "moving_frame_motion_loss": {
+        "zero_velocity": "64",
+        "empty": "64",
+        "wrong_scene": "64"
+      },
+      "cell_weighted_motion_loss": {
+        "zero_velocity": "64",
+        "empty": "64",
+        "wrong_scene": "64"
+      }
+    },
+    "peak": {
+      "semantic_loss": {
+        "zero_velocity": {
+          "scale": "256",
+          "estimate": 0.006944446317439346
+        },
+        "empty": {
+          "scale": "4096",
+          "estimate": 0.04281059506130014
+        },
+        "wrong_scene": {
+          "scale": "4096",
+          "estimate": 0.02853632963789049
+        }
+      },
+      "motion_loss": {
+        "zero_velocity": {
+          "scale": "4096",
+          "estimate": 1.554770768598912
+        },
+        "empty": {
+          "scale": "4096",
+          "estimate": 1.6247205216504201
+        },
+        "wrong_scene": {
+          "scale": "4096",
+          "estimate": 1.591956716627564
+        }
+      },
+      "moving_frame_motion_loss": {
+        "zero_velocity": {
+          "scale": "4096",
+          "estimate": 1.7557533313690152
+        },
+        "empty": {
+          "scale": "4096",
+          "estimate": 1.8347453695710838
+        },
+        "wrong_scene": {
+          "scale": "4096",
+          "estimate": 1.7977462434111269
+        }
+      },
+      "cell_weighted_motion_loss": {
+        "zero_velocity": {
+          "scale": "4096",
+          "estimate": 1.825745289295593
+        },
+        "empty": {
+          "scale": "4096",
+          "estimate": 1.9306763046347795
+        },
+        "wrong_scene": {
+          "scale": "4096",
+          "estimate": 1.8996852795718329
+        }
+      }
+    },
+    "full_minus_4096": {
+      "semantic_loss": {
+        "zero_velocity": {
+          "estimate": -0.0018119250327809366,
+          "ci95_low": -0.002334204924940256,
+          "ci95_high": -0.0013091584917483293
+        },
+        "empty": {
+          "estimate": -0.0031713289509661124,
+          "ci95_low": -0.004323967441699738,
+          "ci95_high": -0.0020943358545105727
+        },
+        "wrong_scene": {
+          "estimate": -0.0038340975401864874,
+          "ci95_low": -0.004598802631881121,
+          "ci95_high": -0.0030858226887322863
+        }
+      },
+      "motion_loss": {
+        "zero_velocity": {
+          "estimate": -0.019058225799031714,
+          "ci95_low": -0.05271420226013847,
+          "ci95_high": 0.016998554251731333
+        },
+        "empty": {
+          "estimate": -0.018526902777439513,
+          "ci95_low": -0.057648233503379435,
+          "ci95_high": 0.021980192376966416
+        },
+        "wrong_scene": {
+          "estimate": -0.02505854997091861,
+          "ci95_low": -0.06250885621678087,
+          "ci95_high": 0.014151111724718411
+        }
+      },
+      "moving_frame_motion_loss": {
+        "zero_velocity": {
+          "estimate": -0.02152185010963792,
+          "ci95_low": -0.059247583700511204,
+          "ci95_high": 0.019236546215358107
+        },
+        "empty": {
+          "estimate": -0.020921843868181744,
+          "ci95_low": -0.06483997732713932,
+          "ci95_high": 0.025125453879671338
+        },
+        "wrong_scene": {
+          "estimate": -0.02829782594276886,
+          "ci95_low": -0.07019099227128647,
+          "ci95_high": 0.016154194231103813
+        }
+      },
+      "cell_weighted_motion_loss": {
+        "zero_velocity": {
+          "estimate": -0.020227473172613974,
+          "ci95_low": -0.054278670364982844,
+          "ci95_high": 0.015476571586171127
+        },
+        "empty": {
+          "estimate": -0.023376024909341764,
+          "ci95_low": -0.060320995946771074,
+          "ci95_high": 0.01433027087441613
+        },
+        "wrong_scene": {
+          "estimate": -0.02831084800383743,
+          "ci95_low": -0.06290677082765965,
+          "ci95_high": 0.0076633310191590465
+        }
+      }
+    },
+    "matched_64_to_full": {
+      "semantic_loss": {
+        "scale64": 0.4619944721663349,
+        "full": 0.30538038182325944,
+        "change": -0.15661409034307544
+      },
+      "motion_loss": {
+        "scale64": 1.586628037981228,
+        "full": 0.7963946018635921,
+        "change": -0.790233436117636
+      },
+      "moving_frame_motion_loss": {
+        "scale64": 1.7917287355739235,
+        "full": 0.899343172348398,
+        "change": -0.8923855632255255
+      },
+      "cell_weighted_motion_loss": {
+        "scale64": 1.7280931982313064,
+        "full": 0.852722965416646,
+        "change": -0.8753702328146603
+      }
+    }
+  },
+  "limitations": [
+    "All five points use only training seed 125; scene bootstrap does not measure random-seed or training-run variability.",
+    "The camera encoder is randomly initialized and frozen.",
+    "Semantic and motion losses are diagnostic targets, not vehicle IoU.",
+    "The fixed 30,000-update budget gives smaller subsets more repeated exposure per token than the full-data run."
+  ]
+}

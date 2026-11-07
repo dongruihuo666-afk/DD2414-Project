@@ -1,0 +1,38 @@
+{
+  "dataset": "v1.0-trainval",
+  "seed": 125,
+  "nsweeps": 1,
+  "manifest": "configs/radar_scaling_manifest_seed125.json",
+  "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc",
+  "train_samples": 28130,
+  "train_scenes": 700,
+  "val_samples": 6019,
+  "val_scenes": 150,
+  "scale_unique_scenes": {
+    "64": 64,
+    "256": 256,
+    "1024": 700,
+    "4096": 700,
+    "full": 700
+  },
+  "stream_scale": "1024",
+  "checked_batches": 512,
+  "radar_points": 221173,
+  "elapsed_seconds": 50.922957976930775,
+  "batches_per_second": 10.054404149734337,
+  "baseline_allocated_mib": 0.0,
+  "final_allocated_mib": 0.0,
+  "baseline_reserved_mib": 0.0,
+  "final_reserved_mib": 0.0,
+  "periodic_allocated_mib": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "acceptance": "512+ batches streamed with no retained CUDA allocation growth"
+}

@@ -1,0 +1,49 @@
+{
+  "baseline": {
+    "fusion_weight": 1.0,
+    "image_weight": 1.0,
+    "heldout_fusion_mean": 0.5557348132133484,
+    "no_radar_fusion_mean": 0.5610334873199463,
+    "radar_penalty_mean": 0.0052986741065979,
+    "heldout_image_mean": null,
+    "train_last_cycle_mean": 0.19837211072444916,
+    "train_seconds": 9.864230842000012
+  },
+  "image_distill": {
+    "fusion_weight": 1.0,
+    "image_weight": 1.0,
+    "heldout_fusion_mean": 0.5342186689376831,
+    "no_radar_fusion_mean": 0.5382526516914368,
+    "radar_penalty_mean": 0.004033982753753662,
+    "heldout_image_mean": 0.5750337839126587,
+    "train_last_cycle_mean": 0.6445485204458237,
+    "train_seconds": 9.104300731999999
+  },
+  "dual_08_camera_02_radar": {
+    "fusion_weight": 0.2,
+    "image_weight": 0.8,
+    "heldout_fusion_mean": 0.556441605091095,
+    "no_radar_fusion_mean": 0.5653689503669739,
+    "radar_penalty_mean": 0.008927345275878906,
+    "heldout_image_mean": 0.5774621963500977,
+    "train_last_cycle_mean": 0.394051194190979,
+    "train_seconds": 9.510556015000006
+  },
+  "dual_02_camera_08_radar": {
+    "fusion_weight": 0.8,
+    "image_weight": 0.2,
+    "heldout_fusion_mean": 0.5837671756744385,
+    "no_radar_fusion_mean": 0.5896829962730408,
+    "radar_penalty_mean": 0.005915820598602295,
+    "heldout_image_mean": 0.5931339263916016,
+    "train_last_cycle_mean": 0.26080501824617386,
+    "train_seconds": 9.452627256999989
+  },
+  "meta": {
+    "train_samples": 4,
+    "val_samples": 4,
+    "steps": 60,
+    "learning_rate": 0.0002,
+    "seed": 125
+  }
+}

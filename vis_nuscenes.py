@@ -353,7 +353,7 @@ def main(
         do_shuffle_cams=False,
         get_tids=True,
     )
-    dataloader.dataset.data_root = os.path.join(data_dir, dset)
+    dataloader.dataset.data_root = dataloader.dataset.dataroot
     iterloader = iter(dataloader)
 
     # set up model & seg loss
