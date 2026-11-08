@@ -34,7 +34,7 @@
     "probe_learning_rate": 0.001,
     "finetune_learning_rate": 0.0001
   },
-  "queue_status": "running",
+  "queue_status": "complete",
   "engineering_checks": {
     "2": "passed",
     "3": "passed"
