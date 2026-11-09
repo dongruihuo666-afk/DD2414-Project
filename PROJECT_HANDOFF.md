@@ -7,6 +7,58 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-09 — Prepare exact-state worker-free recovery of both experiments
+
+- Owner directs attention to our experiments rather than investigating the
+  cluster outage. The active repair targets our confirmed 80-GiB host-memory
+  failures only. `cluster_rpl/recovery_checkpoint.py` prepares FRESH checkpoint
+  copies with exactly TWO config changes: `num_workers: 2 -> 0` and the new
+  output directory. Old failed outputs/checkpoints stay untouched. It validates
+  all original model/data/training implementation digests, schema, fifty-epoch
+  full-data budget and five-rank cursors, then hashes ALL non-config state before
+  and after real serialization: model, optimizer, scalers, progress, sampler,
+  per-rank RNG and BN. An external `runtime_migration.json` records old/new file
+  and config hashes plus the allowed changes; config hashes are recomputed for
+  those honest runtime settings, never rewritten to hide model/source changes.
+- `cluster_rpl/recover_random_depth.py` controls preparation, real recovery
+  admission, pretraining and GT readouts. The TRAINER remains the original
+  clean immutable `a31f9039f9fe` snapshot, so no model/optimizer/loss code is
+  changed. Both groups use ZERO additional DataLoader processes per rank,
+  preventing the previous ten extra worker processes per five-GPU experiment.
+  This tests the metadata-replication hypothesis; long-run host-RAM stability
+  still requires measurement. Seeded per-sample CPU augmentation is unchanged.
+- Admission starts at saved updates 2250/3000, runs another 100 updates, then
+  resumes in a fresh process for update 2351/3101. It requires finite learned
+  state/gradients, exact contiguous new logs, preserved five-rank progress and
+  measured host peak below 90% of the actual Slurm cgroup limit. The controller
+  samples its OWN cgroup RAM and allocated GPU activity/VRAM every two seconds;
+  a steady training window yields samples/s. Both treatment reports must pass
+  the new recovery gate. Original fresh-initialization update-three admission
+  reports are NOT fabricated or reused for this different continuation test.
+- The recovery uses a new root, preserving uncheckpointed old JSONL/TensorBoard
+  tails. No old logged-but-unsaved update is counted as resumed progress.
+  Scientific settings stay random student, RGB 448x800, ten sweeps with velocity,
+  the same two DINO objectives/optional metric depth, global batch five,
+  optimizer/LR state and FIFTY TOTAL epochs including completed sample visits.
+  Frozen camera/fused probes and supervised segmentation retain 10/10/5 epochs
+  and full GT validation. No batch-size increase is bundled into this repair.
+- Tests: `PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES=''
+  MPLCONFIGDIR=/tmp/dd2414-recovery-tests OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+  OPENBLAS_NUM_THREADS=1 PYTHONWARNINGS=ignore
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest
+  test_recovery_checkpoint test_distributed_training test_random_depth_study
+  test_random_depth_migration test_training_checkpoint test_metric_memory`:
+  **33 CPU tests passed**, including actual checkpoint roundtrip, corruption/
+  state/hash rejection, old-source command mapping, both-treatment gate and
+  real zero-versus-two-worker deterministic sample equivalence. Compilation,
+  CLI help and diff checks pass. This is not actual CUDA/RAM admission yet.
+- Next: push/pin the new CONTROLLER, prepare and audit the new eowyn outputs
+  with zero GPUs, run both real five-GPU recovery segments under RAM telemetry,
+  then replace only the seven failed-dependency own jobs with admitted formal
+  continuations, GT readouts and guarded final cleanup. Keep arwen retired and
+  the original trainer snapshot untouched. No system setting, external user's
+  job or global cluster diagnostic is part of this task.
+
 ### 2026-11-09 — Access restored, complete arwen retirement verified, host-RAM failures identified
 
 - User reported the cluster repaired; hongen login and commands now work.
