@@ -7,6 +7,42 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-09 — Measured worker-free RAM floor; retry admission with 128-GiB jobs
+
+- Actual worker-free preparation/full CPU audit **1250692 COMPLETED** in 91 s:
+  both real checkpoints were copied with non-config resume-state hash equality,
+  unchanged trainer/model digests and the complete original dataset admission.
+  New root is
+  `/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109`;
+  settings are shared `.cache/random_depth_workers0_resume_20261109.json`.
+- Actual five-GPU test **1250693** successfully ran control updates 2251–2350
+  and a fresh-process update 2351. It then deliberately FAILED the headroom
+  gate (`Insufficient verified host-memory headroom`), rather than releasing
+  formal training. Sampled host RAM was already 73.7–75.6 GiB against an 80-GiB
+  limit; reducing workers alone does not make five full SDK replicas small.
+  No new CUDA/model error is established by this guarded failure. The new
+  2351 checkpoint/logs are preserved; depth remains at inherited update 3000.
+- Recovery admission now reads each actual saved starting cursor, retains ALL
+  already committed pilot progress, checks contiguous logs from the original
+  migrated cursor and runs another 100+1 fresh-process segment. The gate records
+  original parent AND actual pilot-start counters, validates both real partial
+  exits and actual RAM headroom. It never rewinds to discard the first trial.
+  This changes the recovery controller only; the original immutable trainer,
+  model, data/teacher hashes and scientific settings remain unchanged.
+- Next allocations request **128 GiB host RAM per five-GPU group**, with the
+  same twenty CPUs, local/global batch 1/5, worker count zero and dataset/budget.
+  This is a Slurm job resource request, not a system/cluster configuration
+  change. The current 80-GiB trial has ended; no training jobs are silently
+  duplicated. Both treatments must pass the same new admission before formal
+  work. Existing CPU data audit remains valid for the unchanged old trainer and
+  exact public runtime settings; the new controller gets its own pinned source.
+- Tests: the previous recovery/distributed/protocol/checkpoint/projection
+  command now passes **34 CPU tests**, including a real serialization roundtrip,
+  deterministic 0/2-worker samples, progress-preserving admission retry, and
+  refusal of inadequate measured RAM headroom. This is not a 128-GiB CUDA
+  admission claim. Retired arwen paths and old failed checkpoints remain intact
+  in their verified backups; only our eowyn continuation is being repaired.
+
 ### 2026-11-09 — Prepare exact-state worker-free recovery of both experiments
 
 - Owner directs attention to our experiments rather than investigating the

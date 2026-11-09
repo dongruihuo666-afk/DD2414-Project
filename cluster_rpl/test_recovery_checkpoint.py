@@ -117,13 +117,30 @@ class RecoveryCheckpointTests(unittest.TestCase):
     def test_gate_requires_both_matching_real_resume_segments(self):
         cfg=dict(run_root=str(self.root),recovery=dict(expected_updates=dict(zip(recovery.TREATMENTS,(2250,3000)))))
         report=dict(status='passed',settings=cfg,controller_commit='controller',treatments={
-            name:dict(status='passed',parent_update=start,resumed_update=start+101)
+            name:dict(status='passed',parent_update=start,pilot_initial_update=start,resumed_update=start+101,
+                initial_segment=dict(exit_code=75,host_peak_gib=75.,host_limit_gib=128.),
+                fresh_process_segment=dict(exit_code=75,host_peak_gib=76.,host_limit_gib=128.))
             for name,start in cfg['recovery']['expected_updates'].items()})
         path=self.root/'worker_free_recovery_passed.json'
         path.write_text(json.dumps(report))
         with patch.object(recovery,'commit',return_value='controller'):
             recovery.require_admission(cfg)
             report['treatments']['dino-only']['resumed_update']=2251
+            path.write_text(json.dumps(report))
+            with self.assertRaises(ValueError): recovery.require_admission(cfg)
+
+    def test_memory_retry_preserves_already_committed_pilot_progress(self):
+        cfg=dict(run_root=str(self.root),recovery=dict(expected_updates=dict(zip(recovery.TREATMENTS,(2250,3000)))))
+        report=dict(status='passed',settings=cfg,controller_commit='controller',treatments={
+            name:dict(status='passed',parent_update=origin,pilot_initial_update=origin+101,resumed_update=origin+202,
+                initial_segment=dict(exit_code=75,host_peak_gib=78.,host_limit_gib=128.),
+                fresh_process_segment=dict(exit_code=75,host_peak_gib=79.,host_limit_gib=128.))
+            for name,origin in cfg['recovery']['expected_updates'].items()})
+        path=self.root/'worker_free_recovery_passed.json'
+        path.write_text(json.dumps(report))
+        with patch.object(recovery,'commit',return_value='controller'):
+            recovery.require_admission(cfg)
+            report['treatments']['dino-only']['initial_segment']['host_limit_gib']=80.
             path.write_text(json.dumps(report))
             with self.assertRaises(ValueError): recovery.require_admission(cfg)
 

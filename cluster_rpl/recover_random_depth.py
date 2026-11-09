@@ -189,8 +189,11 @@ def inspect(cfg,treatment,expected):
     import torch
     directory=Path(cfg['run_root'])/treatment/'pretrain'
     value=torch.load(directory/'checkpoints/latest.pt',map_location='cpu',weights_only=False)
+    if expected is None: expected=value['progress']['update']
     if value['progress']['update']!=expected or value['progress']['samples_seen']!=expected*5:
         raise ValueError('Unexpected resumed progress')
+    if not cfg['recovery']['expected_updates'][treatment]<=expected<=281300:
+        raise ValueError('Recovery cursor lies outside the inherited total budget')
     if (value['run_config']['num_workers']!=0 or value['world_size']!=5
             or value['run_config']['epochs']!=50 or len(value['distributed_state'])!=5):
         raise ValueError('Recovery altered the scientific budget or loader recipe')
@@ -215,9 +218,15 @@ def require_admission(cfg):
     for treatment in TREATMENTS:
         result=data['treatments'][treatment]
         parent=cfg['recovery']['expected_updates'][treatment]
+        start=result.get('pilot_initial_update',-1)
         if (result.get('status')!='passed' or result.get('parent_update')!=parent
-                or result.get('resumed_update')!=parent+101):
+                or start<parent or result.get('resumed_update')!=start+101):
             raise ValueError('Incomplete/non-matching recovery admission')
+        for name in ('initial_segment','fresh_process_segment'):
+            segment=result.get(name,{})
+            if (segment.get('exit_code')!=75 or segment.get('host_limit_gib',0)<=0
+                    or not 0<segment.get('host_peak_gib',0)<.9*segment['host_limit_gib']):
+                raise ValueError('Missing actual finite-update/host-memory admission')
 
 
 def main():
@@ -253,8 +262,12 @@ def main():
         raise SystemExit(code)
     results={}
     for treatment in TREATMENTS:
-        start=cfg['recovery']['expected_updates'][treatment]
-        before=inspect(cfg,treatment,start)
+        origin=cfg['recovery']['expected_updates'][treatment]
+        before=inspect(cfg,treatment,None)
+        start=before['progress']['update']
+        directory=Path(cfg['run_root'])/treatment/'pretrain'
+        if last_update(directory,origin)!=start:
+            raise ValueError('Archive/reconcile uncheckpointed log tails before a recovery retry')
         del before
         code,first=run_child(cfg,treatment,stop=start+100)
         if code!=75: raise RuntimeError('First recovery segment failed: '+treatment)
@@ -263,7 +276,7 @@ def main():
         if code!=75: raise RuntimeError('Fresh-process recovery segment failed: '+treatment)
         after=inspect(cfg,treatment,start+101)
         rows=[json.loads(x) for x in (Path(cfg['run_root'])/treatment/'pretrain/metrics.jsonl').read_text().splitlines()]
-        if [x['update'] for x in rows]!=list(range(start+1,start+102)):
+        if [x['update'] for x in rows]!=list(range(origin+1,start+102)):
             raise ValueError('Recovery replayed/skipped a logged update')
         if not all(math.isfinite(x['loss']) and math.isfinite(x['gradient_norm']) for x in rows):
             raise ValueError('Non-finite recovery loss/gradient')
@@ -271,7 +284,7 @@ def main():
             raise ValueError('No learned state changed on resume')
         if max(first['host_peak_gib'],second['host_peak_gib'])>=.9*first['host_limit_gib']:
             raise RuntimeError('Insufficient verified host-memory headroom')
-        results[treatment]=dict(status='passed',parent_update=start,resumed_update=start+101,
+        results[treatment]=dict(status='passed',parent_update=origin,pilot_initial_update=start,resumed_update=start+101,
             initial_segment=first,fresh_process_segment=second)
         print('RECOVERY_TREATMENT_PASSED '+json.dumps(dict(treatment=treatment,**results[treatment])),flush=True)
         del before,after
