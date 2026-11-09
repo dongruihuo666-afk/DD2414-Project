@@ -7,6 +7,83 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-09 — Access restored, complete arwen retirement verified, host-RAM failures identified
+
+- User reported the cluster repaired; hongen login and commands now work.
+  The clean visible feature clone was fast-forwarded to `f26ae51`; execution of
+  the reviewed retirement helper was pinned to NEW immutable worktree
+  `.cache/deployments/f26ae519bfa9` under the shared project. Training source
+  `.cache/deployments/a31f9039f9fe` was NOT modified. Main workstation training
+  and the unrelated staged PDF remain untouched.
+- The previously authorized COMPLETE arwen retirement has ACTUALLY finished.
+  CPU-only inspection **1250688 COMPLETED** found 180 owner-root entries,
+  3,911,261,426 logical file bytes (~3.64 GiB), and seven own old TorchElastic
+  directories under `/tmp`. No own arwen job was running or queued. Home used
+  14,661 MiB of its 100-GiB quota before backup. The remaining owner root was
+  old assets, runs and the empty dataset parent; the full dataset was already
+  absent, as expected from the earlier successful source retirement.
+- CPU-only execution **1250689 COMPLETED** in 44 seconds. It used the tested
+  `retire()` implementation to back up, hash-verify and delete the exact
+  `/local_storage/users/hongen` on ARWEN plus the seven explicitly inventoried,
+  own `/tmp/torchelastic_*` paths. Guards also checked own process working
+  directories/open FDs and own Slurm jobs before each deletion. No outside
+  symlink target, other user's data, shared Home, or eowyn path was deleted.
+  Backup root:
+  `/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/arwen_retirement/job-1250689`.
+  Original owner-root files are under `owner-root/files`, with the SHA-256 entry
+  manifest beside them; temporary directories are archived under `temporary`.
+- Independent CPU-only verification **1250690 COMPLETED**: all EIGHT source
+  paths are absent and every archived file/link/directory entry matches its
+  saved manifest after a fresh SHA-256 pass. Common locations `/local_storage`,
+  `/local_storage/users`, `/tmp`, `/var/tmp`, `/dev/shm` had no remaining top-level
+  entries owned by hongen in the execution report. This verifies known personal
+  storage and common temporary locations, not an unrestricted whole-system scan.
+  The root deletion's observed local free-space increase was 3,911,823,360 bytes,
+  plus seven 20,480-byte temporary-directory deltas. Shared durable backups are
+  retained, NOT Git-tracked; no new dataset migration was performed.
+- Training diagnosis is now CURRENT: **1250637 and 1250641 are OUT_OF_MEMORY**,
+  after 22m47s and 35m21s respectively on 7 November. Both stderr files contain
+  Slurm `oom-kill` events in the batch cgroup; this is HOST memory exhaustion
+  against each job's 80-GiB RAM request, not evidence of a new CUDA allocator
+  OOM. Slurm recorded MaxRSS 81,509,140 / 81,456,884 KiB. GPU allocation peaks
+  in the saved telemetry remained about 4.86 / 4.99 GiB. Control stderr also
+  reports failed name resolution for `slurmctl1.rpl`; whether the separate
+  login/controller outage was caused by our jobs remains UNRESOLVED.
+- CPU-only eowyn checkpoint audit **1250691 COMPLETED**: dataset metadata remains
+  present; both latest checkpoints have finite model/optimizer tensors and all
+  five acknowledged rank cursors. Control can resume at update **2250**, 11,250
+  samples (~0.400 epoch); depth treatment at **3000**, 15,000 samples (~0.533
+  epoch). Last LOGGED updates 2425/3075 are newer than the saved checkpoints and
+  must not be reported as durable resume positions. Neither has finished one
+  epoch/full validation. Their old `status.json` still says `running` because
+  rank zero was killed; it is STALE and scheduler accounting takes precedence.
+- No GPU training job was restarted. Six readouts 1250638–1250640 /
+  1250642–1250644 now show `DependencyNeverSatisfied`; final eowyn backup/cleanup
+  1250645 remains pending on those readouts, and cannot delete the training
+  dataset. No real-time training GPU-utilization benchmark is meaningful while
+  the jobs are stopped. The prior logged five-GPU training-only throughput was
+  ~9.94 / 7.65 samples/s; this is historical cumulative telemetry, not a new
+  steady-window utilization measurement or proof that a larger batch is faster.
+- Reproduction/evidence: `artifacts/rpl_recovery_arwen_retirement_20261109.json`
+  contains preflight, actual deletion argv, resource limits, complete retirement
+  and independent verification reports, checkpoint counters, memory/error
+  accounting, quota and final queue snapshot. Ten `test_retire_arwen` temporary-
+  filesystem tests passed again before execution. All four recovery jobs used
+  ZERO GPUs and one CPU each; arwen jobs used 2 GiB RAM, checkpoint inspection
+  4 GiB. They completed and released their allocations.
+- Next: investigate total HOST/cgroup memory and per-rank DataLoader workers
+  before any larger-batch or long GPU restart. Multiprocess nuScenes metadata
+  replication is a candidate, not yet an established root cause. Preserve the
+  two intact checkpoints and original source/config; changing worker settings
+  requires an explicitly recorded, tested restart compatibility path because
+  strict checkpoint config hashes include them. Then repair the failed Slurm
+  dependencies and reconcile/archive uncheckpointed JSONL/TensorBoard tails
+  before resuming, to avoid duplicate rows after the saved update boundary.
+  Measure sustained RAM/VRAM/throughput during resumed work.
+  Administrator outage cause/new resource rules have been requested but are
+  not yet provided. Full-data architecture, fifty-epoch budget and objectives
+  remain unchanged. The previous blocked-retirement entries below are history.
+
 ### 2026-11-07 — Full arwen retirement authorized; prepared, execution blocked by SSH
 
 - Owner clarified that the earlier dataset-only retirement is insufficient:

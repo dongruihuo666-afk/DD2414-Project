@@ -6,6 +6,19 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
+**9 November recovery:** access works again. The two original formal jobs
+1250637/1250641 are now verified OUT_OF_MEMORY from HOST-RAM cgroup kills at
+their 80-GiB limits; neither is still training. Their intact five-rank latest
+checkpoints retain updates 2250/3000 (~0.400/~0.533 epoch). Old local status files
+claiming `running` are stale. The six GT readouts are blocked by failed parents;
+eowyn data remain present and final cleanup cannot run. Fix/profile host memory
+before restarting or changing batch size; current idle GPU statistics cannot
+answer training-efficiency questions. Complete arwen owner-root and seven stale
+TorchElastic directory retirement is independently verified, with durable
+backup under `fullsize_baseline/runs/arwen_retirement/job-1250689`. See the
+[actual recovery evidence](artifacts/rpl_recovery_arwen_retirement_20261109.json)
+and latest handoff. No training model, objective or budget was changed.
+
 **Repair admitted and training active:** runtime commit `a31f9039f9fe` now uses
 new full-data audit 1250635 and BOTH successful five-GPU/resume pilots 1250636.
 The blocked old jobs 1250545–1250553 were replaced. Formal DINO-only 1250637
