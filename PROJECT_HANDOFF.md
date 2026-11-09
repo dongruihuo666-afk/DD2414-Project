@@ -7,6 +7,40 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-09 — Actual recovery and automatic continuation graph verified
+
+- [Actual recovery evidence](artifacts/rpl_worker_free_recovery_20261109.json)
+  records checkpoint/state hashes, full-data CPU audit, both real CUDA/RAM
+  admissions, exact submission argv, measured telemetry and current queue.
+  Latest verified control/depth status was **3850 / 4250 updates**, approximately
+  **0.684 / 0.755 of the first epoch**; both are RUNNING, not completed results.
+- Bounded continuations **1250704 / 1250705** were actually submitted from
+  immutable helper source `012b653fe8b5`. They depend on `afterany` current
+  pretrains 1250695 / 1250699. The helper permits only completed/full-validation
+  no-op or a committed `FAILED|75:0` partial resume, and delegates to unchanged
+  admitted controller `aec677657cd0` / trainer `a31f9039f9fe`. Both immutable
+  Git revisions and clean worktrees were independently checked after submission.
+- All SIX own pending readout dependencies were actually changed and checked:
+  1250696/1250697/1250698 now require successful 1250704; 1250700/1250701/1250702
+  require successful 1250705. Final backup/cleanup 1250703 still requires ALL
+  six readouts. Current queue is TWO running pretrains plus NINE dependent jobs
+  (two continuations, six GT evaluations, one guarded backup/cleanup). It is
+  not eleven concurrent training jobs. No other user's job was changed.
+- Tests: **40 CPU tests passed**, including real multi-process Gloo checkpoint
+  resume and worker equivalence; six added continuation checks cover exit 75,
+  cancellation/OOM refusal, full final-validation coverage and unchanged epoch
+  budget. Compilation, JSON parsing, exact queue dependency assertions and
+  diff checks pass. The first sandbox-only run's restricted sockets/shared
+  memory were resolved by running the SAME CPU command outside the sandbox.
+- Reproduction/settings and immutable execution paths are recorded in the
+  evidence artifact and preceding handoff entry. No new model or source edit
+  is needed to let the queue continue; do not manually duplicate these jobs.
+  Next: monitor epoch validation/host RAM and collect the two frozen probes
+  plus full segmentation metrics per group. A second partial allocation or
+  other failure blocks evaluations for inspection; no infinite retry, extra
+  epoch or early data deletion is enabled. The existing 47-hour segments give
+  at most 94 allocation hours/group, not a guarantee of finishing in that time.
+
 ### 2026-11-09 — Both worker-free groups admitted and running; bounded continuation prepared
 
 - Actual 128-GiB recovery admission **1250694 COMPLETED** in 7m06s. Each

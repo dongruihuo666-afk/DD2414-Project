@@ -1,0 +1,1312 @@
+{
+  "migrations": {
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 0,
+      "recovery": {
+        "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+        "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+        "expected_updates": {
+          "dino-only": 2250,
+          "dino-metric-depth-bev": 3000
+        }
+      }
+    },
+    "treatments": {
+      "dino-only": {
+        "kind": "audited-runtime-only-resume",
+        "source": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107/dino-only/pretrain/checkpoints/latest.pt",
+        "source_sha256": "dfabf1ced527b77cd379244ac79cb23a6a2ed482e095a1ba4912aa406ebfa29c",
+        "destination": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-only/pretrain/checkpoints/latest.pt",
+        "migrated_checkpoint_sha256": "7bce662e09606b16d5298e66d793804f85c7fb9bdba4980004e6e49772c8c12c",
+        "source_config_sha256": "7c8c3ddfc6226805ea5557b8002e964b7c75760d7b2862d333a016731f28c77b",
+        "destination_config_sha256": "c700f3f52f6e577274d409e500492fc74ec5e7778cdb4df99c7fc56fbe2db905",
+        "config_changes": {
+          "num_workers": {
+            "before": 2,
+            "after": 0
+          },
+          "run_dir": {
+            "before": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107/dino-only/pretrain",
+            "after": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-only/pretrain"
+          }
+        },
+        "unchanged_resume_state_sha256": "8ee1b1c5452cd467304648e0aa1f330fcb2db0a3304c9fe4e162f1e00c3567eb",
+        "update": 2250,
+        "samples_seen": 11250,
+        "scope": "Exact model/optimizer/progress/rank RNG/BN/sampler preservation; loader count and fresh output only"
+      },
+      "dino-metric-depth-bev": {
+        "kind": "audited-runtime-only-resume",
+        "source": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107/dino-metric-depth-bev/pretrain/checkpoints/latest.pt",
+        "source_sha256": "0d21b64dff2e57aca77c747814cfb2d2a55bef8e567397f7aa0a0a84e31844e8",
+        "destination": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-metric-depth-bev/pretrain/checkpoints/latest.pt",
+        "migrated_checkpoint_sha256": "d33007acfc6f4ab6811657504168faa9d1f8b684e95f07d42cd305036ed6af94",
+        "source_config_sha256": "2de1b274826d8047bab1864499c08ba7cf4db1782f9ff3b7a9bba389659ade94",
+        "destination_config_sha256": "57b74819baf20eba74ca7d7ef30546debdbf1e56495f6c8ebc2cf4ffa93f4c7f",
+        "config_changes": {
+          "num_workers": {
+            "before": 2,
+            "after": 0
+          },
+          "run_dir": {
+            "before": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107/dino-metric-depth-bev/pretrain",
+            "after": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-metric-depth-bev/pretrain"
+          }
+        },
+        "unchanged_resume_state_sha256": "a077e4e4c8880acddb598049fc042f9edc9c1d3a19192c41236476b87ff8dd32",
+        "update": 3000,
+        "samples_seen": 15000,
+        "scope": "Exact model/optimizer/progress/rank RNG/BN/sampler preservation; loader count and fresh output only"
+      }
+    }
+  },
+  "admission": {
+    "status": "passed",
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 0,
+      "recovery": {
+        "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+        "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+        "expected_updates": {
+          "dino-only": 2250,
+          "dino-metric-depth-bev": 3000
+        }
+      }
+    },
+    "controller_commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a",
+    "training_code_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+    "treatments": {
+      "dino-only": {
+        "status": "passed",
+        "parent_update": 2250,
+        "pilot_initial_update": 2351,
+        "resumed_update": 2452,
+        "initial_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 141.0726570226252,
+          "host_peak_gib": 78.06614685058594,
+          "host_limit_gib": 128.0,
+          "start_update": 2351,
+          "end_update": 2451,
+          "steady_gpu_samples": 41,
+          "gpu_summary": [
+            {
+              "index": 0,
+              "samples": 41,
+              "mean_utilization": 49.09756097560975,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7079.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 1,
+              "samples": 41,
+              "mean_utilization": 48.75609756097561,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7081.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 2,
+              "samples": 41,
+              "mean_utilization": 58.853658536585364,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7087.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 3,
+              "samples": 41,
+              "mean_utilization": 53.90243902439025,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7093.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 4,
+              "samples": 41,
+              "mean_utilization": 56.146341463414636,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7115.0,
+              "total_mib": 10240.0
+            }
+          ],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency",
+          "measured_training_samples_per_second": 5.812014357834648,
+          "measured_window_seconds": 81.72725852951407
+        },
+        "fresh_process_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 61.43323777988553,
+          "host_peak_gib": 78.06614685058594,
+          "host_limit_gib": 128.0,
+          "start_update": 2451,
+          "end_update": 2452,
+          "steady_gpu_samples": 0,
+          "gpu_summary": [],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency"
+        }
+      },
+      "dino-metric-depth-bev": {
+        "status": "passed",
+        "parent_update": 3000,
+        "pilot_initial_update": 3000,
+        "resumed_update": 3101,
+        "initial_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 153.34308231435716,
+          "host_peak_gib": 83.54694747924805,
+          "host_limit_gib": 128.0,
+          "start_update": 3000,
+          "end_update": 3100,
+          "steady_gpu_samples": 46,
+          "gpu_summary": [
+            {
+              "index": 0,
+              "samples": 46,
+              "mean_utilization": 56.47826086956522,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7195.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 1,
+              "samples": 46,
+              "mean_utilization": 62.02173913043478,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7435.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 2,
+              "samples": 46,
+              "mean_utilization": 60.78260869565217,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7187.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 3,
+              "samples": 46,
+              "mean_utilization": 58.67391304347826,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7189.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 4,
+              "samples": 46,
+              "mean_utilization": 60.608695652173914,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7417.0,
+              "total_mib": 10240.0
+            }
+          ],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency",
+          "measured_training_samples_per_second": 5.111109246388621,
+          "measured_window_seconds": 91.95655528828502
+        },
+        "fresh_process_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 59.35604107566178,
+          "host_peak_gib": 83.54694747924805,
+          "host_limit_gib": 128.0,
+          "start_update": 3100,
+          "end_update": 3101,
+          "steady_gpu_samples": 0,
+          "gpu_summary": [],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency"
+        }
+      }
+    }
+  },
+  "cpu_audit": {
+    "status": "passed",
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 0,
+      "recovery": {
+        "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+        "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+        "expected_updates": {
+          "dino-only": 2250,
+          "dino-metric-depth-bev": 3000
+        }
+      }
+    },
+    "membership": {
+      "splits": {
+        "train": {
+          "scenes": 700,
+          "samples": 28130,
+          "logs": 50
+        },
+        "val": {
+          "scenes": 150,
+          "samples": 6019,
+          "logs": 18
+        }
+      },
+      "overlaps": {
+        "scenes": 0,
+        "samples": 0,
+        "logs": 0
+      },
+      "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+    },
+    "assets": {
+      "dino_weight_sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9",
+      "dino_python_tree_sha256": "88b35b92ca99c27c3bd9c650d930f43e78c7e6341fb13ecfffdc26272fbf80a5",
+      "bevcar_voxelnet_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac",
+      "dav2_python_tree_sha256": "80c3e70f62cbf905792dfd8ae1a70f65af69835d78da151425dcf66beec6f81b",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb"
+    },
+    "node": "eowyn",
+    "slurm_job_id": "1250692",
+    "sensor_files": {
+      "referenced": 2631083,
+      "missing": 0,
+      "empty": 0,
+      "unsafe": 0,
+      "examples": []
+    },
+    "versions": {
+      "torch": "2.5.1",
+      "torchvision": "0.20.1",
+      "numpy": "1.23.5",
+      "Pillow": "9.4.0",
+      "nuscenes-devkit": "1.1.11"
+    },
+    "elapsed_seconds": 69.34960565157235,
+    "code_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+    "scope": "CPU presence/hash/split audit; not bytewise dataset checksums, CUDA admission or blind test"
+  },
+  "gpu_window": {
+    "dino-only": {
+      "start_update": 2559,
+      "end_update": 2599,
+      "per_gpu": [
+        {
+          "index": 0,
+          "samples": 15,
+          "mean_utilization": 61.4,
+          "max_used_mib": 7075.0,
+          "total_mib": 10240.0
+        },
+        {
+          "index": 1,
+          "samples": 15,
+          "mean_utilization": 69.06666666666666,
+          "max_used_mib": 7095.0,
+          "total_mib": 10240.0
+        },
+        {
+          "index": 2,
+          "samples": 15,
+          "mean_utilization": 70.33333333333333,
+          "max_used_mib": 7075.0,
+          "total_mib": 10240.0
+        },
+        {
+          "index": 3,
+          "samples": 15,
+          "mean_utilization": 50.266666666666666,
+          "max_used_mib": 7089.0,
+          "total_mib": 10240.0
+        },
+        {
+          "index": 4,
+          "samples": 15,
+          "mean_utilization": 61.93333333333333,
+          "max_used_mib": 7301.0,
+          "total_mib": 10240.0
+        }
+      ]
+    },
+    "dino-metric-depth-bev": {
+      "start_update": 3189,
+      "end_update": 3222,
+      "per_gpu": []
+    }
+  },
+  "latest_status": {
+    "dino-only": {
+      "state": "running",
+      "mode": "pretrain",
+      "nsweeps": 10,
+      "depth_mode": "metric-bev",
+      "training_profile": "random-metric-bev",
+      "treatment": "dino-only",
+      "updated_unix_time": 1794196507.2779825,
+      "epoch_progress": 0.6843227870600782,
+      "epochs": 50,
+      "update": 3850,
+      "samples_seen": 19250,
+      "samples_per_second": 8.223414290190087,
+      "latest": {
+        "bev": 0.23172633349895477,
+        "gradient_norm": 0.5816195011138916,
+        "image": 0.33050856590271,
+        "loss": 0.2514827847480774,
+        "learning_rates": {
+          "camera": 0.0001431781016708141,
+          "student": 0.0001431781016708141
+        }
+      },
+      "wall_seconds": 2361.2685414887965,
+      "total_updates": 281300,
+      "world_size": 5,
+      "global_batch_size": 5,
+      "peak_allocated_gib": 4.850376605987549,
+      "memory_all_ranks_at_last_save": [
+        {
+          "rank": 0,
+          "peak_allocated_gib": 4.850376605987549,
+          "peak_reserved_gib": 5.310546875,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 1,
+          "peak_allocated_gib": 4.842862606048584,
+          "peak_reserved_gib": 5.330078125,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 2,
+          "peak_allocated_gib": 4.834747791290283,
+          "peak_reserved_gib": 5.310546875,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 3,
+          "peak_allocated_gib": 4.845107555389404,
+          "peak_reserved_gib": 5.32421875,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 4,
+          "peak_allocated_gib": 4.848971843719482,
+          "peak_reserved_gib": 5.53125,
+          "device_total_gib": 9.77484130859375
+        }
+      ]
+    },
+    "dino-metric-depth-bev": {
+      "state": "running",
+      "mode": "pretrain",
+      "nsweeps": 10,
+      "depth_mode": "metric-bev",
+      "training_profile": "random-metric-bev",
+      "treatment": "dino-metric-depth-bev",
+      "updated_unix_time": 1794196509.825814,
+      "epoch_progress": 0.7554212584429435,
+      "epochs": 50,
+      "update": 4250,
+      "samples_seen": 21250,
+      "samples_per_second": 6.847559962629911,
+      "latest": {
+        "bev": 0.2157698780298233,
+        "gradient_norm": 0.49977144598960876,
+        "image": 0.34087191224098207,
+        "loss": 0.37296977639198303,
+        "metric_depth_bev": 2.6435898542404175,
+        "learning_rates": {
+          "camera": 0.00015597582651972984,
+          "student": 0.00015597582651972984
+        }
+      },
+      "wall_seconds": 3125.6170298568904,
+      "total_updates": 281300,
+      "world_size": 5,
+      "global_batch_size": 5,
+      "peak_allocated_gib": 4.988034248352051,
+      "memory_all_ranks_at_last_save": [
+        {
+          "rank": 0,
+          "peak_allocated_gib": 4.988034248352051,
+          "peak_reserved_gib": 5.662109375,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 1,
+          "peak_allocated_gib": 4.978940963745117,
+          "peak_reserved_gib": 5.419921875,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 2,
+          "peak_allocated_gib": 4.9801506996154785,
+          "peak_reserved_gib": 5.431640625,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 3,
+          "peak_allocated_gib": 4.993542194366455,
+          "peak_reserved_gib": 5.65625,
+          "device_total_gib": 9.77484130859375
+        },
+        {
+          "rank": 4,
+          "peak_allocated_gib": 4.983677387237549,
+          "peak_reserved_gib": 5.421875,
+          "device_total_gib": 9.77484130859375
+        }
+      ]
+    }
+  },
+  "submission": {
+    "controller_commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a",
+    "controller_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+    "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+    "config_path": "/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json",
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 0,
+      "recovery": {
+        "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+        "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+        "expected_updates": {
+          "dino-only": 2250,
+          "dino-metric-depth-bev": 3000
+        }
+      }
+    },
+    "jobs": {
+      "prepare": {
+        "job_id": "1250692",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-workers0-prepare-audit",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=2",
+          "--mem=16G",
+          "--time=00:30:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/.cache/prepare-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/.cache/prepare-%j.err",
+          "--wrap=/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python -c 'import subprocess\nsubprocess.run(['\"'\"'/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python'\"'\"', '\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/cluster_rpl/recover_random_depth.py'\"'\"', '\"'\"'--config'\"'\"', '\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json'\"'\"', '\"'\"'--phase'\"'\"', '\"'\"'prepare'\"'\"'],check=True)\nsubprocess.run(['\"'\"'/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python'\"'\"', '\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe/cluster_rpl/audit_random_depth.py'\"'\"', '\"'\"'--config'\"'\"', '\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json'\"'\"'],check=True)\nsubprocess.run(['\"'\"'/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python'\"'\"', '\"'\"'-c'\"'\"', \"import sys; sys.path.insert(0,'\"'\"'cluster_rpl'\"'\"'); from recover_random_depth import memory_group; print('\"'\"'HOST_MEMORY_COUNTERS'\"'\"', [str(p) for p in memory_group()])\"],check=True)'"
+        ],
+        "node": "eowyn",
+        "gpus": 0,
+        "cpus": 2,
+        "memory": "16G",
+        "time_limit": "00:30:00",
+        "afterok": []
+      },
+      "pilot": {
+        "job_id": "1250693",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-workers0-real-resume",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=80G",
+          "--time=00:45:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/.cache/pilot-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/.cache/pilot-%j.err",
+          "--dependency=afterok:1250692",
+          "--gres=gpu:5",
+          "--signal=B:USR1@180",
+          "--wrap=/Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase pilot"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "80G",
+        "time_limit": "00:45:00",
+        "afterok": [
+          "1250692"
+        ]
+      },
+      "pilot128": {
+        "job_id": "1250694",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-workers0-resume-128g",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--gres=gpu:5",
+          "--time=00:45:00",
+          "--signal=B:USR1@180",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/pilot128-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/pilot128-%j.err",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase pilot"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "00:45:00",
+        "afterok": [],
+        "preserves_prior_pilot_progress": true
+      },
+      "dino_pretrain": {
+        "job_id": "1250695",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-dino-50ep",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_pretrain-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_pretrain-%j.err",
+          "--dependency=afterok:1250694",
+          "--gres=gpu:5",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase pretrain --treatment dino-only"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250694"
+        ]
+      },
+      "dino_camera-probe": {
+        "job_id": "1250696",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-dino-camera-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_camera-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_camera-probe-%j.err",
+          "--dependency=afterok:1250695",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout frozen_camera_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250704"
+        ],
+        "initial_afterok": [
+          "1250695"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250696",
+          "Dependency=afterok:1250704"
+        ]
+      },
+      "dino_fused-probe": {
+        "job_id": "1250697",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-dino-fused-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_fused-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_fused-probe-%j.err",
+          "--dependency=afterok:1250695",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout frozen_fused_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250704"
+        ],
+        "initial_afterok": [
+          "1250695"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250697",
+          "Dependency=afterok:1250704"
+        ]
+      },
+      "dino_segmentation": {
+        "job_id": "1250698",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-dino-segmentation",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_segmentation-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/dino_segmentation-%j.err",
+          "--dependency=afterok:1250695",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout end_to_end_segmentation"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250704"
+        ],
+        "initial_afterok": [
+          "1250695"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250698",
+          "Dependency=afterok:1250704"
+        ]
+      },
+      "depth_pretrain": {
+        "job_id": "1250699",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-depth-50ep",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_pretrain-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_pretrain-%j.err",
+          "--dependency=afterok:1250694",
+          "--gres=gpu:5",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase pretrain --treatment dino-metric-depth-bev"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250694"
+        ]
+      },
+      "depth_camera-probe": {
+        "job_id": "1250700",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-depth-camera-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_camera-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_camera-probe-%j.err",
+          "--dependency=afterok:1250699",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout frozen_camera_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250705"
+        ],
+        "initial_afterok": [
+          "1250699"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250700",
+          "Dependency=afterok:1250705"
+        ]
+      },
+      "depth_fused-probe": {
+        "job_id": "1250701",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-depth-fused-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_fused-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_fused-probe-%j.err",
+          "--dependency=afterok:1250699",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout frozen_fused_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250705"
+        ],
+        "initial_afterok": [
+          "1250699"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250701",
+          "Dependency=afterok:1250705"
+        ]
+      },
+      "depth_segmentation": {
+        "job_id": "1250702",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-depth-segmentation",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_segmentation-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/depth_segmentation-%j.err",
+          "--dependency=afterok:1250699",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout end_to_end_segmentation"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1250705"
+        ],
+        "initial_afterok": [
+          "1250699"
+        ],
+        "dependency_update_argv": [
+          "scontrol",
+          "update",
+          "JobId=1250702",
+          "Dependency=afterok:1250705"
+        ]
+      },
+      "target_cleanup": {
+        "job_id": "1250703",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-backup-clean",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=1",
+          "--mem=2G",
+          "--time=02:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/target_cleanup-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/.cache/target_cleanup-%j.err",
+          "--dependency=afterok:1250696:1250697:1250698:1250700:1250701:1250702",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe/cluster_rpl/cleanup_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase target --execute"
+        ],
+        "node": "eowyn",
+        "gpus": 0,
+        "cpus": 1,
+        "memory": "2G",
+        "time_limit": "02:00:00",
+        "afterok": [
+          "1250696",
+          "1250697",
+          "1250698",
+          "1250700",
+          "1250701",
+          "1250702"
+        ]
+      },
+      "dino_continuation": {
+        "job_id": "1250704",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-dino-continue",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--gres=gpu:5",
+          "--time=47:00:00",
+          "--signal=B:USR1@300",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/.cache/dino-continue-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/.cache/dino-continue-%j.err",
+          "--dependency=afterany:1250695",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/cluster_rpl/continue_recovered_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --treatment dino-only --previous-job 1250695"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterany": [
+          "1250695"
+        ]
+      },
+      "depth_continuation": {
+        "job_id": "1250705",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-recovered-depth-continue",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--gres=gpu:5",
+          "--time=47:00:00",
+          "--signal=B:USR1@300",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/.cache/depth-continue-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/.cache/depth-continue-%j.err",
+          "--dependency=afterany:1250699",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5/cluster_rpl/continue_recovered_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --treatment dino-metric-depth-bev --previous-job 1250699"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterany": [
+          "1250699"
+        ]
+      }
+    },
+    "created_unix_time": 1794194193.6785822,
+    "controller_history": [
+      {
+        "commit": "f8dddbc55d07b4e721a24746b0a101ec8aab1332",
+        "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/f8dddbc55d07"
+      }
+    ],
+    "retry_submitted_unix_time": 1794194826.9550433,
+    "retired_failed_dependencies": [
+      "1250638",
+      "1250639",
+      "1250640",
+      "1250642",
+      "1250643",
+      "1250644",
+      "1250645"
+    ],
+    "real_recovery_reports": [
+      {
+        "treatment": "dino-only",
+        "status": "passed",
+        "parent_update": 2250,
+        "pilot_initial_update": 2351,
+        "resumed_update": 2452,
+        "initial_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 141.0726570226252,
+          "host_peak_gib": 78.06614685058594,
+          "host_limit_gib": 128.0,
+          "start_update": 2351,
+          "end_update": 2451,
+          "steady_gpu_samples": 41,
+          "gpu_summary": [
+            {
+              "index": 0,
+              "samples": 41,
+              "mean_utilization": 49.09756097560975,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7079.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 1,
+              "samples": 41,
+              "mean_utilization": 48.75609756097561,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7081.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 2,
+              "samples": 41,
+              "mean_utilization": 58.853658536585364,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7087.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 3,
+              "samples": 41,
+              "mean_utilization": 53.90243902439025,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7093.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 4,
+              "samples": 41,
+              "mean_utilization": 56.146341463414636,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7115.0,
+              "total_mib": 10240.0
+            }
+          ],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency",
+          "measured_training_samples_per_second": 5.812014357834648,
+          "measured_window_seconds": 81.72725852951407
+        },
+        "fresh_process_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 61.43323777988553,
+          "host_peak_gib": 78.06614685058594,
+          "host_limit_gib": 128.0,
+          "start_update": 2451,
+          "end_update": 2452,
+          "steady_gpu_samples": 0,
+          "gpu_summary": [],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency"
+        }
+      },
+      {
+        "treatment": "dino-metric-depth-bev",
+        "status": "passed",
+        "parent_update": 3000,
+        "pilot_initial_update": 3000,
+        "resumed_update": 3101,
+        "initial_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 153.34308231435716,
+          "host_peak_gib": 83.54694747924805,
+          "host_limit_gib": 128.0,
+          "start_update": 3000,
+          "end_update": 3100,
+          "steady_gpu_samples": 46,
+          "gpu_summary": [
+            {
+              "index": 0,
+              "samples": 46,
+              "mean_utilization": 56.47826086956522,
+              "min_utilization": 0.0,
+              "max_utilization": 99.0,
+              "maximum_used_mib": 7195.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 1,
+              "samples": 46,
+              "mean_utilization": 62.02173913043478,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7435.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 2,
+              "samples": 46,
+              "mean_utilization": 60.78260869565217,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7187.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 3,
+              "samples": 46,
+              "mean_utilization": 58.67391304347826,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7189.0,
+              "total_mib": 10240.0
+            },
+            {
+              "index": 4,
+              "samples": 46,
+              "mean_utilization": 60.608695652173914,
+              "min_utilization": 0.0,
+              "max_utilization": 100.0,
+              "maximum_used_mib": 7417.0,
+              "total_mib": 10240.0
+            }
+          ],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency",
+          "measured_training_samples_per_second": 5.111109246388621,
+          "measured_window_seconds": 91.95655528828502
+        },
+        "fresh_process_segment": {
+          "exit_code": 75,
+          "elapsed_seconds": 59.35604107566178,
+          "host_peak_gib": 83.54694747924805,
+          "host_limit_gib": 128.0,
+          "start_update": 3100,
+          "end_update": 3101,
+          "steady_gpu_samples": 0,
+          "gpu_summary": [],
+          "host_peak_counter_supported": true,
+          "scope": "Sampled GPU activity and cgroup RAM; GPU utilization is not peak FLOP efficiency"
+        }
+      }
+    ],
+    "formal_submission_completed": true,
+    "formal_submitted_unix_time": 1794195396.7468872,
+    "continuation_source": {
+      "commit": "012b653fe8b5eefa63110a0a61c801d9b57e7d0b",
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/012b653fe8b5",
+      "maximum_additional_allocations_per_treatment": 1,
+      "policy": "Only committed partial exit 75; no OOM/error/cancellation retry; unchanged fifty TOTAL epochs"
+    },
+    "bounded_continuations_submitted_unix_time": 1794196483.2654347
+  },
+  "scheduler_snapshot": "             JOBID                                    NAME      STATE       TIME NODELIST(REASON)\n           1250696      dd2414-recovered-dino-camera-probe    PENDING       0:00 (Dependency)\n           1250697       dd2414-recovered-dino-fused-probe    PENDING       0:00 (Dependency)\n           1250698      dd2414-recovered-dino-segmentation    PENDING       0:00 (Dependency)\n           1250700     dd2414-recovered-depth-camera-probe    PENDING       0:00 (Dependency)\n           1250701      dd2414-recovered-depth-fused-probe    PENDING       0:00 (Dependency)\n           1250702     dd2414-recovered-depth-segmentation    PENDING       0:00 (Dependency)\n           1250703           dd2414-recovered-backup-clean    PENDING       0:00 (Dependency)\n           1250704          dd2414-recovered-dino-continue    PENDING       0:00 (Dependency)\n           1250705         dd2414-recovered-depth-continue    PENDING       0:00 (Dependency)\n           1250695              dd2414-recovered-dino-50ep    RUNNING      18:48 eowyn\n           1250699             dd2414-recovered-depth-50ep    RUNNING      18:48 eowyn\n",
+  "accounting": "JobID|State|ReqMem|Elapsed|ExitCode\n1250692|COMPLETED|16Gn|00:01:31|0:0\n1250692.batch|COMPLETED|16Gn|00:01:31|0:0\n1250692.extern|COMPLETED|16Gn|00:01:32|0:0\n1250693|FAILED|80Gn|00:03:29|1:0\n1250693.batch|FAILED|80Gn|00:03:29|1:0\n1250693.extern|COMPLETED|80Gn|00:03:31|0:0\n1250694|COMPLETED|128Gn|00:07:06|0:0\n1250694.batch|COMPLETED|128Gn|00:07:06|0:0\n1250694.extern|COMPLETED|128Gn|00:07:08|0:0\n1250695|RUNNING|128Gn|00:18:48|0:0\n1250695.extern|RUNNING|128Gn|00:18:48|0:0\n1250695.0|COMPLETED|128Gn|00:00:32|0:0\n1250695.1|COMPLETED|128Gn|00:00:02|0:0\n1250695.2|COMPLETED|128Gn|00:00:02|0:0\n1250699|RUNNING|128Gn|00:18:48|0:0\n1250699.extern|RUNNING|128Gn|00:18:48|0:0\n",
+  "verified_dependencies": "1250696|PENDING|afterok:1250704|dd2414-recovered-dino-camera-probe\n1250697|PENDING|afterok:1250704|dd2414-recovered-dino-fused-probe\n1250698|PENDING|afterok:1250704|dd2414-recovered-dino-segmentation\n1250700|PENDING|afterok:1250705|dd2414-recovered-depth-camera-probe\n1250701|PENDING|afterok:1250705|dd2414-recovered-depth-fused-probe\n1250702|PENDING|afterok:1250705|dd2414-recovered-depth-segmentation\n1250703|PENDING|afterok:1250696,afterok:1250697,afterok:1250698,afterok:1250700,afterok:1250701,afterok:1250702|dd2414-recovered-backup-clean\n1250704|PENDING|afterany:1250695|dd2414-recovered-dino-continue\n1250705|PENDING|afterany:1250699|dd2414-recovered-depth-continue\n1250695|RUNNING||dd2414-recovered-dino-50ep\n1250699|RUNNING||dd2414-recovered-depth-50ep\n",
+  "immutable_sources": {
+    "training_root": {
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+      "commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+      "porcelain": ""
+    },
+    "controller_root": {
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+      "commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a",
+      "porcelain": ""
+    }
+  },
+  "formal_memory_throughput_window": {
+    "node": "eowyn",
+    "elapsed_seconds": 30.001875527203083,
+    "before": {
+      "dino-only": {
+        "job_id": "1250695",
+        "latest": {
+          "update": 2559,
+          "epoch_progress": 0.45485247067188056,
+          "bev": 0.2779037535190582,
+          "gradient_norm": 0.8856624960899353,
+          "image": 0.3547421395778656,
+          "loss": 0.29327144026756286,
+          "learning_rates": {
+            "camera": 0.00010187344472093852,
+            "student": 0.00010187344472093852
+          }
+        },
+        "host_current_gib": 76.88047790527344,
+        "host_peak_gib": 76.88065338134766,
+        "host_limit_gib": 128.0,
+        "anonymous_rss_gib": 67.48764419555664,
+        "file_cache_gib": 9.102745056152344,
+        "unevictable_gib": 0.0
+      },
+      "dino-metric-depth-bev": {
+        "job_id": "1250699",
+        "latest": {
+          "update": 3189,
+          "epoch_progress": 0.5668325630998934,
+          "bev": 0.244439634680748,
+          "gradient_norm": 0.4048806428909302,
+          "image": 0.3844708859920502,
+          "loss": 0.4175891995429993,
+          "metric_depth_bev": 2.902866315841675,
+          "learning_rates": {
+            "camera": 0.00012202986135798082,
+            "student": 0.00012202986135798082
+          }
+        },
+        "host_current_gib": 73.47440338134766,
+        "host_peak_gib": 73.47440338134766,
+        "host_limit_gib": 128.0,
+        "anonymous_rss_gib": 67.65208053588867,
+        "file_cache_gib": 5.564998626708984,
+        "unevictable_gib": 0.0
+      }
+    },
+    "after": {
+      "dino-only": {
+        "job_id": "1250695",
+        "latest": {
+          "update": 2599,
+          "epoch_progress": 0.46196231781016706,
+          "bev": 0.24713954627513887,
+          "gradient_norm": 0.4582383632659912,
+          "image": 0.37482737302780156,
+          "loss": 0.27267711460590366,
+          "learning_rates": {
+            "camera": 0.00010315321720583008,
+            "student": 0.00010315321720583008
+          }
+        },
+        "host_current_gib": 78.40993118286133,
+        "host_peak_gib": 78.40993118286133,
+        "host_limit_gib": 128.0,
+        "anonymous_rss_gib": 67.49127578735352,
+        "file_cache_gib": 10.601028442382812,
+        "unevictable_gib": 0.0,
+        "window_samples_per_second": 6.666249908898443
+      },
+      "dino-metric-depth-bev": {
+        "job_id": "1250699",
+        "latest": {
+          "update": 3222,
+          "epoch_progress": 0.5726981869889798,
+          "bev": 0.22259661555290222,
+          "gradient_norm": 0.48416316509246826,
+          "image": 0.37754961252212527,
+          "loss": 0.3725821077823639,
+          "metric_depth_bev": 2.379897689819336,
+          "learning_rates": {
+            "camera": 0.00012308567365801638,
+            "student": 0.00012308567365801638
+          }
+        },
+        "host_current_gib": 74.64445495605469,
+        "host_peak_gib": 74.76077270507812,
+        "host_limit_gib": 128.0,
+        "anonymous_rss_gib": 67.53227996826172,
+        "file_cache_gib": 6.833038330078125,
+        "unevictable_gib": 0.0,
+        "window_samples_per_second": 5.499656174841216
+      }
+    },
+    "scope": "Read-only 30-second window of our two formal jobs; cgroup RSS and file cache are distinct from GPU VRAM"
+  },
+  "scope": "Actual worker-free exact-state recovery, CUDA/host-RAM admission, own scheduler dependencies and short telemetry; training remains incomplete",
+  "tests": {
+    "cpu_tests": 40,
+    "result": "passed",
+    "command": "PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES= python -m unittest test_continue_recovered_depth test_recovery_checkpoint test_distributed_training test_random_depth_study test_random_depth_migration test_training_checkpoint test_metric_memory",
+    "environment": "local bev Python; unrestricted local sockets/shared memory; no GPU",
+    "compile_and_diff": "passed"
+  },
+  "limitations": [
+    "Training and full validation are incomplete; no new Vehicle IoU claim.",
+    "Short throughput window is not an end-to-end ETA.",
+    "Depth GPU activity was unavailable in the formal 30-second window; earlier admission measurements are separately recorded.",
+    "At most one extra 47-hour allocation per group; only committed partial exit 75 can resume.",
+    "Original trainer and admitted controller are immutable; workstation training and unrelated staged PDF are untouched."
+  ]
+}

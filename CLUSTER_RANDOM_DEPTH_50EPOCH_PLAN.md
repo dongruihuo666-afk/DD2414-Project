@@ -16,8 +16,11 @@ Six one-GPU GT readouts are 1250696-1250698 / 1250700-1250702 (32-GiB RAM),
 and final verified backup/cleanup is 1250703. A bounded continuation helper
 extends each group once across the 47-hour allocation boundary, accepting only
 a committed partial exit 75; it does not retry OOM/cancellation/errors or add
-epochs. Actual continuation IDs/dependencies are recorded after submission.
-See the latest handoff for measured RAM/throughput and source pins.
+epochs. Actual continuations are **1250704 / 1250705**, after 1250695 / 1250699.
+Each group's three pending GT readouts now depend on successful continuation;
+cleanup 1250703 still requires all six. Current queue: two running pretrains
+and nine dependent jobs. See [actual recovery and dependency evidence](artifacts/rpl_worker_free_recovery_20261109.json)
+and the latest handoff for measured RAM/throughput and immutable source pins.
 
 **Earlier 9 November diagnosis (superseded by recovery above):** access works
 again. The two original formal jobs
