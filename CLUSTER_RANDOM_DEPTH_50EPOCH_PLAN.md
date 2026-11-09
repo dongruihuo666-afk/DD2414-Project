@@ -6,7 +6,21 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
-**9 November recovery:** access works again. The two original formal jobs
+**9 November recovery ACTIVE:** both 128-GiB worker-free CUDA/resume admissions
+passed in job 1250694. Formal DINO-only **1250695** and DINO plus projected
+metric depth **1250699** are RUNNING on eowyn, with five GPUs/twenty CPUs each.
+Only DataLoader workers (2 -> 0), host-RAM requests and fresh output directories
+changed; all checkpoint state and the fifty-TOTAL-epoch budget are preserved.
+Run name: `random_resnet101_metric_bev_50epochs_workers0_resume_20261109`.
+Six one-GPU GT readouts are 1250696-1250698 / 1250700-1250702 (32-GiB RAM),
+and final verified backup/cleanup is 1250703. A bounded continuation helper
+extends each group once across the 47-hour allocation boundary, accepting only
+a committed partial exit 75; it does not retry OOM/cancellation/errors or add
+epochs. Actual continuation IDs/dependencies are recorded after submission.
+See the latest handoff for measured RAM/throughput and source pins.
+
+**Earlier 9 November diagnosis (superseded by recovery above):** access works
+again. The two original formal jobs
 1250637/1250641 are now verified OUT_OF_MEMORY from HOST-RAM cgroup kills at
 their 80-GiB limits; neither is still training. Their intact five-rank latest
 checkpoints retain updates 2250/3000 (~0.400/~0.533 epoch). Old local status files
@@ -19,7 +33,8 @@ backup under `fullsize_baseline/runs/arwen_retirement/job-1250689`. See the
 [actual recovery evidence](artifacts/rpl_recovery_arwen_retirement_20261109.json)
 and latest handoff. No training model, objective or budget was changed.
 
-**Repair admitted and training active:** runtime commit `a31f9039f9fe` now uses
+**Earlier 7 November admission (subsequently hit the host-RAM failures):**
+runtime commit `a31f9039f9fe` used
 new full-data audit 1250635 and BOTH successful five-GPU/resume pilots 1250636.
 The blocked old jobs 1250545–1250553 were replaced. Formal DINO-only 1250637
 and DINO + metric depth 1250641 are RUNNING (updates 56 and 44 verified at the

@@ -7,6 +7,54 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-09 — Both worker-free groups admitted and running; bounded continuation prepared
+
+- Actual 128-GiB recovery admission **1250694 COMPLETED** in 7m06s. Each
+  treatment made 100 updates and resumed for one more update in a fresh process.
+  Control retains the preceding trial's committed progress (2351 -> 2452);
+  depth advances 3000 -> 3101. All learned/optimizer/RNG/BN/sampler state is
+  preserved, with only worker count and fresh output path changed. Measured
+  admission host peaks were 78.066 / 83.547 GiB, below the actual 128-GiB limits.
+- Formal control **1250695** and metric-depth **1250699** are RUNNING on eowyn,
+  each with five GPUs, twenty CPUs and 128 GiB host RAM. The two experiments
+  still use random ResNet101, RGB 448x800, ten sweeps with velocity, global
+  batch five and FIFTY TOTAL epochs including inherited updates. The trainer
+  stays at immutable `a31f9039f9fe`; admitted controller is `aec677657cd0`.
+  No scientific/model change or workstation experiment change was made.
+- Six downstream jobs **1250696-1250698 / 1250700-1250702** are waiting for
+  completed pretraining, using one GPU/four CPUs/32-GiB host RAM each. Final
+  backup/cleanup **1250703** waits for all six full-GT readouts. Only seven own
+  stale failed-parent jobs 1250638-1250640 / 1250642-1250645 were cancelled.
+  The completed arwen retirement and all previous evidence remain preserved.
+- A real 30-second simultaneous training window advanced control 2559 -> 2599
+  and depth 3189 -> 3222, approximately 6.67 / 5.50 samples/s per FIVE-GPU group.
+  Anonymous RAM was 67.49 / 67.53 GiB; total cgroup RAM 78.41 / 74.64 GiB also
+  included 10.60 / 6.83 GiB file cache. Control GPU activity averaged 50.27-70.33%
+  per card in this window; no corresponding depth activity samples were
+  captured in that window. These are short measurements, not a full-run ETA,
+  FLOP efficiency, completed epoch, segmentation quality or final IoU claim.
+- `cluster_rpl/continue_recovered_depth.py` prepares ONE additional 47-hour
+  allocation per group. It only resumes a parent with committed `partial`
+  summary AND scheduler `FAILED|75:0`; OOM, cancellation and arbitrary errors
+  fail instead. A parent already complete at 50 epochs plus full 6,019-frame
+  validation makes continuation a no-op. The helper delegates to the exact
+  admitted controller, so no checkpoint/source hash is disguised. Readouts
+  will depend on successful continuation; at most 94 allocation hours/group,
+  with no repeated-error retry or added epochs. This paragraph describes the
+  reviewed helper; the actual continuation submission is recorded separately.
+- Reproduction: the existing shared settings are
+  `.cache/random_depth_workers0_resume_20261109.json`; run the helper only in
+  the matching eowyn allocation with `--config SETTINGS --treatment dino-only`
+  (or `dino-metric-depth-bev`) `--previous-job PARENT_ID`. CPU checks use
+  `PYTHONPATH=scripts:cluster_rpl CUDA_VISIBLE_DEVICES=''` and the local bev
+  Python with `-m unittest test_continue_recovered_depth
+  test_recovery_checkpoint test_distributed_training test_random_depth_study
+  test_random_depth_migration test_training_checkpoint test_metric_memory`.
+  **40 CPU tests passed** (including actual two-process Gloo resume and worker
+  equivalence), compilation and diff checks passed. The first sandbox run
+  could not open Gloo/shared-memory resources; the identical CPU command passed
+  outside that restriction. Actual continuation IDs follow queue submission.
+
 ### 2026-11-09 — Measured worker-free RAM floor; retry admission with 128-GiB jobs
 
 - Actual worker-free preparation/full CPU audit **1250692 COMPLETED** in 91 s:
