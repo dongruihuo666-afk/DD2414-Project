@@ -6,7 +6,17 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
-**9 November recovery ACTIVE:** both 128-GiB worker-free CUDA/resume admissions
+**12 November launcher repair:** the first training segments gracefully saved
+at 35.4685 / 29.3445 epochs, but continuation jobs 1250704 / 1250705 failed in
+node-side `sacct` library loading before training. Six readouts are blocked.
+The repair scopes existing `/usr/local/lib:/usr/local/lib/slurm` paths to only
+the accounting subprocess and adds `--check-only` for real CPU-node admission.
+It does not change the original trainer, learned state, treatments or budgets.
+Both patched checks/checkpoints must pass before replacement five-GPU jobs are
+submitted and the blocked downstream graph replaced. Actual new IDs and
+progress follow in the handoff after verification.
+
+**Earlier 9 November recovery (historical submission snapshot):** both 128-GiB worker-free CUDA/resume admissions
 passed in job 1250694. Formal DINO-only **1250695** and DINO plus projected
 metric depth **1250699** are RUNNING on eowyn, with five GPUs/twenty CPUs each.
 Only DataLoader workers (2 -> 0), host-RAM requests and fresh output directories

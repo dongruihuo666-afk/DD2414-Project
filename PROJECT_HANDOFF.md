@@ -7,6 +7,43 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-12 — Repair continuation accounting without changing training
+
+- The owner authorized correcting the launcher and continuing both studies.
+  Parent pretrains 1250695 / 1250699 gracefully saved and exited `FAILED|75:0`
+  at the 47-hour boundary on 11 November. Their summary/checkpoint files retain
+  control update **199546** (35.4685 epochs) and depth **165092** (29.3445 epochs),
+  with 35 / 29 completed 6,019-sample validations. Continuations 1250704 /
+  1250705 failed BEFORE launching the trainer: eowyn's `sacct` loader could not
+  resolve `libslurmdb.so.32`. Six GT readouts are `DependencyNeverSatisfied`;
+  no final IoU or completed 50-epoch result exists yet.
+- Actual CPU-only eowyn checks confirmed that the library already exists in
+  `/usr/local/lib`. Adding `/usr/local/lib:/usr/local/lib/slurm` to only the
+  `sacct` child process resolves both parent states successfully. No package,
+  system configuration, shell startup file or cluster service was changed.
+- `cluster_rpl/continue_recovered_depth.py` now pins `/usr/local/bin/sacct`,
+  scopes library paths to that query subprocess, preserves existing paths and
+  bounds each query by ten seconds. It verifies the exact numeric parent job
+  AND current Unix owner, refuses ambiguous rows, and retains the original
+  partial-exit-75/complete-full-validation policy. No failure is silently
+  converted into a resumable training state. `--check-only` exercises real
+  accounting plus the committed protocol on a CPU allocation without execing
+  the trainer. The admitted controller `aec677657cd0`, trainer `a31f9039f9fe`,
+  checkpoints, optimizer/LR, RNG/BN/sampler and scientific config stay unchanged.
+- Tests: `PYTHONPATH=cluster_rpl CUDA_VISIBLE_DEVICES=''
+  /home/students2026/miniconda3/envs/bev/bin/python -m unittest
+  test_continue_recovered_depth`: **11 tests passed**, including subprocess-only
+  path isolation, exact owner/job query, bounded accounting wait and all previous
+  OOM/cancellation/budget/final-validation refusals. Compilation and diff checks
+  pass. The actual diagnostic proves the library-path remedy; the pinned patched
+  CLI and saved checkpoints still require admission before GPU launch.
+- Next: push/pin the repaired helper, run BOTH `--check-only` commands and CPU
+  checkpoint integrity checks on eowyn, then submit replacement five-GPU
+  continuations from the saved cursors. Replace only the seven verified own
+  blocked readout/cleanup jobs and record their new IDs. Keep the same 50 TOTAL
+  epochs, 448x800 inputs, ten sweeps with velocity, two treatments and 10/10/5
+  downstream budgets. Preserve all failure evidence and workstation work.
+
 ### 2026-11-09 — Actual recovery and automatic continuation graph verified
 
 - [Actual recovery evidence](artifacts/rpl_worker_free_recovery_20261109.json)
