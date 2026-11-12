@@ -6,6 +6,7 @@ __pycache__
 /external/BEVCar/
 artifacts/*
 !artifacts/rpl_worker_free_recovery_20261109.json
+!artifacts/rpl_continuation_repair_20261112.json
 !artifacts/full_data_protocol_audit.json
 !artifacts/official_full_data_results.json
 !artifacts/rpl_depth_admission_20261106.json

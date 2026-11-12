@@ -1,0 +1,781 @@
+{
+  "captured_utc": "2026-11-12T00:44:46.763174+00:00",
+  "submission": {
+    "source_commit": "4a4fbdca34597f2ae7c76044314306bc3606b69d",
+    "source_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+    "old_submission_ledger": "/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_submission_20261109.json",
+    "config_path": "/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json",
+    "settings": {
+      "node": "eowyn",
+      "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+      "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+      "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+      "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+      "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+      "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+      "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+      "gpus_per_experiment": 5,
+      "workers_per_rank": 0,
+      "recovery": {
+        "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+        "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+        "expected_updates": {
+          "dino-only": 2250,
+          "dino-metric-depth-bev": 3000
+        }
+      }
+    },
+    "controller_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+    "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+    "parent_jobs": {
+      "dino-only": "1250695",
+      "dino-metric-depth-bev": "1250699"
+    },
+    "jobs": {
+      "admission": {
+        "job_id": "1251175",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-continuation-admit",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=1",
+          "--mem=4G",
+          "--gres=gpu:0",
+          "--time=00:10:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/admit-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/admit-%j.err",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python -c '\nimport datetime,gc,json,os,subprocess,sys,time\nfrom pathlib import Path\nprint('\"'\"'CHECK_STARTED'\"'\"',datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\nroot=Path('\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459'\"'\"')\nold=json.loads(Path('\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_submission_20261109.json'\"'\"').read_text())\nconfig=Path(old['\"'\"'config_path'\"'\"'])\npython=str(Path(old['\"'\"'settings'\"'\"']['\"'\"'env_prefix'\"'\"'])/'\"'\"'bin/python'\"'\"')\nrows=[]\nfor name,parent in [('\"'\"'dino-only'\"'\"','\"'\"'1250695'\"'\"'),('\"'\"'dino-metric-depth-bev'\"'\"','\"'\"'1250699'\"'\"')]:\n    command=[python,str(root/'\"'\"'cluster_rpl/continue_recovered_depth.py'\"'\"'),'\"'\"'--config'\"'\"',str(config),\n        '\"'\"'--treatment'\"'\"',name,'\"'\"'--previous-job'\"'\"',parent,'\"'\"'--check-only'\"'\"']\n    completed=subprocess.run(command,text=True,capture_output=True,timeout=60)\n    print(completed.stdout,end='\"'\"''\"'\"',flush=True)\n    if completed.returncode:\n        print(completed.stderr,end='\"'\"''\"'\"',flush=True);raise RuntimeError('\"'\"'Patched real-node check failed'\"'\"')\n    rows.append(json.loads(next(x.split('\"'\"' '\"'\"',1)[1] for x in completed.stdout.splitlines() if x.startswith('\"'\"'BOUNDED_CONTINUATION '\"'\"'))))\nprint('\"'\"'BOTH_PATCHED_NODE_ACCOUNTING_CHECKS_PASSED'\"'\"',flush=True)\nos.environ.update(OMP_NUM_THREADS='\"'\"'1'\"'\"',MKL_NUM_THREADS='\"'\"'1'\"'\"',OPENBLAS_NUM_THREADS='\"'\"'1'\"'\"')\nsys.path.insert(0,str(Path(old['\"'\"'controller_root'\"'\"'])/'\"'\"'cluster_rpl'\"'\"'))\nimport recover_random_depth as recovery\ncfg=recovery.settings(config)\nrecovery.require_admission(cfg)\nprint('\"'\"'IMPORTING_CHECKPOINT_VALIDATOR'\"'\"',datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\nfrom recovery_checkpoint import canonical,file_digest,resume_digest\nimport torch\ntorch.set_num_threads(1)\nresult=dict(status='\"'\"'passed'\"'\"',source_commit='\"'\"'4a4fbdca34597f2ae7c76044314306bc3606b69d'\"'\"',node=os.uname().nodename,\n    check_job_id=os.environ['\"'\"'SLURM_JOB_ID'\"'\"'],accounting_checks=rows,settings=cfg,\n    config_file_sha256=file_digest(config),checkpoints={})\nfor name,expected in [('\"'\"'dino-only'\"'\"',199546),('\"'\"'dino-metric-depth-bev'\"'\"',165092)]:\n    directory=Path(cfg['\"'\"'run_root'\"'\"'])/name/'\"'\"'pretrain'\"'\"'\n    checkpoint=directory/'\"'\"'checkpoints/latest.pt'\"'\"'\n    print('\"'\"'LOADING_SAVED_CHECKPOINT'\"'\"',name,datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\n    value=recovery.inspect(cfg,name,expected)\n    config=value['\"'\"'run_config'\"'\"']\n    assert value['\"'\"'run_config_sha256'\"'\"']==canonical(config)\n    assert config==json.loads((directory/'\"'\"'config.json'\"'\"').read_text())\n    assert config['\"'\"'training_profile'\"'\"']=='\"'\"'random-metric-bev'\"'\"' and config['\"'\"'treatment'\"'\"']==name\n    assert config['\"'\"'train_samples'\"'\"']==28130 and config['\"'\"'val_samples'\"'\"']==6019\n    assert config['\"'\"'epochs'\"'\"']==50 and config['\"'\"'num_workers'\"'\"']==0\n    for rank,state in enumerate(value['\"'\"'distributed_state'\"'\"']):\n        assert state['\"'\"'rank'\"'\"']==rank and state['\"'\"'sampler'\"'\"']['\"'\"'rank'\"'\"']==rank\n        assert {k:v for k,v in state['\"'\"'sampler'\"'\"'].items() if k!='\"'\"'rank'\"'\"'}=={k:v for k,v in value['\"'\"'sampler'\"'\"'].items() if k!='\"'\"'rank'\"'\"'}\n    for field in ('\"'\"'implementation_sha256'\"'\"','\"'\"'model_data_implementation_sha256'\"'\"','\"'\"'additional_implementation_sha256'\"'\"'):\n        for relative,expected_hash in config[field].items():\n            source=Path(cfg['\"'\"'recovery'\"'\"']['\"'\"'training_root'\"'\"'])/('\"'\"'scripts'\"'\"' if field=='\"'\"'implementation_sha256'\"'\"' else '\"'\"''\"'\"')/relative\n            assert file_digest(source)==expected_hash,str(source)\n    progress=value['\"'\"'progress'\"'\"']\n    summary=json.loads((directory/'\"'\"'summary.json'\"'\"').read_text())\n    assert summary['\"'\"'status'\"'\"']=='\"'\"'partial'\"'\"' and summary['\"'\"'progress'\"'\"']['\"'\"'update'\"'\"']==progress['\"'\"'update'\"'\"']\n    assert all(row['\"'\"'samples'\"'\"']==6019 for row in progress['\"'\"'validations'\"'\"'].values())\n    report=dict(update=progress['\"'\"'update'\"'\"'],epoch_progress=progress['\"'\"'samples_seen'\"'\"']/28130,\n        samples_seen=progress['\"'\"'samples_seen'\"'\"'],configured_epochs=config['\"'\"'epochs'\"'\"'],world_size=value['\"'\"'world_size'\"'\"'],\n        rank_states=len(value['\"'\"'distributed_state'\"'\"']),model_and_optimizer_finite=True,\n        all_training_implementation_hashes_match=True,checkpoint=str(checkpoint),\n        checkpoint_sha256=file_digest(checkpoint),resume_state_sha256=resume_digest(value),\n        config_sha256=canonical(config),completed_validation_epochs=len(progress['\"'\"'validations'\"'\"']))\n    result['\"'\"'checkpoints'\"'\"'][name]=report\n    print('\"'\"'CHECKPOINT_PASSED '\"'\"'+json.dumps(dict(treatment=name,**report)),flush=True)\n    del value;gc.collect()\nresult['\"'\"'finished_utc'\"'\"']=datetime.datetime.now(datetime.timezone.utc).isoformat()\ndestination=root/'\"'\"'.cache/continuation_admission_20261112.json'\"'\"'\ndestination.write_text(json.dumps(result,indent=2)+'\"'\"'\\n'\"'\"')\nprint('\"'\"'CONTINUATION_REPAIR_ADMITTED '\"'\"'+str(destination),flush=True)\n'"
+        ],
+        "gpus": 0,
+        "cpus": 1,
+        "memory": "4G"
+      },
+      "dino_resume": {
+        "job_id": "1251176",
+        "name": "dd2414-fixed-dino-continue",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-dino-continue",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_resume-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_resume-%j.err",
+          "--dependency=afterok:1251175",
+          "--gres=gpu:5",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/cluster_rpl/continue_recovered_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --treatment dino-only --previous-job 1250695"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251175"
+        ]
+      },
+      "dino_camera-probe": {
+        "job_id": "1251177",
+        "name": "dd2414-fixed-dino-camera-probe",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-dino-camera-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_camera-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_camera-probe-%j.err",
+          "--dependency=afterok:1251176",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout frozen_camera_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251176"
+        ]
+      },
+      "dino_fused-probe": {
+        "job_id": "1251178",
+        "name": "dd2414-fixed-dino-fused-probe",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-dino-fused-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_fused-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_fused-probe-%j.err",
+          "--dependency=afterok:1251176",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout frozen_fused_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251176"
+        ]
+      },
+      "dino_segmentation": {
+        "job_id": "1251179",
+        "name": "dd2414-fixed-dino-segmentation",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-dino-segmentation",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_segmentation-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/dino_segmentation-%j.err",
+          "--dependency=afterok:1251176",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-only --readout end_to_end_segmentation"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251176"
+        ]
+      },
+      "depth_resume": {
+        "job_id": "1251180",
+        "name": "dd2414-fixed-depth-continue",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-depth-continue",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=20",
+          "--mem=128G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_resume-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_resume-%j.err",
+          "--dependency=afterok:1251175",
+          "--gres=gpu:5",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/cluster_rpl/continue_recovered_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --treatment dino-metric-depth-bev --previous-job 1250699"
+        ],
+        "node": "eowyn",
+        "gpus": 5,
+        "cpus": 20,
+        "memory": "128G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251175"
+        ]
+      },
+      "depth_camera-probe": {
+        "job_id": "1251181",
+        "name": "dd2414-fixed-depth-camera-probe",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-depth-camera-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_camera-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_camera-probe-%j.err",
+          "--dependency=afterok:1251180",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout frozen_camera_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251180"
+        ]
+      },
+      "depth_fused-probe": {
+        "job_id": "1251182",
+        "name": "dd2414-fixed-depth-fused-probe",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-depth-fused-probe",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_fused-probe-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_fused-probe-%j.err",
+          "--dependency=afterok:1251180",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout frozen_fused_bev_probe"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251180"
+        ]
+      },
+      "depth_segmentation": {
+        "job_id": "1251183",
+        "name": "dd2414-fixed-depth-segmentation",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-depth-segmentation",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=4",
+          "--mem=32G",
+          "--time=47:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_segmentation-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/depth_segmentation-%j.err",
+          "--dependency=afterok:1251180",
+          "--gres=gpu:1",
+          "--signal=B:USR1@300",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0/cluster_rpl/recover_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase readout --treatment dino-metric-depth-bev --readout end_to_end_segmentation"
+        ],
+        "node": "eowyn",
+        "gpus": 1,
+        "cpus": 4,
+        "memory": "32G",
+        "time_limit": "47:00:00",
+        "afterok": [
+          "1251180"
+        ]
+      },
+      "target_cleanup": {
+        "job_id": "1251184",
+        "name": "dd2414-fixed-backup-clean",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-fixed-backup-clean",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=1",
+          "--mem=2G",
+          "--time=02:00:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/target_cleanup-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/target_cleanup-%j.err",
+          "--dependency=afterok:1251177:1251178:1251179:1251181:1251182:1251183",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python /Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe/cluster_rpl/cleanup_random_depth.py --config /Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_resume_20261109.json --phase target --execute"
+        ],
+        "node": "eowyn",
+        "gpus": 0,
+        "cpus": 1,
+        "memory": "2G",
+        "time_limit": "02:00:00",
+        "afterok": [
+          "1251177",
+          "1251178",
+          "1251179",
+          "1251181",
+          "1251182",
+          "1251183"
+        ]
+      }
+    },
+    "created_unix_time": 1794443793.1473134,
+    "admission_history": [
+      {
+        "job_id": "1251174",
+        "argv": [
+          "sbatch",
+          "--parsable",
+          "--partition=pdebug",
+          "--job-name=dd2414-continuation-admit",
+          "--nodes=1",
+          "--ntasks=1",
+          "--nodelist=eowyn",
+          "--cpus-per-task=1",
+          "--mem=4G",
+          "--gres=gpu:0",
+          "--time=00:10:00",
+          "--chdir=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+          "--output=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/admit-%j.out",
+          "--error=/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459/.cache/admit-%j.err",
+          "--wrap=exec /Midgard/home/hongen/miniforge3/envs/dd2414/bin/python -c '\nimport datetime,gc,json,os,subprocess,sys,time\nfrom pathlib import Path\nprint('\"'\"'CHECK_STARTED'\"'\"',datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\nroot=Path('\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459'\"'\"')\nold=json.loads(Path('\"'\"'/Midgard/home/hongen/projects/DD2414-Project/.cache/random_depth_workers0_submission_20261109.json'\"'\"').read_text())\nconfig=Path(old['\"'\"'config_path'\"'\"'])\npython=str(Path(old['\"'\"'settings'\"'\"']['\"'\"'env_prefix'\"'\"'])/'\"'\"'bin/python'\"'\"')\nrows=[]\nfor name,parent in [('\"'\"'dino-only'\"'\"','\"'\"'1250695'\"'\"'),('\"'\"'dino-metric-depth-bev'\"'\"','\"'\"'1250699'\"'\"')]:\n    command=[python,str(root/'\"'\"'cluster_rpl/continue_recovered_depth.py'\"'\"'),'\"'\"'--config'\"'\"',str(config),\n        '\"'\"'--treatment'\"'\"',name,'\"'\"'--previous-job'\"'\"',parent,'\"'\"'--check-only'\"'\"']\n    completed=subprocess.run(command,text=True,capture_output=True,timeout=60)\n    print(completed.stdout,end='\"'\"''\"'\"',flush=True)\n    if completed.returncode:\n        print(completed.stderr,end='\"'\"''\"'\"',flush=True);raise RuntimeError('\"'\"'Patched real-node check failed'\"'\"')\n    rows.append(json.loads(next(x.split('\"'\"' '\"'\"',1)[1] for x in completed.stdout.splitlines() if x.startswith('\"'\"'BOUNDED_CONTINUATION '\"'\"'))))\nprint('\"'\"'BOTH_PATCHED_NODE_ACCOUNTING_CHECKS_PASSED'\"'\"',flush=True)\nos.environ.update(OMP_NUM_THREADS='\"'\"'1'\"'\"',MKL_NUM_THREADS='\"'\"'1'\"'\"',OPENBLAS_NUM_THREADS='\"'\"'1'\"'\"')\nsys.path.insert(0,str(Path(old['\"'\"'controller_root'\"'\"'])/'\"'\"'cluster_rpl'\"'\"'))\nimport recover_random_depth as recovery\ncfg=recovery.settings(config)\nrecovery.require_admission(cfg)\nprint('\"'\"'IMPORTING_CHECKPOINT_VALIDATOR'\"'\"',datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\nfrom recovery_checkpoint import canonical,file_digest,resume_digest\nimport torch\ntorch.set_num_threads(1)\nresult=dict(status='\"'\"'passed'\"'\"',source_commit='\"'\"'4a4fbdca34597f2ae7c76044314306bc3606b69d'\"'\"',node=os.uname().nodename,\n    check_job_id=os.environ['\"'\"'SLURM_JOB_ID'\"'\"'],accounting_checks=rows,settings=cfg,\n    config_file_sha256=file_digest(config),checkpoints={})\nfor name,expected in [('\"'\"'dino-only'\"'\"',199546),('\"'\"'dino-metric-depth-bev'\"'\"',165092)]:\n    directory=Path(cfg['\"'\"'run_root'\"'\"'])/name/'\"'\"'pretrain'\"'\"'\n    checkpoint=directory/'\"'\"'checkpoints/latest.pt'\"'\"'\n    print('\"'\"'LOADING_SAVED_CHECKPOINT'\"'\"',name,datetime.datetime.now(datetime.timezone.utc).isoformat(),flush=True)\n    value=recovery.inspect(cfg,name,expected)\n    config=value['\"'\"'run_config'\"'\"']\n    assert value['\"'\"'run_config_sha256'\"'\"']==canonical(config)\n    assert config==json.loads((directory/'\"'\"'config.json'\"'\"').read_text())\n    assert config['\"'\"'training_profile'\"'\"']=='\"'\"'random-metric-bev'\"'\"' and config['\"'\"'treatment'\"'\"']==name\n    assert config['\"'\"'train_samples'\"'\"']==28130 and config['\"'\"'val_samples'\"'\"']==6019\n    assert config['\"'\"'epochs'\"'\"']==50 and config['\"'\"'num_workers'\"'\"']==0\n    for rank,state in enumerate(value['\"'\"'distributed_state'\"'\"']):\n        assert state['\"'\"'rank'\"'\"']==rank and state['\"'\"'sampler'\"'\"']==value['\"'\"'sampler'\"'\"']\n    for field in ('\"'\"'implementation_sha256'\"'\"','\"'\"'model_data_implementation_sha256'\"'\"','\"'\"'additional_implementation_sha256'\"'\"'):\n        for relative,expected_hash in config[field].items():\n            source=Path(cfg['\"'\"'recovery'\"'\"']['\"'\"'training_root'\"'\"'])/('\"'\"'scripts'\"'\"' if field=='\"'\"'implementation_sha256'\"'\"' else '\"'\"''\"'\"')/relative\n            assert file_digest(source)==expected_hash,str(source)\n    progress=value['\"'\"'progress'\"'\"']\n    summary=json.loads((directory/'\"'\"'summary.json'\"'\"').read_text())\n    assert summary['\"'\"'status'\"'\"']=='\"'\"'partial'\"'\"' and summary['\"'\"'progress'\"'\"']['\"'\"'update'\"'\"']==progress['\"'\"'update'\"'\"']\n    assert all(row['\"'\"'samples'\"'\"']==6019 for row in progress['\"'\"'validations'\"'\"'].values())\n    report=dict(update=progress['\"'\"'update'\"'\"'],epoch_progress=progress['\"'\"'samples_seen'\"'\"']/28130,\n        samples_seen=progress['\"'\"'samples_seen'\"'\"'],configured_epochs=config['\"'\"'epochs'\"'\"'],world_size=value['\"'\"'world_size'\"'\"'],\n        rank_states=len(value['\"'\"'distributed_state'\"'\"']),model_and_optimizer_finite=True,\n        all_training_implementation_hashes_match=True,checkpoint=str(checkpoint),\n        checkpoint_sha256=file_digest(checkpoint),resume_state_sha256=resume_digest(value),\n        config_sha256=canonical(config),completed_validation_epochs=len(progress['\"'\"'validations'\"'\"']))\n    result['\"'\"'checkpoints'\"'\"'][name]=report\n    print('\"'\"'CHECKPOINT_PASSED '\"'\"'+json.dumps(dict(treatment=name,**report)),flush=True)\n    del value;gc.collect()\nresult['\"'\"'finished_utc'\"'\"']=datetime.datetime.now(datetime.timezone.utc).isoformat()\ndestination=root/'\"'\"'.cache/continuation_admission_20261112.json'\"'\"'\ndestination.write_text(json.dumps(result,indent=2)+'\"'\"'\\n'\"'\"')\nprint('\"'\"'CONTINUATION_REPAIR_ADMITTED '\"'\"'+str(destination),flush=True)\n'"
+        ],
+        "gpus": 0,
+        "cpus": 1,
+        "memory": "4G",
+        "retirement_reason": "CPU auditor incorrectly compared per-rank sampler identities; compare common cursor/config fields and verify each rank separately",
+        "observed_before_retirement": ""
+      }
+    ],
+    "admission_result": {
+      "status": "passed",
+      "source_commit": "4a4fbdca34597f2ae7c76044314306bc3606b69d",
+      "node": "eowyn",
+      "check_job_id": "1251175",
+      "accounting_checks": [
+        {
+          "parent": "1250695",
+          "decision": "resume",
+          "accounting": {
+            "job_id": "1250695",
+            "user": "hongen",
+            "state": "FAILED",
+            "exit_code": "75:0"
+          },
+          "check_only": true,
+          "treatment": "dino-only",
+          "committed_update": 199546,
+          "controller_commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a"
+        },
+        {
+          "parent": "1250699",
+          "decision": "resume",
+          "accounting": {
+            "job_id": "1250699",
+            "user": "hongen",
+            "state": "FAILED",
+            "exit_code": "75:0"
+          },
+          "check_only": true,
+          "treatment": "dino-metric-depth-bev",
+          "committed_update": 165092,
+          "controller_commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a"
+        }
+      ],
+      "settings": {
+        "node": "eowyn",
+        "data_root": "/local_storage/users/hongen/datasets/nuscenes",
+        "run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+        "durable_backup_root": "/Midgard/home/hongen/projects/DD2414-Project/fullsize_baseline/runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109",
+        "env_prefix": "/Midgard/home/hongen/miniforge3/envs/dd2414",
+        "bevcar_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/BEVCar",
+        "metric_teacher_source": "/Midgard/home/hongen/projects/DD2414-Project/.cache/Depth-Anything-V2",
+        "metric_teacher_weights": "/Midgard/home/hongen/projects/DD2414-Project/.cache/depth_anything_v2_metric_vkitti_vits.pth",
+        "metric_teacher_sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb",
+        "gpus_per_experiment": 5,
+        "workers_per_rank": 0,
+        "recovery": {
+          "training_root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+          "parent_run_root": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_ddp_streamed_20261107",
+          "expected_updates": {
+            "dino-only": 2250,
+            "dino-metric-depth-bev": 3000
+          }
+        }
+      },
+      "config_file_sha256": "b366bfb2041f95cb62fcd4dd1f8abc90fb79589c0fcd12d67397de20a2a4a3d4",
+      "checkpoints": {
+        "dino-only": {
+          "update": 199546,
+          "epoch_progress": 35.46853892641308,
+          "samples_seen": 997730,
+          "configured_epochs": 50,
+          "world_size": 5,
+          "rank_states": 5,
+          "model_and_optimizer_finite": true,
+          "all_training_implementation_hashes_match": true,
+          "checkpoint": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-only/pretrain/checkpoints/latest.pt",
+          "checkpoint_sha256": "4b5b394e241577335ecd328b5992208315fede82591f6ebdadd51e1606b11b35",
+          "resume_state_sha256": "9078132ffc2f1a7ce6ec3a97393b90575e4e19f9a5c60541af1da268020a8753",
+          "config_sha256": "c700f3f52f6e577274d409e500492fc74ec5e7778cdb4df99c7fc56fbe2db905",
+          "completed_validation_epochs": 35
+        },
+        "dino-metric-depth-bev": {
+          "update": 165092,
+          "epoch_progress": 29.344472093849983,
+          "samples_seen": 825460,
+          "configured_epochs": 50,
+          "world_size": 5,
+          "rank_states": 5,
+          "model_and_optimizer_finite": true,
+          "all_training_implementation_hashes_match": true,
+          "checkpoint": "/local_storage/users/hongen/dd2414_runs/random_resnet101_metric_bev_50epochs_workers0_resume_20261109/dino-metric-depth-bev/pretrain/checkpoints/latest.pt",
+          "checkpoint_sha256": "49cccaf0da341c31b23533953a8cc8e6ff11a603d66e33f8f665f3ee577ef2ec",
+          "resume_state_sha256": "4f1bc2e557d5f1957ad1e6e437102398c55dd1d8cb0c2019d04eb22e61808f11",
+          "config_sha256": "57b74819baf20eba74ca7d7ef30546debdbf1e56495f6c8ebc2cf4ffa93f4c7f",
+          "completed_validation_epochs": 29
+        }
+      },
+      "finished_utc": "2026-11-12T00:37:46.598564+00:00"
+    },
+    "retired_blocked_jobs": [
+      {
+        "job_id": "1250696",
+        "observed": "hongen|PENDING|dd2414-recovered-dino-camera-probe|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250697",
+        "observed": "hongen|PENDING|dd2414-recovered-dino-fused-probe|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250698",
+        "observed": "hongen|PENDING|dd2414-recovered-dino-segmentation|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250700",
+        "observed": "hongen|PENDING|dd2414-recovered-depth-camera-probe|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250701",
+        "observed": "hongen|PENDING|dd2414-recovered-depth-fused-probe|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250702",
+        "observed": "hongen|PENDING|dd2414-recovered-depth-segmentation|DependencyNeverSatisfied"
+      },
+      {
+        "job_id": "1250703",
+        "observed": "hongen|PENDING|dd2414-recovered-backup-clean|Dependency"
+      }
+    ],
+    "old_blocked_jobs_cancelled": true,
+    "repair_submitted_unix_time": 1794443987.3489184,
+    "repair_submission_complete": true,
+    "policy": "Replacement for launch-failed continuations; original fifty TOTAL epochs and checkpoint state unchanged; no retry of actual training errors"
+  },
+  "progress": {
+    "dino-only": {
+      "status": {
+        "state": "running",
+        "mode": "pretrain",
+        "nsweeps": 10,
+        "depth_mode": "metric-bev",
+        "training_profile": "random-metric-bev",
+        "treatment": "dino-only",
+        "updated_unix_time": 1794444278.2829971,
+        "epoch_progress": 35.509242801279775,
+        "epochs": 50,
+        "update": 199775,
+        "samples_seen": 998875,
+        "samples_per_second": 6.6791784403748276,
+        "latest": {
+          "bev": 0.08211857676506043,
+          "gradient_norm": 0.07788088172674179,
+          "image": 0.17536106705665588,
+          "loss": 0.10076707750558854,
+          "learning_rates": {
+            "camera": 5.6127562506136376e-05,
+            "student": 5.6127562506136376e-05
+          }
+        },
+        "wall_seconds": 170313.51864532195,
+        "total_updates": 281300,
+        "world_size": 5,
+        "global_batch_size": 5,
+        "peak_allocated_gib": 4.828803062438965,
+        "memory_all_ranks_at_last_save": [
+          {
+            "rank": 0,
+            "peak_allocated_gib": 4.828803062438965,
+            "peak_reserved_gib": 5.31640625,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 1,
+            "peak_allocated_gib": 4.8312225341796875,
+            "peak_reserved_gib": 5.361328125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 2,
+            "peak_allocated_gib": 4.841009140014648,
+            "peak_reserved_gib": 5.3203125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 3,
+            "peak_allocated_gib": 4.838019847869873,
+            "peak_reserved_gib": 5.310546875,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 4,
+            "peak_allocated_gib": 4.834027290344238,
+            "peak_reserved_gib": 5.330078125,
+            "device_total_gib": 9.77484130859375
+          }
+        ]
+      },
+      "latest_metric": {
+        "update": 199783,
+        "epoch_progress": 35.51066477070743,
+        "bev": 0.08501952588558198,
+        "gradient_norm": 0.09114395081996918,
+        "image": 0.17177253365516665,
+        "loss": 0.10237012654542924,
+        "learning_rates": {
+          "camera": 5.612098987946848e-05,
+          "student": 5.612098987946848e-05
+        }
+      },
+      "source_update": 199546,
+      "updates_after_resume": 237,
+      "recent_new_updates": [
+        199547,
+        199548,
+        199549
+      ],
+      "new_metrics_finite": true,
+      "tail_updates_contiguous": true,
+      "resource_tail": {
+        "seconds": 294.88126719370484,
+        "update": 199782,
+        "host_current_gib": 81.44807815551758,
+        "host_peak_gib": 81.44807815551758,
+        "host_limit_gib": 128.0,
+        "gpus": [
+          {
+            "index": 0,
+            "utilization": 42.0,
+            "used_mib": 7081.0,
+            "total_mib": 10240.0
+          },
+          {
+            "index": 1,
+            "utilization": 0.0,
+            "used_mib": 7127.0,
+            "total_mib": 10240.0
+          },
+          {
+            "index": 2,
+            "utilization": 0.0,
+            "used_mib": 7085.0,
+            "total_mib": 10240.0
+          },
+          {
+            "index": 3,
+            "utilization": 32.0,
+            "used_mib": 7075.0,
+            "total_mib": 10240.0
+          },
+          {
+            "index": 4,
+            "utilization": 10.0,
+            "used_mib": 7095.0,
+            "total_mib": 10240.0
+          }
+        ]
+      },
+      "checkpoint_bytes": 485845099,
+      "checkpoint_modified_unix_time": 1794444259.1728306,
+      "status_age_seconds": 6.7553606033325195,
+      "host_memory": {
+        "current_gib": 81.4703254699707,
+        "peak_gib": 81.54271697998047,
+        "limit_gib": 128.0,
+        "rss_gib": 67.43109130859375,
+        "cache_gib": 13.659782409667969,
+        "oom_control": "oom_kill_disable 0\nunder_oom 0\noom_kill 0"
+      },
+      "fresh_periodic_checkpoint_verified": true
+    },
+    "dino-metric-depth-bev": {
+      "status": {
+        "state": "running",
+        "mode": "pretrain",
+        "nsweeps": 10,
+        "depth_mode": "metric-bev",
+        "training_profile": "random-metric-bev",
+        "treatment": "dino-metric-depth-bev",
+        "updated_unix_time": 1794444271.1465306,
+        "epoch_progress": 29.37699964450764,
+        "epochs": 50,
+        "update": 165275,
+        "samples_seen": 826375,
+        "samples_per_second": 5.555740371970452,
+        "latest": {
+          "bev": 0.09702274650335313,
+          "gradient_norm": 0.07047352939844131,
+          "image": 0.19774444699287416,
+          "loss": 0.20072487592697144,
+          "metric_depth_bev": 1.6711557388305665,
+          "learning_rates": {
+            "camera": 8.785874180766218e-05,
+            "student": 8.785874180766218e-05
+          }
+        },
+        "wall_seconds": 171067.46594330668,
+        "total_updates": 281300,
+        "world_size": 5,
+        "global_batch_size": 5,
+        "peak_allocated_gib": 4.968447208404541,
+        "memory_all_ranks_at_last_save": [
+          {
+            "rank": 0,
+            "peak_allocated_gib": 4.968447208404541,
+            "peak_reserved_gib": 5.41796875,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 1,
+            "peak_allocated_gib": 4.9690704345703125,
+            "peak_reserved_gib": 5.423828125,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 2,
+            "peak_allocated_gib": 4.981095790863037,
+            "peak_reserved_gib": 5.419921875,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 3,
+            "peak_allocated_gib": 4.966111660003662,
+            "peak_reserved_gib": 5.43359375,
+            "device_total_gib": 9.77484130859375
+          },
+          {
+            "rank": 4,
+            "peak_allocated_gib": 4.977614879608154,
+            "peak_reserved_gib": 5.427734375,
+            "device_total_gib": 9.77484130859375
+          }
+        ]
+      },
+      "latest_metric": {
+        "update": 165290,
+        "epoch_progress": 29.3796658371845,
+        "bev": 0.08513940572738649,
+        "gradient_norm": 0.0618489533662796,
+        "image": 0.1875847488641739,
+        "loss": 0.2057659447193146,
+        "metric_depth_bev": 2.0027494192123414,
+        "learning_rates": {
+          "camera": 8.784383024735343e-05,
+          "student": 8.784383024735343e-05
+        }
+      },
+      "source_update": 165092,
+      "updates_after_resume": 198,
+      "recent_new_updates": [
+        165093,
+        165094,
+        165095
+      ],
+      "new_metrics_finite": true,
+      "tail_updates_contiguous": true,
+      "resource_tail": {
+        "seconds": 294.6790182478726,
+        "update": 165288,
+        "host_current_gib": 77.62392807006836,
+        "host_peak_gib": 77.62405395507812,
+        "host_limit_gib": 128.0,
+        "gpus": []
+      },
+      "checkpoint_bytes": 485845547,
+      "checkpoint_modified_unix_time": 1794444248.1568506,
+      "status_age_seconds": 13.895266771316528,
+      "host_memory": {
+        "current_gib": 77.7033805847168,
+        "peak_gib": 77.70350646972656,
+        "limit_gib": 128.0,
+        "rss_gib": 67.58769989013672,
+        "cache_gib": 9.775096893310547,
+        "oom_control": "oom_kill_disable 0\nunder_oom 0\noom_kill 0"
+      },
+      "fresh_periodic_checkpoint_verified": true
+    }
+  },
+  "scheduler": "1251177|PENDING|0:00|afterok:1251176|dd2414-fixed-dino-camera-probe|(Dependency)\n1251178|PENDING|0:00|afterok:1251176|dd2414-fixed-dino-fused-probe|(Dependency)\n1251179|PENDING|0:00|afterok:1251176|dd2414-fixed-dino-segmentation|(Dependency)\n1251181|PENDING|0:00|afterok:1251180|dd2414-fixed-depth-camera-probe|(Dependency)\n1251182|PENDING|0:00|afterok:1251180|dd2414-fixed-depth-fused-probe|(Dependency)\n1251183|PENDING|0:00|afterok:1251180|dd2414-fixed-depth-segmentation|(Dependency)\n1251184|PENDING|0:00|afterok:1251177,afterok:1251178,afterok:1251179,afterok:1251181,afterok:1251182,afterok:1251183|dd2414-fixed-backup-clean|(Dependency)\n1251176|RUNNING|4:58||dd2414-fixed-dino-continue|eowyn\n1251180|RUNNING|4:58||dd2414-fixed-depth-continue|eowyn\n",
+  "immutable_sources": {
+    "source_root": {
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/4a4fbdca3459",
+      "commit": "4a4fbdca34597f2ae7c76044314306bc3606b69d",
+      "porcelain": ""
+    },
+    "controller_root": {
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/aec677657cd0",
+      "commit": "aec677657cd0a72b7aa1ef72510faf4f1d3bee2a",
+      "porcelain": ""
+    },
+    "training_root": {
+      "root": "/Midgard/home/hongen/projects/DD2414-Project/.cache/deployments/a31f9039f9fe",
+      "commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+      "porcelain": ""
+    }
+  },
+  "accounting": "JobID|JobName|State|Elapsed|ExitCode|NodeList\n1250696|dd2414-recovered-dino-camera-probe|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250697|dd2414-recovered-dino-fused-probe|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250698|dd2414-recovered-dino-segmentation|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250700|dd2414-recovered-depth-camera-probe|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250701|dd2414-recovered-depth-fused-probe|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250702|dd2414-recovered-depth-segmentation|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1250703|dd2414-recovered-backup-clean|CANCELLED by 1295200121|00:00:00|0:0|None assigned\n1251174|dd2414-continuation-admit|FAILED|00:00:37|1:0|eowyn\n1251175|dd2414-continuation-admit|COMPLETED|00:00:11|0:0|eowyn\n1251176|dd2414-fixed-dino-continue|RUNNING|00:04:59|0:0|eowyn\n1251177|dd2414-fixed-dino-camera-probe|PENDING|00:00:00|0:0|None assigned\n1251178|dd2414-fixed-dino-fused-probe|PENDING|00:00:00|0:0|None assigned\n1251179|dd2414-fixed-dino-segmentation|PENDING|00:00:00|0:0|None assigned\n1251180|dd2414-fixed-depth-continue|RUNNING|00:04:59|0:0|eowyn\n1251181|dd2414-fixed-depth-camera-probe|PENDING|00:00:00|0:0|None assigned\n1251182|dd2414-fixed-depth-fused-probe|PENDING|00:00:00|0:0|None assigned\n1251183|dd2414-fixed-depth-segmentation|PENDING|00:00:00|0:0|None assigned\n1251184|dd2414-fixed-backup-clean|PENDING|00:00:00|0:0|None assigned\n",
+  "scope": "Actual repaired node accounting, unchanged checkpoint/protocol admission, five-GPU resumed training and fresh periodic saves; both fifty-epoch experiments remain incomplete",
+  "fix": {
+    "query_binary": "/usr/local/bin/sacct",
+    "child_library_prefixes": [
+      "/usr/local/lib",
+      "/usr/local/lib/slurm"
+    ],
+    "environment_scope": "Only sacct subprocess; trainer and global environment unchanged",
+    "packages_or_system_settings_changed": false
+  },
+  "tests": {
+    "continuation_regression_tests": 11,
+    "result": "passed",
+    "command": "PYTHONPATH=cluster_rpl CUDA_VISIBLE_DEVICES= /home/students2026/miniconda3/envs/bev/bin/python -m unittest test_continue_recovered_depth",
+    "compile_and_diff_checks": "passed",
+    "real_node_admission_job": "1251175"
+  },
+  "limitations": [
+    "Pretraining and the six downstream GT evaluations are incomplete; no new final Vehicle IoU is claimed.",
+    "Full checkpoint learned-state/optimizer/provenance checks were performed on the paused source before resumption; fresh periodic saves are confirmed by file timestamps and active native training counters.",
+    "Only one replacement continuation per treatment is queued; no automatic retry of OOM, cancellation or arbitrary training failure.",
+    "Dataset cleanup still requires all completed fifty-epoch pretrains, six GT readouts and a hash-verified durable backup."
+  ]
+}

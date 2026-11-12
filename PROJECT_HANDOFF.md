@@ -7,6 +7,53 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-12 — Repaired continuations are training; downstream graph replaced
+
+- User explicitly authorized repair and resumption. Helper source is pinned at
+  `4a4fbdca3459`; actual CPU admission **1251175 COMPLETED** in 11 seconds.
+  BOTH patched `--check-only` commands succeeded on eowyn, identifying the exact
+  hongen-owned original parents and their `FAILED|75:0` exits. Both real saved
+  checkpoints passed model/optimizer finiteness, config/implementation hashes,
+  fifty-epoch full-data budget and FIVE rank-specific sampler-state checks.
+  Source cursors are control **199546 / 35.4685 epochs**, depth **165092 /
+  29.3445 epochs**. The admission records file/config/all-resume-state SHA-256;
+  no checkpoint state was rewritten, reset or migrated by this repair.
+- Actual replacement continuations **1251176 (DINO-only)** and **1251180
+  (DINO + metric depth)** are RUNNING on eowyn, each with five GPUs, twenty CPUs,
+  128-GiB host RAM and one 47-hour allocation. These replace launch-failed jobs
+  1250704/1250705; they do not add another fifty epochs. The original admitted
+  controller `aec677657cd0` and model/trainer `a31f9039f9fe` remain unchanged.
+  Latest recorded verification reached **199783 / 165290 updates** (35.5107 /
+  29.3797 epochs), with finite losses/gradients and contiguous counters. BOTH
+  native periodic checkpoints have been freshly written after resumption.
+  Sampled host RAM is 81.47 / 77.70 GiB against 128 GiB, with zero OOM kills.
+- Exactly SEVEN old own PENDING jobs were owner/name/reason-checked and
+  cancelled: 1250696-1250698 / 1250700-1250703. Their failed dependencies could
+  never run. Fresh 10-epoch camera/fused probes and 5-epoch full segmentation
+  are **1251177/1251178/1251179** after successful 1251176, and
+  **1251181/1251182/1251183** after successful 1251180. Guarded final verified
+  backup/cleanup **1251184** requires all SIX GT readouts. No other user's job,
+  workstation run, arwen storage or official Simple-BEV path was changed.
+- Reproduction and exact submission argv are recorded in the shared
+  `.cache/continuation_repair_20261112.json` ledger and
+  [actual repair evidence](artifacts/rpl_continuation_repair_20261112.json).
+  Original submission ledger now points to this active repair record. Preserve
+  the immutable helper/controller/trainer roots and same settings file
+  `.cache/random_depth_workers0_resume_20261109.json`; do not duplicate jobs.
+- Tests: **11 continuation CPU regression tests passed**, compilation/diff
+  checks passed, actual patched node accounting and full checkpoint admission
+  passed, and real five-GPU optimizer updates are observed for BOTH groups.
+  Preliminary CPU audit 1251174 was replaced because its checker incorrectly
+  compared rank-specific sampler identities; the corrected audit compares
+  shared cursor/config fields and verifies each rank separately. This was an
+  audit-script correction, not a checkpoint or model change; history is kept.
+- Limitations/next: neither study has finished 50 epochs, and no new final IoU
+  exists yet. Continue the remaining original budget, verify periodic saves and
+  full final validation, then collect all six GT results before backup/cleanup.
+  Readouts still require SUCCESSFUL full pretraining; timeouts/errors/partial
+  results cannot release them or delete data. Library paths are scoped to the
+  accounting subprocess only; nothing was installed or reconfigured globally.
+
 ### 2026-11-12 — Repair continuation accounting without changing training
 
 - The owner authorized correcting the launcher and continuing both studies.

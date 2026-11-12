@@ -6,7 +6,19 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
-**12 November launcher repair:** the first training segments gracefully saved
+**12 November repair ACTIVE:** actual eowyn CPU admission 1251175 passed both
+patched accounting checks and real checkpoint integrity/provenance checks.
+Replacement five-GPU continuations **1251176 / 1251180** are RUNNING from the
+saved 35.4685 / 29.3445 epoch cursors, with observed finite optimizer updates
+beyond those cursors. Source helper `4a4fbdca3459` calls the unchanged admitted
+controller/trainer. Budgets remain FIFTY TOTAL epochs, not fifty extra epochs.
+Own permanently blocked jobs 1250696-1250698 / 1250700-1250703 were replaced by
+GT readouts **1251177-1251179 / 1251181-1251183**, and guarded final backup/
+cleanup **1251184**. All six readouts wait for the appropriate successful
+continuation. See [actual repair evidence](artifacts/rpl_continuation_repair_20261112.json)
+and the latest handoff; do not resubmit the old failed graph.
+
+**Earlier 12 November diagnosis:** the first training segments gracefully saved
 at 35.4685 / 29.3445 epochs, but continuation jobs 1250704 / 1250705 failed in
 node-side `sacct` library loading before training. Six readouts are blocked.
 The repair scopes existing `/usr/local/lib:/usr/local/lib/slurm` paths to only
