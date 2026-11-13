@@ -7,6 +7,26 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-13 — Verified backup and isolated integration consolidation
+
+- Owner authorized engineering cleanup, scoped staged/untracked project records,
+  separate branch commits/pushes, and recovery tags; no training cancellation,
+  main merge, force-push or data deletion. Remote backup branch/tag are verified
+  at `32d9f35`; original depth source is independently tagged at `0f91e22`.
+  Full recovery refs, external provenance, exclusions and exact baseline command
+  are in [the backup record](docs/integration/BACKUP.md).
+- Work is isolated on `codex/team-integration-20261113`, consolidating the
+  depth source and workstation-only official-study records. No core/model/data
+  implementation was changed in this consolidation. Original workstation
+  branch/index and all fixed cluster execution roots remain untouched.
+- Validation before refactoring: **103 existing CPU regressions passed**,
+  including exact checkpoint/Gloo resume, batch/teacher/depth geometry and
+  sampling controls. Diff checks passed. No full GPU/data experiment was run.
+- Next: extract shared runtime/teacher/loss implementations into an installable
+  package with legacy aliases; introduce named, zero-copy batch adapters and
+  parity checks, then document interfaces and organize testing/deployment.
+  Cross-refactor exact resume must not bypass source/config/hash checks.
+
 ### 2026-11-12 — Repaired continuations are training; downstream graph replaced
 
 - User explicitly authorized repair and resumption. Helper source is pinned at
@@ -3855,7 +3875,7 @@ chat transcripts, secrets, or unreviewed generated data.
 ### Official-split full-data runtime
 
 - Changed: compact `artifacts/official_full_data_results.json` and this runtime block.
-- Queue state: `running`; last stage: `official_rgb_double_dino_10sweep_velocity_full_pretrain_camera_bev_frozen_probe`.
+- Queue state: `complete`; last stage: `official_rgb_double_dino_10sweep_velocity_zero_pretrain_end_to_end_segmentation`.
 - Reproduce/resume: `bash scripts/start_official_full_data.sh`.
 - Evidence: completed summaries require a successful worker exit and full validation;
   the JSON records exact commands, initialization, epochs and actual metrics.

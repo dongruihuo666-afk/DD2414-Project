@@ -1,0 +1,101 @@
+{
+  "dset": "trainval",
+  "nsweeps": 1,
+  "sample_selection": "uniform",
+  "sample_manifest": {
+    "train": {
+      "available_samples": 28130,
+      "available_scenes": 700,
+      "indices": [
+        0
+      ],
+      "tokens": [
+        "3481dbfd65864925b4a4b2d6b7256d44"
+      ],
+      "scene_tokens": [
+        "0053e9c440a94c1b84bd9c4223efc4b0"
+      ]
+    },
+    "val": {
+      "available_samples": 6019,
+      "available_scenes": 150,
+      "indices": [
+        0
+      ],
+      "tokens": [
+        "d5324133e1d241658a7b763831b3af2e"
+      ],
+      "scene_tokens": [
+        "01452fbfbf4543af8acdfd3e8a1ee806"
+      ]
+    }
+  },
+  "scope": "motion target on full fusion model with BEVCar radar branch, held-out (train on train split, eval on scene-disjoint val split)",
+  "train_samples": 1,
+  "val_samples": 1,
+  "steps": 1,
+  "learning_rate": 0.0002,
+  "velocity_clip": 15.0,
+  "moving_threshold": 1.0,
+  "bevcar_velocity_channels": [
+    4,
+    5
+  ],
+  "target_fields": "vx_comp,vy_comp (radar cols 8,9) on moving points only, camera frame",
+  "variants": {
+    "motion_only": {
+      "sem_weight": 0.0,
+      "motion_weight": 1.0
+    }
+  },
+  "train_motion_infos": [
+    {
+      "moving_points": 14,
+      "covered_cells": 12
+    }
+  ],
+  "val_motion_infos": [
+    {
+      "moving_points": 0,
+      "covered_cells": 0
+    }
+  ],
+  "seeds": [
+    125
+  ],
+  "seed_results": {
+    "125": {
+      "motion_only": {
+        "sem_history": [
+          0.0
+        ],
+        "mot_history": [
+          3.091036558151245
+        ],
+        "heldout_sem_eval": {
+          "correct": [
+            1.0002703666687012
+          ],
+          "zero_velocity": [
+            1.0002703666687012
+          ],
+          "no_radar": [
+            1.000381350517273
+          ]
+        },
+        "heldout_mot_eval": {
+          "correct": [
+            0.0
+          ],
+          "zero_velocity": [
+            0.0
+          ],
+          "no_radar": [
+            0.0
+          ]
+        },
+        "train_seconds": 0.7519481960334815
+      }
+    }
+  }
+}
