@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Overfit one nuScenes mini sample with radar-anchored DINOv2 targets."""
+from _bootstrap import enable_source_package
+enable_source_package()
 
 import argparse
 import sys
@@ -29,43 +31,7 @@ BACKGROUND = (245, 247, 250)
 TEXT = (25, 30, 40)
 
 
-class SemanticDistillationModel(nn.Module):
-    def __init__(self, student, teacher_dim=384, image_distill=False):
-        super().__init__()
-        self.student = student
-        self.image_distill = image_distill
-        self.semantic_head = nn.Sequential(
-            nn.Conv2d(student.latent_dim, student.latent_dim, 3, padding=1, bias=False),
-            nn.InstanceNorm2d(student.latent_dim),
-            nn.GELU(),
-            nn.Conv2d(student.latent_dim, teacher_dim, 1),
-        )
-        if image_distill:
-            self.image_head = nn.Sequential(
-                nn.Conv2d(student.feat2d_dim, student.feat2d_dim,
-                          3, padding=1, bias=False),
-                nn.InstanceNorm2d(student.feat2d_dim),
-                nn.GELU(),
-                nn.Conv2d(student.feat2d_dim, teacher_dim, 1),
-            )
-        else:
-            self.image_head = None
-
-    def forward(self, rgb, pixel_from_cameras, camera0_from_cameras,
-                vox_util, radar_voxels):
-        shared_bev, _, image_features = self.student(
-            rgb_camXs=rgb,
-            pix_T_cams=pixel_from_cameras,
-            cam0_T_camXs=camera0_from_cameras,
-            vox_util=vox_util,
-            rad_occ_mem0=radar_voxels,
-            return_shared_bev=True,
-        )
-        fusion_prediction = self.semantic_head(shared_bev)
-        image_prediction = (
-            self.image_head(image_features) if self.image_head is not None else None
-        )
-        return fusion_prediction, image_prediction, shared_bev, image_features
+from dd2414.models.distillation import SemanticDistillationModel
 
 
 def font(size, bold=False):
@@ -150,15 +116,7 @@ def prepare_inputs(batch, device):
     )
 
 
-def semantic_loss(prediction, target, confidence):
-    prediction = F.normalize(prediction.float(), dim=1)
-    target = F.normalize(target.float(), dim=1)
-    cosine = (prediction * target).sum(dim=1)
-    weights = confidence.float()
-    weights = torch.where(weights > 0.05, weights, torch.zeros_like(weights))
-    weights = weights / weights.amax(dim=(1, 2), keepdim=True).clamp_min(1e-6)
-    loss = ((1.0 - cosine) * weights).sum() / weights.sum().clamp_min(1.0)
-    return loss, cosine
+from dd2414.losses.semantic import semantic_loss
 
 
 def heatmap(values):

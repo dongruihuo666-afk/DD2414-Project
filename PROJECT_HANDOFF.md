@@ -7,6 +7,30 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-14 — Independent branch cleanup: shared code stage
+
+- This branch remains the independent experiment `experiment/rpl-depth-10sweep-velocity-study`. No merges,
+  cherry-picks from other experiments, branch renames, or main updates occurred.
+  Each extracted function comes from THIS branch's preserved `0f91e222d658439d253dde4babf9a353056eecd3`.
+- The rejected standalone handoff/snapshot branches were retired after verified
+  remote tags and an all-refs bundle. All original experiments remain separate.
+  Recovery tag: `repository-snapshot-20261113T185518Z/experiment/rpl-depth-10sweep-velocity-study`.
+- Shared teacher/target/model/loss/state helpers now live in `src/dd2414`;
+  old helper modules remain aliases and experiment programs keep their CLIs.
+  Named batch views do not copy, reorder or convert inputs. Installation uses
+  explicit namespaces; new CLI help is stdlib-only. Model/manifest/parameter
+  semantics remain branch-local. New config records bind actual package bytes;
+  strict historical resume requires the original source, with no state reset.
+- Reproduction: `PYTHONPATH=src:.:scripts:cluster_rpl:cluster_experiment
+  CUDA_VISIBLE_DEVICES='' python tools/testing/run_cpu.py` (runner added in the
+  documentation stage); parity fixture: `tests/parity/probe.py --implementation
+  legacy|package --source-root /path/to/the/corresponding/source`.
+- Actual baseline before/after extraction: 183 CPU tests passed on each
+  side, including this branch's existing regression assertions. Gloo/worker IPC
+  checks need local socket/shared-memory permissions. Fixed-input parity now matches exactly in 10 groups, including gradients,
+  calibrated voxel inputs and optimizer resume; portable docs are next. No data/CUDA training or cluster mutation.
+
+
 ### 2026-11-12 — Repaired continuations are training; downstream graph replaced
 
 - User explicitly authorized repair and resumption. Helper source is pinned at

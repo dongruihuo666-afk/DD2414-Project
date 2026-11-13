@@ -3,6 +3,9 @@
 No automatic Slurm submission. The old single-GPU/downstream trainer stays
 available. Completed checkpoints expose unprefixed backbone tensors for it.
 """
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
 import datetime
 import fcntl
 import json
@@ -18,23 +21,23 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from baseline_followup import code_commit, digest_file, load_datasets
-from depth_pretraining_objective import PretrainingForward, pretraining_loss
-from dinov2_bev_demo import load_teacher
-from distributed_training import (AcknowledgedDistributedSampler, SeededEpochDataset, any_rank,
-    load_ddp_checkpoint, mean_scalars, rank_zero_call, save_ddp_checkpoint, validation_shard)
-from fullsize_training import atomic_json_write, learning_rate_at_step
-from multisweep_teacher import build_model, configure, load_depth_teacher, load_official_camera_encoder
-from radar_scaling_data import IndexedSubset, validate_scaling_manifest
-from source_provenance import check_continuation_source
-from train_fullsize_linear_probe import reset_seeds
+from dd2414.runtime.provenance import code_commit, digest_file
+from dd2414.evaluation.followup import load_datasets
+from dd2414.objectives.depth import PretrainingForward, pretraining_loss
+from dd2414.teachers.dino import load_teacher
+from dd2414.runtime.distributed import AcknowledgedDistributedSampler, SeededEpochDataset, any_rank, load_ddp_checkpoint, mean_scalars, rank_zero_call, save_ddp_checkpoint, validation_shard
+from dd2414.runtime.fullsize import atomic_json_write, learning_rate_at_step
+from dd2414.models.multisweep import build_model, configure, load_depth_teacher, load_official_camera_encoder
+from dd2414.data.manifest import IndexedSubset, validate_scaling_manifest
+from dd2414.runtime.provenance import check_continuation_source
+from dd2414.evaluation.probe import reset_seeds
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def validate_args(args, environment):
     if getattr(args, 'training_profile', 'legacy-continuation') == 'random-metric-bev':
-        from metric_bev_profile import validate_metric_args
+        from dd2414.experiments.metric_profile import validate_metric_args
         return validate_metric_args(args, environment)
     if (args.mode != 'pretrain' or args.batch_size != 1 or args.precision != 'bf16'
             or args.nsweeps != 10 or args.train_samples not in [0,28130]
@@ -64,7 +67,7 @@ def run(args):
     updates_per_epoch = 28130 // world_size
     objective = pretraining_loss
     if metric_profile:
-        from metric_bev_objective import metric_pretraining_loss
+        from dd2414.objectives.metric_bev import metric_pretraining_loss
         objective = metric_pretraining_loss
     local_rank = int(os.environ['LOCAL_RANK'])
     if not torch.cuda.is_available() or torch.cuda.device_count() != world_size:
@@ -102,7 +105,7 @@ def run(args):
         if args.seed != manifest['seed']:
             raise ValueError('Manifest seed mismatch')
         if metric_profile:
-            from metric_bev_profile import prepare_metric
+            from dd2414.experiments.metric_profile import prepare_metric
             backbone, plain_forward, depth_teacher, initialization = prepare_metric(args, device)
             continuation = None
         else:
@@ -175,7 +178,7 @@ def run(args):
                 ['nets/segnet.py','nets/bevcar_voxel_adapter.py','nets/radar_encoder.py',
                  'nuscenesdataset.py','utils/vox.py','utils/geom.py']})
         if metric_profile:
-            from metric_bev_profile import metric_config
+            from dd2414.experiments.metric_profile import metric_config
             config.update(metric_config(args, ROOT, initialization))
         elif depth_teacher is not None:
             config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
