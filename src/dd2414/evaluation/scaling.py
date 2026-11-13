@@ -212,4 +212,3 @@ def validation_summary(model, teacher, dataset, manifest, count, device, seed,
         'per_scene': per_scene,
         'records': str(output_path),
     }
-

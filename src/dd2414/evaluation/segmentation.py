@@ -7,4 +7,3 @@ def official_counts(logits, target, valid):
                 fp=int((prediction & ~truth & mask).sum()),
                 fn=int((~prediction & truth & mask).sum()),
                 tn=int((~prediction & ~truth & mask).sum()))
-
