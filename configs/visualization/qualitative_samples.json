@@ -1,0 +1,17 @@
+{
+  "selection": "Four evenly spaced validation scenes; within each scene, choose the sample nearest its temporal midpoint that has at least one valid GT vehicle cell. Selection never uses model predictions.",
+  "samples": [
+    {
+      "sample_token": "9ce5d3ae2cce4a0aaea1626e752f65d9"
+    },
+    {
+      "sample_token": "3608204ac02a47afa1165e06f47d761d"
+    },
+    {
+      "sample_token": "6d1c615ee4694f68996b1b40d2302aaf"
+    },
+    {
+      "sample_token": "ad830c774eb7484a87fd2c776c570c2f"
+    }
+  ]
+}

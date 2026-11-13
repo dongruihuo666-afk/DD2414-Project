@@ -163,14 +163,7 @@ def main():
                 time.sleep(10)
         return process.returncode, read_json(directory/'summary.json')
     def publish():
-        try:
-            result = subprocess.run([sys.executable, 'scripts/publish_official_full_data.py',
-                '--study-dir', str(args.study_dir.resolve())], cwd=ROOT,
-                capture_output=True, text=True, timeout=300)
-            state['publication'] = dict(returncode=result.returncode,
-                                        message=(result.stdout+result.stderr)[-2000:])
-        except Exception as error:
-            state['publication'] = dict(returncode=-1, message=str(error))
+        state['publication'] = dict(status='manual_only', note='Invoke an explicit reviewed publisher separately.')
         write_json(state_path, state)
     audit_command = [sys.executable, 'scripts/audit_full_data_protocol.py',
         '--protocol', 'official_train_val', '--require-ready', '--data-root', str(args.data_root),

@@ -6,6 +6,7 @@ must review the change scope before a GitHub write.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -51,9 +52,7 @@ def main() -> None:
         print('{}')
         return
 
-    print(json.dumps({
-        'decision': 'block',
-        'reason': (
+    message = (
             'This feature branch has local changes or commits ahead of its '
             'upstream. Before finishing, review git status and the task scope. '
             'For your own project edits, update PROJECT_HANDOFF.md with the '
@@ -64,8 +63,13 @@ def main() -> None:
             'Do not stage unrelated user/teammate changes, push to main, '
             'force-push, or merge as a routine step. If unfinished work is '
             'intentionally left local, explain that and finish.'
-        ),
-    }))
+        )
+    # A read-only conversation must not be blocked by somebody else's edits.
+    # Teams may explicitly enable enforcement in their task environment.
+    if os.environ.get('DD2414_ENFORCE_HANDOFF') == '1':
+        print(json.dumps({'decision': 'block', 'reason': message}))
+    else:
+        print(json.dumps({'systemMessage': message}))
 
 
 if __name__ == '__main__':

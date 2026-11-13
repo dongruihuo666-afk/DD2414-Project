@@ -197,15 +197,8 @@ def main():
     report(args.study_dir,state)
 
     def publish_evidence():
-        # A transient GitHub/SSH error cannot discard results or stop training.
-        try:
-            result = subprocess.run([sys.executable,'scripts/publish_multisweep_followup.py',
-                '--study-dir',str(args.study_dir)],cwd=ROOT,capture_output=True,text=True)
-            state['publication'] = dict(returncode=result.returncode,
-                message=(result.stdout+result.stderr)[-3000:])
-        except Exception as error:
-            state['publication'] = dict(returncode=-1,message=f'{type(error).__name__}: {error}')
-        atomic_json_write(state,path)
+        state['publication'] = dict(status='manual_only', note='Invoke an explicit reviewed publisher separately.')
+        atomic_json_write(state, path)
     for task in plan:
         name = task['name']
         summary = read_json(task['expected_summary'])
