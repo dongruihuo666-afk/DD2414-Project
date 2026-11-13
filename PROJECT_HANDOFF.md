@@ -37,6 +37,12 @@
    `DD2414_ENFORCE_HANDOFF=1` enables blocking for a task. Global user settings
    and unrelated staged files are untouched. Team rules remain in `AGENTS.md`.
 
+Final archive hygiene: trimmed inherited README trailing whitespace and retained
+the executable bit on the legacy radar-rotation wrapper and its moved program.
+No numerical code changed in this follow-up. Local syntax/link/shell and scoped
+Git whitespace checks pass; the recorded 194-test and strict-load results remain
+the applicable runtime evidence. Next action is team review, not a training launch.
+
 ## Reproduce and verify
 
 ```bash

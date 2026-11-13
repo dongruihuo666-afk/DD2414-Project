@@ -150,7 +150,7 @@ are intentionally excluded from version control.
 
 ### Simple-BEV: What Really Matters for Multi-Sensor BEV Perception?
 
-This is the official code release for our arXiv paper on BEV perception. 
+This is the official code release for our arXiv paper on BEV perception.
 
 [[Paper](https://arxiv.org/abs/2206.07959)] [[Project Page](https://simple-bev.github.io/)]
 
@@ -160,10 +160,10 @@ This is the official code release for our arXiv paper on BEV perception.
 
 ## Requirements
 
-The lines below should set up a fresh environment with everything you need: 
+The lines below should set up a fresh environment with everything you need:
 ```
 conda create --name bev
-source activate bev 
+source activate bev
 conda install pytorch=1.12.0 torchvision=0.13.0 cudatoolkit=11.3 -c pytorch
 conda install pip
 pip install -r requirements.txt
@@ -179,7 +179,7 @@ To download a pre-trained camera-only model, run this:
 ```
 sh get_rgb_model.sh
 ```
-When evaluated at `res_scale=2` (`448x800`), this model should show a final trainval mean IOU of `47.6`, which is slightly higher than the number in our arXiv paper (`47.4`). 
+When evaluated at `res_scale=2` (`448x800`), this model should show a final trainval mean IOU of `47.6`, which is slightly higher than the number in our arXiv paper (`47.4`).
 
 To download a pre-trained camera-plus-radar model, run this:
 
@@ -188,7 +188,7 @@ sh get_rad_model.sh
 ```
 When evaluated at `res_scale=2` (`448x800`) and `nsweeps=5`, this model should show a final trainval mean IOU of `55.8`, which is slightly higher than the number in our arXiv paper (`55.7`).
 
-Note there is some variance across training runs, which alters results by +-0.1 IOU. It should be possible to cherry-pick checkpoints along the training process, but we recommend to pick `max_iters` and just report the final number (as we have done).  
+Note there is some variance across training runs, which alters results by +-0.1 IOU. It should be possible to cherry-pick checkpoints along the training process, but we recommend to pick `max_iters` and just report the final number (as we have done).
 
 ## Training
 
@@ -310,7 +310,7 @@ For example, `p_a = a_T_b * p_b`.
 This convention lets us easily keep track of valid transformations, such as
 `point_a = a_T_b * b_T_c * c_T_d * point_d`.
 
-For example, an intrinsics matrix is `pix_T_cam`. An extrinsics matrix is `cam_T_world`. 
+For example, an intrinsics matrix is `pix_T_cam`. An extrinsics matrix is `cam_T_world`.
 
 In this project's context, we often need something like this:
 `xyz_cam0 = cam0_T_cam1 * cam1_T_velodyne * xyz_velodyne`
