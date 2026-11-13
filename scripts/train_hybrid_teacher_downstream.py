@@ -12,6 +12,9 @@ DINO distillation and the motion objective are not continued in either mode.
 That keeps the downstream Vehicle BEV IoU directly interpretable and avoids
 silently changing the requested two-experiment protocol.
 """
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
 
 import argparse
 import json
@@ -22,6 +25,11 @@ import sys
 import time
 from pathlib import Path
 
+from dd2414.cli.args_train_hybrid_teacher_downstream import parse_args
+import sys
+if __name__ == '__main__' and any(v in sys.argv[1:] for v in ('--help','-h')):
+    parse_args()
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -31,33 +39,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
-from dinov2_bev_demo import build_loaders  # noqa: E402
-from fullsize_training import (  # noqa: E402
-    AcknowledgedShuffleSampler,
-    atomic_json_write,
-    learning_rate_at_step,
-    query_nvidia_smi,
-)
-from hybrid_teacher_full import (  # noqa: E402
-    auxiliary_metrics_from_counts,
-    binary_counts,
-    build_hybrid_teacher_model,
-    configure_end_to_end_finetuning,
-    configure_linear_probe,
-    file_sha256,
-    label_tensors,
-    module_state_sha256,
-    prepare_inputs,
-    reset_seeds,
-    simplebev_downstream_loss,
-    simplebev_per_frame_iou,
-    simplebev_segmentation_loss,
-)
-from radar_scaling_data import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
-from training_checkpoint import (  # noqa: E402
-    load_training_checkpoint,
-    save_training_checkpoint,
-)
+from dd2414.teachers.dino import build_loaders
+from dd2414.runtime.fullsize import AcknowledgedShuffleSampler, atomic_json_write, learning_rate_at_step, query_nvidia_smi
+from dd2414.models.hybrid import auxiliary_metrics_from_counts, binary_counts, build_hybrid_teacher_model, configure_end_to_end_finetuning, configure_linear_probe, file_sha256, label_tensors, module_state_sha256, prepare_inputs, reset_seeds, simplebev_downstream_loss, simplebev_per_frame_iou, simplebev_segmentation_loss
+from dd2414.data.manifest import IndexedSubset, scale_indices, validate_scaling_manifest
+from dd2414.runtime.checkpoints import load_training_checkpoint, save_training_checkpoint
 
 
 GIB = 1024 ** 3
@@ -70,36 +56,7 @@ def request_stop(signum, _frame):
     print(f'RECEIVED_SIGNAL_{signum}; stopping after current optimizer step', flush=True)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', choices=('finetune', 'linear-probe'), required=True)
-    parser.add_argument('--data-root', type=Path, required=True)
-    parser.add_argument('--bevcar-source', type=Path, required=True)
-    parser.add_argument('--manifest', type=Path, required=True)
-    parser.add_argument('--pretrain-checkpoint', type=Path, required=True)
-    parser.add_argument('--run-dir', type=Path, required=True)
-    parser.add_argument('--train-samples', type=int, default=0,
-                        help='0 uses all 28,130 manifest training samples')
-    parser.add_argument('--val-samples', type=int, default=6019)
-    parser.add_argument('--epochs', type=int, default=8)
-    parser.add_argument('--batch-size', type=int, default=2)
-    parser.add_argument('--gradient-accumulation', type=int, default=1)
-    parser.add_argument('--num-workers', type=int, default=8)
-    parser.add_argument('--prefetch-factor', type=int, default=2)
-    parser.add_argument('--learning-rate', type=float, default=None)
-    parser.add_argument('--minimum-lr-ratio', type=float, default=0.1)
-    parser.add_argument('--warmup-epochs', type=float, default=0.25)
-    parser.add_argument('--weight-decay', type=float, default=1e-5)
-    parser.add_argument('--precision', choices=('bf16', 'fp16'), default='bf16')
-    parser.add_argument('--seed', type=int, default=125)
-    parser.add_argument('--validation-epochs', default='1,3,5,8')
-    parser.add_argument('--checkpoint-every-updates', type=int, default=1000)
-    parser.add_argument('--print-every-updates', type=int, default=50)
-    parser.add_argument('--resume', action='store_true')
-    parser.add_argument('--stop-after-updates', type=int, default=0)
-    parser.add_argument('--allow-incomplete-pretrain', action='store_true',
-                        help='engineering smoke tests only')
-    return parser.parse_args()
+from dd2414.cli.args_train_hybrid_teacher_downstream import parse_args
 
 
 def parse_epochs(value, total):
@@ -370,6 +327,7 @@ def main():
         'num_workers': args.num_workers,
         'prefetch_factor': args.prefetch_factor,
     }
+    record_package_implementation(run_config, Path(__file__).resolve().parents[1])
     progress = {
         'epoch': 0,
         'update': 0,

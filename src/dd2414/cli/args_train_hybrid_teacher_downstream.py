@@ -1,0 +1,32 @@
+import argparse
+from pathlib import Path
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--mode', choices=('finetune', 'linear-probe'), required=True)
+    parser.add_argument('--data-root', type=Path, required=True)
+    parser.add_argument('--bevcar-source', type=Path, required=True)
+    parser.add_argument('--manifest', type=Path, required=True)
+    parser.add_argument('--pretrain-checkpoint', type=Path, required=True)
+    parser.add_argument('--run-dir', type=Path, required=True)
+    parser.add_argument('--train-samples', type=int, default=0,
+                        help='0 uses all 28,130 manifest training samples')
+    parser.add_argument('--val-samples', type=int, default=6019)
+    parser.add_argument('--epochs', type=int, default=8)
+    parser.add_argument('--batch-size', type=int, default=2)
+    parser.add_argument('--gradient-accumulation', type=int, default=1)
+    parser.add_argument('--num-workers', type=int, default=8)
+    parser.add_argument('--prefetch-factor', type=int, default=2)
+    parser.add_argument('--learning-rate', type=float, default=None)
+    parser.add_argument('--minimum-lr-ratio', type=float, default=0.1)
+    parser.add_argument('--warmup-epochs', type=float, default=0.25)
+    parser.add_argument('--weight-decay', type=float, default=1e-5)
+    parser.add_argument('--precision', choices=('bf16', 'fp16'), default='bf16')
+    parser.add_argument('--seed', type=int, default=125)
+    parser.add_argument('--validation-epochs', default='1,3,5,8')
+    parser.add_argument('--checkpoint-every-updates', type=int, default=1000)
+    parser.add_argument('--print-every-updates', type=int, default=50)
+    parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--stop-after-updates', type=int, default=0)
+    parser.add_argument('--allow-incomplete-pretrain', action='store_true',
+                        help='engineering smoke tests only')
+    return parser.parse_args(argv)

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Resumable full-data hybrid-teacher pretraining with BEVCar and multi-sweep radar."""
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
 
 import argparse
 import json
@@ -11,6 +14,11 @@ import sys
 import time
 from pathlib import Path
 
+from dd2414.cli.args_train_hybrid_teacher_pretrain import parse_args
+import sys
+if __name__ == '__main__' and any(v in sys.argv[1:] for v in ('--help','-h')):
+    parse_args()
+
 import torch
 from torch.utils.data import DataLoader, Subset
 from torch.utils.tensorboard import SummaryWriter
@@ -20,31 +28,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
-from dinov2_bev_demo import build_loaders, load_teacher  # noqa: E402
-from fullsize_training import (  # noqa: E402
-    AcknowledgedShuffleSampler,
-    atomic_json_write,
-    build_motion_targets_batched,
-    build_targets_from_features_batched,
-    extract_teacher_features_batched,
-    learning_rate_at_step,
-    motion_loss_batched,
-    query_nvidia_smi,
-    semantic_loss_batched,
-)
-from hybrid_teacher_full import (  # noqa: E402
-    build_hybrid_teacher_model,
-    configure_pretraining,
-    file_sha256,
-    image_distillation_loss,
-    prepare_inputs,
-    reset_seeds,
-)
-from radar_scaling_data import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
-from training_checkpoint import (  # noqa: E402
-    load_training_checkpoint,
-    save_training_checkpoint,
-)
+from dd2414.teachers.dino import build_loaders, load_teacher
+from dd2414.runtime.fullsize import AcknowledgedShuffleSampler, atomic_json_write, build_motion_targets_batched, build_targets_from_features_batched, extract_teacher_features_batched, learning_rate_at_step, motion_loss_batched, query_nvidia_smi, semantic_loss_batched
+from dd2414.models.hybrid import build_hybrid_teacher_model, configure_pretraining, file_sha256, image_distillation_loss, prepare_inputs, reset_seeds
+from dd2414.data.manifest import IndexedSubset, scale_indices, validate_scaling_manifest
+from dd2414.runtime.checkpoints import load_training_checkpoint, save_training_checkpoint
 
 
 GIB = 1024 ** 3
@@ -57,38 +45,7 @@ def request_stop(signum, _frame):
     print(f'RECEIVED_SIGNAL_{signum}; stopping after current optimizer step', flush=True)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--data-root', type=Path, required=True)
-    parser.add_argument('--bevcar-source', type=Path, required=True)
-    parser.add_argument('--manifest', type=Path, required=True)
-    parser.add_argument('--run-dir', type=Path, required=True)
-    parser.add_argument('--scale', choices=('4096', 'full'), default='full')
-    parser.add_argument('--train-samples', type=int, default=0,
-                        help='engineering override; 0 uses the selected scale')
-    parser.add_argument('--val-samples', type=int, default=6019)
-    parser.add_argument('--epochs', type=int, default=8)
-    parser.add_argument('--batch-size', type=int, default=2)
-    parser.add_argument('--gradient-accumulation', type=int, default=1)
-    parser.add_argument('--num-workers', type=int, default=8)
-    parser.add_argument('--prefetch-factor', type=int, default=2)
-    parser.add_argument('--learning-rate', type=float, default=2e-4)
-    parser.add_argument('--minimum-lr-ratio', type=float, default=0.1)
-    parser.add_argument('--warmup-epochs', type=float, default=0.25)
-    parser.add_argument('--weight-decay', type=float, default=1e-5)
-    parser.add_argument('--precision', choices=('bf16', 'fp16'), default='bf16')
-    parser.add_argument('--seed', type=int, default=125)
-    parser.add_argument('--nsweeps', type=int, choices=(1, 5, 10), default=10)
-    parser.add_argument('--image-weight', type=float, default=0.2)
-    parser.add_argument('--bev-weight', type=float, default=0.8)
-    parser.add_argument('--motion-weight', type=float, default=0.5)
-    parser.add_argument('--model-name', default='dinov2_vits14')
-    parser.add_argument('--validation-epochs', default='1,3,5,8')
-    parser.add_argument('--checkpoint-every-updates', type=int, default=1000)
-    parser.add_argument('--print-every-updates', type=int, default=50)
-    parser.add_argument('--resume', action='store_true')
-    parser.add_argument('--stop-after-updates', type=int, default=0)
-    return parser.parse_args()
+from dd2414.cli.args_train_hybrid_teacher_pretrain import parse_args
 
 
 def parse_epochs(value, total):
@@ -300,6 +257,7 @@ def main():
         'num_workers': args.num_workers,
         'prefetch_factor': args.prefetch_factor,
     }
+    record_package_implementation(run_config, Path(__file__).resolve().parents[1])
     progress = {
         'epoch': 0,
         'update': 0,

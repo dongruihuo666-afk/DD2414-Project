@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Frozen one-layer vehicle-segmentation probe for a full-size checkpoint."""
+from _bootstrap import enable_source_package
+enable_source_package()
 
 import argparse
 import hashlib
@@ -22,15 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
-from compare_motion_target_bevcar_tiny import (  # noqa: E402
-    build_model,
-    official_voxelnet,
-    prepare_bevcar_inputs,
-)
-from dinov2_bev_demo import build_loaders  # noqa: E402
-from fullsize_training import atomic_json_write, query_nvidia_smi  # noqa: E402
-from radar_evaluation import apply_radar_velocity_mode  # noqa: E402
-from radar_scaling_data import scale_indices, validate_scaling_manifest  # noqa: E402
+from dd2414.models.legacy_motion import build_model, official_voxelnet, prepare_bevcar_inputs
+from dd2414.teachers.dino import build_loaders
+from dd2414.runtime.fullsize import atomic_json_write, query_nvidia_smi
+from dd2414.evaluation.radar_controls import apply_radar_velocity_mode
+from dd2414.data.manifest import scale_indices, validate_scaling_manifest
 
 
 def parse_args():
@@ -55,81 +53,28 @@ def parse_args():
     return parser.parse_args()
 
 
-def reset_seeds(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+from dd2414.evaluation.probe import reset_seeds
 
 
-def file_sha256(path):
-    digest = hashlib.sha256()
-    with Path(path).open('rb') as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b''):
-            digest.update(block)
-    return digest.hexdigest()
+from dd2414.evaluation.probe import file_sha256
 
 
-def balanced_binary_loss(logits, target, valid):
-    """Average foreground and background BCE without empty-class NaNs."""
-    raw = F.binary_cross_entropy_with_logits(logits.float(), target.float(),
-                                              reduction='none')
-    valid_mask = valid.gt(0.5)
-    terms = []
-    for class_mask in (target.gt(0.5), target.le(0.5)):
-        mask = valid_mask & class_mask
-        if mask.any():
-            terms.append(raw[mask].mean())
-    if not terms:
-        raise ValueError('probe batch has no valid BEV cells')
-    return torch.stack(terms).mean()
+from dd2414.evaluation.probe import balanced_binary_loss
 
 
-def binary_segmentation_counts(logits, target, valid):
-    prediction = logits.sigmoid().ge(0.5)
-    truth = target.gt(0.5)
-    mask = valid.gt(0.5)
-    return {
-        'tp': int((prediction & truth & mask).sum()),
-        'fp': int((prediction & ~truth & mask).sum()),
-        'fn': int((~prediction & truth & mask).sum()),
-        'tn': int((~prediction & ~truth & mask).sum()),
-    }
+from dd2414.evaluation.probe import binary_segmentation_counts
 
 
-def metrics_from_counts(counts):
-    tp, fp, fn = counts['tp'], counts['fp'], counts['fn']
-    iou_denominator = tp + fp + fn
-    precision_denominator = tp + fp
-    recall_denominator = tp + fn
-    f1_denominator = 2 * tp + fp + fn
-    return {
-        'vehicle_iou': tp / iou_denominator if iou_denominator else None,
-        'precision': tp / precision_denominator if precision_denominator else None,
-        'recall': tp / recall_denominator if recall_denominator else None,
-        'f1': 2 * tp / f1_denominator if f1_denominator else None,
-        **counts,
-    }
+from dd2414.evaluation.probe import metrics_from_counts
 
 
-def add_counts(total, current):
-    for key in total:
-        total[key] += current[key]
+from dd2414.evaluation.probe import add_counts
 
 
-def checkpoint_velocity_mode(payload):
-    return payload['run_config'].get('radar_velocity_mode', 'full')
+from dd2414.evaluation.probe import checkpoint_velocity_mode
 
 
-def resolve_velocity_mode(requested, payload):
-    stored = checkpoint_velocity_mode(payload)
-    if requested == 'auto':
-        return stored
-    if requested != stored:
-        raise ValueError(
-            f'probe velocity mode {requested} does not match checkpoint mode {stored}'
-        )
-    return requested
+from dd2414.evaluation.probe import resolve_velocity_mode
 
 
 def shared_bev(model, batch, device, velocity_mode, amp_dtype):

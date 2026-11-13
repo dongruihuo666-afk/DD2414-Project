@@ -7,6 +7,30 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-14 — Independent branch cleanup: shared code stage
+
+- This branch remains the independent experiment `experiment/hybrid-teacher-10sweep-cluster`. No merges,
+  cherry-picks from other experiments, branch renames, or main updates occurred.
+  Each extracted function comes from THIS branch's preserved `33f2d86d70286c514cede6539f991825dde726ee`.
+- The rejected standalone handoff/snapshot branches were retired after verified
+  remote tags and an all-refs bundle. All original experiments remain separate.
+  Recovery tag: `repository-snapshot-20261113T185518Z/experiment/hybrid-teacher-10sweep-cluster`.
+- Shared teacher/target/model/loss/state helpers now live in `src/dd2414`;
+  old helper modules remain aliases and experiment programs keep their CLIs.
+  Named batch views do not copy, reorder or convert inputs. Installation uses
+  explicit namespaces; new CLI help is stdlib-only. Model/manifest/parameter
+  semantics remain branch-local. New config records bind actual package bytes;
+  strict historical resume requires the original source, with no state reset.
+- Reproduction: `PYTHONPATH=src:.:scripts:cluster_rpl:cluster_experiment
+  CUDA_VISIBLE_DEVICES='' python tools/testing/run_cpu.py` (runner added in the
+  documentation stage); parity fixture: `tests/parity/probe.py --implementation
+  legacy|package --source-root /path/to/the/corresponding/source`.
+- Actual baseline before/after extraction: 44 CPU tests passed on each
+  side, including this branch's existing regression assertions. Gloo/worker IPC
+  checks need local socket/shared-memory permissions. Fixed-input parity now matches exactly in 9 groups, including gradients,
+  calibrated voxel inputs and optimizer resume; portable docs are next. No data/CUDA training or cluster mutation.
+
+
 2026-10-05 trainval status: the Ubuntu host has full labeled `v1.0-trainval`;
 mini has been removed. The official split is 700 train / 150 val scenes and
 28,130 / 6,019 samples; all 2,631,083 referenced sensor files were present and
