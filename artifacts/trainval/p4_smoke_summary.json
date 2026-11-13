@@ -1,0 +1,77 @@
+{
+  "status": "complete",
+  "run_config": {
+    "dataset": "v1.0-trainval",
+    "manifest_sha256": "8905db7995784bbee4d641c9756a8648ebf5510a891fa633fe65c1eab8dcb0fc",
+    "scale": "128",
+    "train_samples": 128,
+    "seed": 125,
+    "nsweeps": 1,
+    "max_updates": 2,
+    "learning_rate": 0.0002,
+    "semantic_weight": 1.0,
+    "motion_weight": 0.5,
+    "model_name": "dinov2_vits14",
+    "bevcar_voxelnet_sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac",
+    "checkpoint_every": 1,
+    "num_workers": 0
+  },
+  "progress": {
+    "epoch": 0,
+    "update": 2,
+    "loss_sum": 5.924964427947998,
+    "semantic_sum": 1.9474610090255737,
+    "motion_sum": 7.955006837844849,
+    "moving_updates": 2,
+    "covered_cells": 9,
+    "train_seconds": 0.6227353939320892,
+    "peak_allocated_gib": 3.5737662315368652
+  },
+  "mean_train_loss": 2.962482213973999,
+  "mean_semantic_loss": 0.9737305045127869,
+  "mean_motion_loss": 3.9775034189224243,
+  "updates_per_second": 3.211636948032706,
+  "estimated_30000_update_hours": 2.5947308080503717,
+  "checkpoint_seconds_this_process": 1.0955853848718107,
+  "checkpoint_bytes": 187965266,
+  "teacher_feature_cache": null,
+  "validation": {
+    "samples": 2,
+    "moving_frames": 1,
+    "covered_cells": 6,
+    "positions": [
+      0,
+      6018
+    ],
+    "seconds": 0.673380131018348,
+    "frames_per_second": 2.970090603914039,
+    "amp": true,
+    "means": {
+      "matched": {
+        "semantic_loss": 0.9745068252086639,
+        "motion_loss": 1.243294596672058,
+        "moving_frame_motion_loss": 2.486589193344116,
+        "cell_weighted_motion_loss": 2.486589193344116
+      },
+      "zero_velocity": {
+        "semantic_loss": 0.9745084345340729,
+        "motion_loss": 1.2432942390441895,
+        "moving_frame_motion_loss": 2.486588478088379,
+        "cell_weighted_motion_loss": 2.486588478088379
+      },
+      "empty": {
+        "semantic_loss": 0.9746880829334259,
+        "motion_loss": 1.2430906295776367,
+        "moving_frame_motion_loss": 2.4861812591552734,
+        "cell_weighted_motion_loss": 2.4861812591552734
+      },
+      "wrong_scene": {
+        "semantic_loss": 0.974696695804596,
+        "motion_loss": 1.2431814670562744,
+        "moving_frame_motion_loss": 2.486362934112549,
+        "cell_weighted_motion_loss": 2.486362934112549
+      }
+    },
+    "records": "artifacts/trainval/p4_smoke_val.jsonl"
+  }
+}
