@@ -30,6 +30,14 @@ python tools/quality/check_source.py
 
 ## Evidence, limits and next step
 
+Local-tooling follow-up (2026-11-14): removed the two tracked .codex hook files
+and AGENTS.md from the index, retaining their local bytes. Added assistant/IDE
+ignore rules; .github/workflows/cpu.yml remains shared project CI. Verification:
+`git ls-files .codex AGENTS.md` is empty; `git check-ignore` matches the reviewed
+local-tooling paths, local SHA-256 values are unchanged, documentation links
+and diff checks pass. No runtime code changed, so training tests were not rerun.
+Next: keep personal tooling local and review shared project configuration.
+
 Pre/post extraction: 98 existing CPU tests pass. Fixed-input comparisons
 against `f9f333f8607f22514df216d5969f23a0ecbf5917` match exactly in 9 groups,
 including gradients, calibrated inputs/voxels, wrapper state, sampler and
