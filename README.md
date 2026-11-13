@@ -1,6 +1,6 @@
 # DD2414: Camera and Radar BEV Learning
 
-**Experiment branch:** `dd2414-mini-baseline`
+**Experiment branch:** `experiment/workstation-radar-baseline`
 
 This branch contains the radar-scaling experiments and the completed ten-sweep full-data study initialized from the official RGB encoder.
 Each experiment has its own branch, configuration and results.

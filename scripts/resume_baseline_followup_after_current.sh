@@ -16,8 +16,8 @@ while true; do
         *) break ;;
     esac
 done
-[[ "$(git branch --show-current)" == dd2414-mini-baseline ]] || {
-    echo 'Recovery is restricted to dd2414-mini-baseline.' >&2; exit 1;
+[[ "$(git branch --show-current)" == experiment/workstation-radar-baseline ]] || {
+    echo 'Recovery is restricted to experiment/workstation-radar-baseline.' >&2; exit 1;
 }
 echo 'Resuming the original study with its existing absolute deadline and completed stages.'
 exec "${PYTHON_BIN}" scripts/run_baseline_followup_day.py \

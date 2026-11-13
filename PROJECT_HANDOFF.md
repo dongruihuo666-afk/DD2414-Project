@@ -1,12 +1,27 @@
 # Project handoff
 
-Branch: `dd2414-mini-baseline`
+Branch: `experiment/workstation-radar-baseline`
 
 This branch contains the radar-scaling experiments and the completed ten-sweep full-data study initialized from the official RGB encoder.
 Experiment settings are in [EXPERIMENT.md](docs/EXPERIMENT.md); source and asset
 recovery details are in [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
 
-## Latest changes — 2026-11-14
+## Branch-name adaptation — 2026-11-14
+
+- Renamed `dd2414-mini-baseline` to `experiment/workstation-radar-baseline`
+  to describe the full-data workstation experiments. Updated active documentation,
+  deployment examples, launch guards and the explicit publication allowlist.
+- The pre-change commit is preserved by
+  `pre-workstation-branch-rename-20261114-c23dee8`. Original snapshot tag names,
+  benchmark provenance and the recorded source boundary keep their historical names.
+- Local checkouts can follow the migration commands in [BRANCHES.md](docs/BRANCHES.md).
+  Existing run directories and pinned training sources are unchanged.
+- Validation passed: four tooling regressions, documentation links, Python
+  syntax/import boundaries, four shell syntax checks, and mocked publication,
+  deployment and queue branch guards. All 38 pinned Git blobs match the recorded
+  hashes and have no working-tree changes. No training or CUDA inference was run.
+
+## Earlier changes — 2026-11-14
 
 - Shortened repetitive setup/recovery explanations and rewrote the command tools
   with normal spacing, descriptive names and explicit control flow.

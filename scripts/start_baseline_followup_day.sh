@@ -8,8 +8,8 @@ BEVCAR_SOURCE_DIR="${BEVCAR_SOURCE_DIR:-${REPO_ROOT}/external/BEVCar}"
 STUDY_DIR="${STUDY_DIR:-${REPO_ROOT}/fullsize_baseline/runs/meeting_followup_20261016}"
 RUN_SERVICE="${RUN_SERVICE:-dd2414-baseline-followup-day}"
 cd "${REPO_ROOT}"
-[[ "$(git branch --show-current)" == dd2414-mini-baseline ]] || {
-    echo 'Switch to dd2414-mini-baseline before starting this study.' >&2; exit 1;
+[[ "$(git branch --show-current)" == experiment/workstation-radar-baseline ]] || {
+    echo 'Switch to experiment/workstation-radar-baseline before starting this study.' >&2; exit 1;
 }
 [[ -d "${NUSCENES_ROOT}/v1.0-trainval" ]] || { echo 'Missing trainval dataset.' >&2; exit 1; }
 [[ -f "${BEVCAR_SOURCE_DIR}/nets/voxelnet.py" ]] || { echo 'Missing BEVCar VoxelNet.' >&2; exit 1; }

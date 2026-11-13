@@ -1,4 +1,4 @@
-# Experiment: `dd2414-mini-baseline`
+# Experiment: `experiment/workstation-radar-baseline`
 
 This branch contains the radar-scaling experiments and the completed ten-sweep full-data study initialized from the official RGB encoder.
 

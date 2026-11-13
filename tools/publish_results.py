@@ -8,7 +8,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = ("results/benchmarks.json", "PROJECT_HANDOFF.md")
 EXPERIMENT_BRANCHES = (
-    "dd2414-mini-baseline",
+    "experiment/workstation-radar-baseline",
     "experiment/hybrid-teacher-10sweep-cluster",
     "experiment/rpl-full-data-double-distill",
     "experiment/rpl-depth-10sweep-velocity-study",

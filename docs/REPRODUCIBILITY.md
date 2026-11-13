@@ -16,6 +16,13 @@ JSON records. A verified all-refs bundle and index/patch inventory are stored
 under `.cache/repository-snapshots/20261113T185518Z/` on the workstation.
 Data, weights, logs and environments are stored separately from source.
 
+The later branch-name adaptation is backed up by
+`pre-workstation-branch-rename-20261114-c23dee8`, pointing to commit
+`c23dee8af731ecea171ac0eac443e04fa3c95b60`. The original snapshot tags above,
+benchmark source records and source-boundary metadata retain `dd2414-mini-baseline`
+as their historical identity. The active branch is now
+`experiment/workstation-radar-baseline`.
+
 ## Resuming a run
 
 Use the source revision, environment, assets and output directory recorded by

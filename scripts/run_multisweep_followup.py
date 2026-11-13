@@ -149,7 +149,7 @@ def main():
     args = p.parse_args()
     if min(args.batch_size,args.pretrain_epochs,args.downstream_epochs) < 1:
         raise ValueError('positive batch size and epoch budgets required')
-    if subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip() != 'dd2414-mini-baseline':
+    if subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip() != 'experiment/workstation-radar-baseline':
         raise RuntimeError('baseline branch required; cluster branch must remain untouched')
     args.study_dir = args.study_dir.resolve()
     if args.plan_only:

@@ -6,7 +6,7 @@ PYTHON_BIN="${PYTHON_BIN:-${HOME}/miniconda3/envs/bev/bin/python}"
 STUDY_DIR="${STUDY_DIR:-${REPO_ROOT}/fullsize_baseline/runs/official_rgb_full_10sweep_20261103}"
 RUN_SERVICE="dd2414-official-full-data"
 cd "${REPO_ROOT}"
-[[ "$(git branch --show-current)" == dd2414-mini-baseline ]] || exit 1
+[[ "$(git branch --show-current)" == experiment/workstation-radar-baseline ]] || exit 1
 [[ -x "${PYTHON_BIN}" ]] || { echo 'Missing bev environment.' >&2; exit 1; }
 if systemctl --user is-active --quiet "${RUN_SERVICE}.service"; then
     echo "${RUN_SERVICE} is already active"

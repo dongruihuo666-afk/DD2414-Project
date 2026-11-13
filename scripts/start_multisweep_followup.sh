@@ -6,7 +6,7 @@ PYTHON_BIN="${PYTHON_BIN:-${HOME}/miniconda3/envs/bev/bin/python}"
 STUDY_DIR="${STUDY_DIR:-${REPO_ROOT}/fullsize_baseline/runs/multisweep_teacher_20261016}"
 RUN_SERVICE="${RUN_SERVICE:-dd2414-multisweep-teacher}"
 cd "${REPO_ROOT}"
-[[ "$(git branch --show-current)" == dd2414-mini-baseline ]] || exit 1
+[[ "$(git branch --show-current)" == experiment/workstation-radar-baseline ]] || exit 1
 for previous in dd2414-baseline-followup-day dd2414-baseline-followup-recovery; do
     if systemctl --user is-active --quiet "${previous}.service"; then
         echo "${previous} is still active; checkpoint/stop the old queue before starting." >&2
