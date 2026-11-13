@@ -34,3 +34,12 @@ pipeline, experiments, or project documentation.
 The repository-local `Stop` hook reminds the agent about unfinished local
 changes or commits that are ahead of the feature branch's upstream. It never
 pushes on its own and does not replace reviewing the exact files being sent.
+
+## Independent experiments and generated files
+
+- Preserve each experiment branch independently. Do not merge experimental
+  histories into main or create an extra handoff branch for routine cleanup.
+- Keep records consolidated in docs and the short handoff. Generated artifacts,
+  old local plans, logs, PDFs and weights are ignored, not publication defaults.
+- The local hook is advisory by default; DD2414_ENFORCE_HANDOFF=1 is task-local
+  opt-in. No hook stages/pushes or grants scope over unrelated teammate work.

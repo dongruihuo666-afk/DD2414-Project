@@ -1,0 +1,10 @@
+{
+  "branch": "experiment/hybrid-teacher-10sweep-cluster",
+  "project_root": "/path/to/this-experiment-checkout",
+  "python": "/path/to/mamba/env/bin/python",
+  "entry": "downstream",
+  "launcher": [],
+  "arguments": [
+    "--help"
+  ]
+}
