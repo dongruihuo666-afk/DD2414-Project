@@ -1,63 +1,52 @@
-# DD2414 — independent camera/radar BEV experiment
+# DD2414: Camera and Radar BEV Learning
 
-**Branch: `dd2414-mini-baseline`**
+**Experiment branch:** `dd2414-mini-baseline`
 
-Workstation experiment history, full-data radar scaling and the completed official-RGB-initialized ten-sweep study.
+This branch contains the radar-scaling experiments and the completed ten-sweep full-data study initialized from the official RGB encoder.
+Each experiment has its own branch, configuration and results.
+`main` contains the original Simple-BEV reference.
 
-Each branch is an independent experiment, not a staging area for one merged
-model. `main` stays the original Simple-BEV reference. This cleanup creates no
-new experiment branch and does not merge histories or import another branch's
-newer model, data ordering, initialization, objective or training budget.
+## Getting started
 
-## Install and run
-
-Use an existing compatible Python 3.10 / Torch 2.5.1 / torchvision 0.20.1
-environment; do not change the environment or fixed source of a running job.
+Use Python 3.10, PyTorch 2.5.1 and torchvision 0.20.1. In an environment with
+the dependencies already installed:
 
 ```bash
 python -m pip install --no-deps --no-build-isolation -e .
-dd2414 --help
 dd2414 train --help
 python tools/testing/run_cpu.py
-python tools/quality/check_source.py
 ```
 
-`--no-deps` assumes dependencies are already prepared. See
-[installation/testing](docs/DEVELOPMENT.md). Import/help does not download weights,
-start training or contact a cluster. Actual runs need explicit data, source,
-checkpoint and output paths. Read the unchanged branch-specific flags/protocol.
+See [development](docs/DEVELOPMENT.md) for dependencies and checks, and
+[the experiment](docs/EXPERIMENT.md) for initialization, training and evaluation.
+Training requires local nuScenes data, teacher weights and external sources.
 
-## Project structure
+## Layout
 
-| Path | Purpose |
+| Path | Contents |
 | --- | --- |
-| `src/dd2414/` | This branch's common teachers/targets, losses, wrappers, runtime and named batch interface |
-| `nets/`, `utils/`, `nuscenesdataset.py` | Preserved official path and branch-local research implementation |
-| `configs/` | Unchanged data manifest/protocol; separate optional deployment paths |
-| `scripts/` | Compatible training and opt-in historical experiment commands |
-| `tests/`, `tools/` | CPU/state/parity checks, explicit deployment/publication and report tools |
-| `docs/` | Consolidated project, experiment, interface and recovery documentation |
-| `results/` | Only a small curated benchmark summary, when this branch has one |
+| `src/dd2414/` | Model wrappers, teachers, losses, data interfaces and training utilities |
+| `nets/`, `utils/`, `nuscenesdataset.py` | Simple-BEV implementation and dataset loader |
+| `configs/` | Data manifests, experiment settings and deployment examples |
+| `scripts/` | Training, evaluation and historical experiment commands |
+| `tests/`, `tools/` | Regression tests, checks and command-line tools |
+| `docs/` | Experiment, interface, setup and recovery documentation |
+| `results/` | Selected benchmark summaries |
 
-Start with [the branch index](docs/BRANCHES.md), [current experiment](docs/EXPERIMENT.md),
-[tensor/API contract](docs/INTERFACES.md), [engineering checks](docs/DEVELOPMENT.md)
-and [recovery/artifact policy](docs/REPRODUCIBILITY.md). The short
-[handoff](PROJECT_HANDOFF.md) records actual checks and limitations.
+[Branches](docs/BRANCHES.md) describes the experiment variants.
+[Interfaces](docs/INTERFACES.md) documents input fields, coordinates and outputs.
+[Deployment](docs/DEPLOYMENT.md) covers launching jobs and publishing summaries.
+[Reproducibility](docs/REPRODUCIBILITY.md) records source snapshots and asset hashes.
+[PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) records the latest engineering checks.
 
-## Records and generated files
-
-Past day plans, per-action journals, meeting PDFs, bulk images, raw JSON/JSONL
-and runtime output no longer belong to this branch's active Git tree. They
-remain untouched locally and recoverable from the verified pre-cleanup tag.
-`artifacts/` is ignored without whitelist exceptions. Necessary configuration
-is in `configs/`; this is separate from generated reports and model parameters.
-No data, weights, cache, environment or cluster job was deleted or stopped.
+Generated artifacts, logs, weights, personal settings and old meeting records
+are ignored. Original records remain available in the source snapshots.
 
 ## Attribution
 
-Derived from [aharley/simple_bev](https://github.com/aharley/simple_bev),
-`be46f0ef71960c233341852f3d9bc3677558ab6d`. **Simple-BEV: What Really Matters
-for Multi-Sensor BEV Perception?**, Adam W. Harley, Zhaoyuan Fang, Jie Li,
-Rares Ambrus and Katerina Fragkiadaki, arXiv:2206.07959. The original
-[LICENSE](LICENSE) and source headers are retained. External BEVCar, DINOv2 and
-Depth Anything licenses apply to their respective sources/assets.
+Based on [aharley/simple_bev](https://github.com/aharley/simple_bev), commit
+`be46f0ef71960c233341852f3d9bc3677558ab6d`:
+**Simple-BEV: What Really Matters for Multi-Sensor BEV Perception?**,
+Adam W. Harley, Zhaoyuan Fang, Jie Li, Rares Ambrus and Katerina Fragkiadaki,
+arXiv:2206.07959. See [LICENSE](LICENSE). BEVCar, DINOv2 and Depth Anything retain
+their respective licenses.

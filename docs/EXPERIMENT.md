@@ -1,40 +1,40 @@
-# This experiment: `dd2414-mini-baseline`
+# Experiment: `dd2414-mini-baseline`
 
-Workstation experiment history, full-data radar scaling and the completed official-RGB-initialized ten-sweep study.
+This branch contains the radar-scaling experiments and the completed ten-sweep full-data study initialized from the official RGB encoder.
 
-The pre-cleanup source is `0225bbef5f69ae04e0d52adbd4ee9d393cb1678e`, saved under
-`repository-snapshot-20261113T185518Z/dd2414-mini-baseline`. The model/data implementation, loss weights, initialization,
-velocity coordinate transforms, sweeps, depth geometry and budget are preserved
-from that source. Engineering extraction does not add a new experiment or result.
+Original source: `0225bbef5f69ae04e0d52adbd4ee9d393cb1678e`.
+The corresponding source tag is listed in [reproducibility](REPRODUCIBILITY.md).
 
-## Configuration and evaluation
+## Model and training
 
-`MultiSweepTeacher` exposes existing image DINO and radar-supported BEV DINO
-objectives plus its existing motion/depth profiles. Frozen camera/fused probes,
-unfrozen readouts, full supervised segmentation and GT-box motion readouts are
-different protocols and must be reported separately. The official-initialized
-protocol uses only strict `encoder.*` weights from the official RGB checkpoint;
-absence of that explicit argument retains the branch's original initialization.
+`MultiSweepTeacher` supports image DINO distillation and radar-supported BEV
+DINO distillation, with the motion and depth profiles implemented in this
+branch. Supplying `--official-camera-checkpoint` strictly loads `encoder.*`
+from the official Simple-BEV RGB checkpoint. Otherwise the factory uses its
+original initialization.
 
-Full-data results use the official train/validation scene separation in the
-branch's recorded manifest. Public test labels are withheld; validation scores
-are not a new blind-test result. An older subset protocol in an older branch is
-not silently regenerated, relabeled as full data or removed as a method change.
-Use existing manifest validation and exact token order/hash.
+## Evaluation
 
-## Recommended entrypoints
+Frozen camera/fused probes measure representation quality under a fixed linear
+readout. Unfrozen readouts and supervised segmentation measure adaptation with
+labels. GT-box velocity readouts evaluate motion at known object locations.
+Report these protocols separately.
+
+Full-data results use the official train/validation scene split recorded in
+the manifest. Public test annotations are withheld, so these are validation
+scores. Keep the recorded sample order and manifest hashes when reproducing a run.
+
+## Commands
 
 ```bash
 dd2414 train --help
 ```
 
 
-All flags/defaults come verbatim from this branch's original parser. Existing
-`scripts/train_*.py` commands remain available. The original official
-`train_nuscenes.py` / `eval_nuscenes.py`, download scripts and checkpoint keys are
-unchanged. The upstream `eval.sh` defaults are not a universal reproduction recipe.
+The existing `scripts/train_*.py` commands remain available. Official Simple-BEV
+uses `train_nuscenes.py`, `eval_nuscenes.py` and its download scripts. Match
+their preprocessing and arguments to the checkpoint being evaluated.
 
-For exact historical commands/configuration/status snapshots, recover original
-documents from the tag rather than treating old RUNNING statements as live
-facts. No cluster query, new job or full-data retraining is part of this cleanup.
-Small curated evidence is indexed in [results](../results/README.md).
+[Results](../results/README.md) indexes the retained benchmark summaries.
+Original commands, detailed configurations and reports can be recovered from
+the source tag. Check running jobs directly before using an old status record.
