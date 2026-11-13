@@ -34,3 +34,8 @@ pipeline, experiments, or project documentation.
 The repository-local `Stop` hook reminds the agent about unfinished local
 changes or commits that are ahead of the feature branch's upstream. It never
 pushes on its own and does not replace reviewing the exact files being sent.
+It is advisory by default; `DD2414_ENFORCE_HANDOFF=1` explicitly enables blocking
+for a task environment. A read-only question or unrelated staged teammate work
+does not authorize commits. Never copy personal usernames, keys, cluster paths
+or machine assumptions into shared defaults. Use isolated worktrees for source
+changes when existing runs depend on a fixed checkout.

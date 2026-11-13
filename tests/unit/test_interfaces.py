@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -51,11 +52,12 @@ class InterfaceTests(unittest.TestCase):
 
     def test_cli_help_is_stdlib_only(self):
         code = "from dd2414.cli.main import main; import sys; main(['train','--help'])"
-        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        environment = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[2] / 'src'))
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=environment)
         self.assertEqual(result.returncode, 0, result.stderr)
         # A fresh import guard makes accidental heavyweight help imports fail.
         code = "import sys; sys.modules['torch']=None; sys.modules['nuscenes']=None; " + code
-        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=environment)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--nsweeps', result.stdout)
 

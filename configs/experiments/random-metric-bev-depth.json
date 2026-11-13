@@ -1,0 +1,16 @@
+{
+  "run_name": "random-10sweep-dino-metric-depth-new",
+  "arguments": [
+    "--distributed", "--mode", "pretrain", "--training-profile", "random-metric-bev",
+    "--treatment", "dino-metric-depth-bev", "--depth-mode", "metric-bev",
+    "--nsweeps", "10", "--velocity-mode", "full", "--epochs", "50",
+    "--batch-size", "1", "--num-workers", "0", "--seed", "125",
+    "--image-resolution", "448", "800", "--teacher-resolution", "448", "798",
+    "--depth-teacher-resolution", "448", "798", "--precision", "bf16",
+    "--learning-rate", "0.0002", "--camera-lr", "0.0002",
+    "--image-weight", "0.2", "--bev-weight", "0.8", "--motion-weight", "0",
+    "--depth-weight", "0", "--relative-depth-weight", "0",
+    "--metric-depth-weight", "0.05", "--metric-depth-sigma", "2",
+    "--checkpoint-every", "250", "--print-every", "10"
+  ]
+}

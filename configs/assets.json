@@ -1,0 +1,16 @@
+{
+  "scope": "Content pins for separately acquired assets; no weights or datasets in Git",
+  "files": {
+    "simplebev_rgb_checkpoint": {"sha256": "ccaaf31b7590b73c55d67de0e70c1b99f705bedc2f773cb7124fd0344892749e"},
+    "bevcar_voxelnet": {"sha256": "43ed0ee30f70c328bd47885cbc68272e7f5e3625c61b325b54f713a851f3e6ac"},
+    "dinov2_vits14": {"sha256": "b938bf1bc15cd2ec0feacfe3a1bb553fe8ea9ca46a7e1d8d00217f29aef60cd9"},
+    "depth_anything_relative_vits": {"sha256": "715fade13be8f229f8a70cc02066f656f2423a59effd0579197bbf57860e1378"},
+    "depth_anything_metric_vkitti_vits": {"sha256": "9203e538d35255c90dda4b7fedb47ff33fe725497bcca3b1e53b3a65ee63f0cb"},
+    "full_data_manifest": {"sha256": "f46868da2d68fe651cddce64013981454f67c8574a1a6f46a6723f72bc84002f", "canonical_content_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"}
+  },
+  "sources": {
+    "bevcar": {"url": "https://github.com/robot-learning-freiburg/BEVCar.git", "commit": "29cacda3bc5416d47428c1d0f017527acad34f90"},
+    "depth_anything_v2": {"url": "https://github.com/DepthAnything/Depth-Anything-V2.git", "commit": "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf"},
+    "dinov2": {"url": "https://github.com/facebookresearch/dinov2", "commit": null, "source_archive": "research/pre_integration/dinov2-cached-source.tar.gz", "source_archive_sha256": "85d433456741b7415a3b58588f3d82460d7f4239744a3931026680ee847fff75"}
+  }
+}

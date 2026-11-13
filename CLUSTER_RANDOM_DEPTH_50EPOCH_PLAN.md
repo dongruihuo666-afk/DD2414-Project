@@ -6,7 +6,7 @@ The workstation branch/queue and official Simple-BEV path are unchanged.
 
 ## Current execution choice: eowyn after validated migration
 
-**12 November repair ACTIVE:** actual eowyn CPU admission 1251175 passed both
+**Recorded 12 November repair snapshot (not a live status query):** actual eowyn CPU admission 1251175 passed both
 patched accounting checks and real checkpoint integrity/provenance checks.
 Replacement five-GPU continuations **1251176 / 1251180** are RUNNING from the
 saved 35.4685 / 29.3445 epoch cursors, with observed finite optimizer updates

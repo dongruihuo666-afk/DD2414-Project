@@ -1,0 +1,33 @@
+name: dd2414-integration
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10.14
+  - pip=24.0
+  - libgl
+  - libglib
+  - pip:
+      # Keep the isolated interpreter/libraries under mamba; use matching
+      # wheels to avoid the old conda Pillow/libxcb vs libgl conflict.
+      - --extra-index-url https://download.pytorch.org/whl/cu121
+      - torch==2.5.1+cu121
+      - torchvision==0.20.1+cu121
+      - numpy==1.23.5
+      - Pillow==9.4.0
+      - matplotlib==3.5.1
+      - scipy==1.15.3
+      - scikit-learn==1.1.2
+      - scikit-image==0.19.3
+      - nuscenes-devkit==1.1.11
+      - efficientnet_pytorch==0.7.1
+      - fire==0.4.0
+      - pyquaternion==0.9.9
+      # The pinned nuScenes SDK declares opencv-python, not its headless
+      # alternative. Do not install both providers of the cv2 namespace.
+      - opencv-python==4.6.0.66
+      - tensorboardX==2.2
+      - tensorboard==2.10.0
+      - protobuf==3.19.4
+      - Shapely==1.8.5.post1
+      - PyYAML==6.0.3

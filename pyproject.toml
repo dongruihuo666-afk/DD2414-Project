@@ -16,7 +16,7 @@ dependencies = ["numpy==1.23.5", "torch==2.5.1", "torchvision==0.20.1",
 train = ["nuscenes-devkit==1.1.11", "opencv-python==4.6.0.66",
          "tensorboard==2.10.0", "tensorboardX==2.2", "protobuf==3.19.4",
          "matplotlib==3.5.1", "efficientnet-pytorch==0.7.1", "fire==0.4.0"]
-test = ["pytest==9.1.1"]
+test = ["pytest==9.1.1", "PyYAML==6.0.3"]
 cluster = []  # Slurm, SSH and rsync are site tools; not Python dependencies.
 
 [project.scripts]

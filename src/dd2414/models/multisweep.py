@@ -176,7 +176,9 @@ def projected_radar_depth(batch, height, width, device, max_age=.1):
     """
     images = as_batch(batch).images[:, 0]
     b, s = images.shape[:2]
-    rots, trans, intrinsics = (batch[i][:, 0].to(device).float() for i in [1, 2, 3])
+    view = as_batch(batch)
+    rots, trans, intrinsics = (value[:, 0].to(device).float() for value in
+        (view.camera_rotations, view.camera_translations, view.intrinsics))
     camera_from_ego = utils.geom.safe_inverse(
         utils.geom.merge_rtlist(rots, trans).flatten(0, 1)).reshape(b, s, 4, 4)
     radar = as_batch(batch).radar[:, 0].to(device).float().transpose(1, 2)

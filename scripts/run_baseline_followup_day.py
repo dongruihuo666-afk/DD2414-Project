@@ -83,14 +83,11 @@ def main():
         state.update(stage=stage, updated_unix_time=time.time(), **extra)
         atomic_json_write(state, state_path)
 
-    def report_and_publish():
+    def report_and_record_publication():
         build_report(study)
-        # Git/network failures never discard a training result or stop the queue.
-        # The exact blocking message remains visible for later manual recovery.
-        result = subprocess.run([sys.executable, 'scripts/publish_baseline_followup.py',
-            '--study-dir', str(study)], cwd=ROOT, capture_output=True, text=True)
-        state['publication'] = dict(returncode=result.returncode,
-            message=(result.stdout+result.stderr)[-3000:])
+        state['publication'] = dict(status='manual_only', command=[
+            sys.executable, 'tools/publish_results.py', '--study', 'baseline',
+            '--study-dir', str(args.study_dir.resolve())])
         atomic_json_write(state, state_path)
 
     def execute(name, command, expected_summary, *, retry=True, budget_seconds=None):
@@ -152,7 +149,7 @@ def main():
             status.update(status='complete' if complete else ('partial' if timed_out else 'failed'),
                 returncode=process.returncode, finished_unix_time=time.time())
             update(name)
-            report_and_publish()
+            report_and_record_publication()
             if complete:
                 return True
             if timed_out or STOP:
@@ -237,7 +234,7 @@ def main():
     complete = all(row.get('status') == 'complete' for row in state['stages'].values())
     update('finished', status='complete' if complete else 'finished_with_partial_or_failed_stages',
            finished_unix_time=time.time(), child_status={})
-    report_and_publish()
+    report_and_record_publication()
     print(json.dumps(state), flush=True)
 
 

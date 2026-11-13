@@ -1,5 +1,11 @@
 # RPL full-data double-distillation deployment
 
+Integration note: this directory preserves site- and source-specific controllers,
+including historical personal paths, branch guards and recovery policies. Do
+not treat these as portable defaults or rerun recorded jobs. See
+[portable deployment](../docs/DEPLOYMENT.md). The cleanup did not synchronize,
+submit, cancel, resume or modify any remote job or immutable execution root.
+
 For the current **random ResNet101 / 50-epoch / two-treatment metric BEV depth**
 study use [CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md](../CLUSTER_RANDOM_DEPTH_50EPOCH_PLAN.md),
 `random_depth_study.example.json`, `audit_random_depth.py` and

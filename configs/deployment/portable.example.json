@@ -1,0 +1,11 @@
+{
+  "project_root": "/path/to/DD2414-Project",
+  "python": "/path/to/environment/bin/python",
+  "data_root": "/path/to/nuscenes",
+  "bevcar_source": "/path/to/BEVCar",
+  "run_root": "/path/to/new-runs",
+  "manifest": "configs/radar_scaling_manifest_seed125.json",
+  "metric_teacher_source": "/path/to/Depth-Anything-V2",
+  "metric_teacher_weights": "/path/to/depth_anything_v2_metric_vkitti_vits.pth",
+  "local_ranks": 2
+}

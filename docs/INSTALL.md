@@ -34,6 +34,10 @@ For an isolated editable check without modifying the workstation environment:
 
 ## New training and downstream readouts
 
+A mamba profile with previously admitted CUDA 12.1 cluster pins is available in
+[configs/environments](../configs/environments/README.md). It is separate from
+the workstation's working CUDA 12.4 build and was not installed over it.
+
 `dd2414 train` dispatches the existing `train_multisweep_teacher.py` driver;
 flags/defaults are identical and now parsed in a lightweight module. It requires
 a source checkout for manifests, historical drivers and provenance. An installed

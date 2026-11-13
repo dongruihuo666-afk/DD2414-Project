@@ -196,16 +196,11 @@ def main():
     atomic_json_write(state,path)
     report(args.study_dir,state)
 
-    def publish_evidence():
-        # A transient GitHub/SSH error cannot discard results or stop training.
-        try:
-            result = subprocess.run([sys.executable,'scripts/publish_multisweep_followup.py',
-                '--study-dir',str(args.study_dir)],cwd=ROOT,capture_output=True,text=True)
-            state['publication'] = dict(returncode=result.returncode,
-                message=(result.stdout+result.stderr)[-3000:])
-        except Exception as error:
-            state['publication'] = dict(returncode=-1,message=f'{type(error).__name__}: {error}')
-        atomic_json_write(state,path)
+    def record_publication_command():
+        state['publication'] = dict(status='manual_only', command=[
+            sys.executable, 'tools/publish_results.py', '--study', 'multisweep',
+            '--study-dir', str(args.study_dir.resolve())])
+        atomic_json_write(state, path)
     for task in plan:
         name = task['name']
         summary = read_json(task['expected_summary'])
@@ -261,7 +256,7 @@ def main():
                 returncode=process.returncode,finished_unix_time=time.time())
             atomic_json_write(state,path)
             report(args.study_dir,state)
-            publish_evidence()
+            record_publication_command()
             if complete or STOP:
                 break
             print(f'Worker failed: {name}; preserving checkpoint, attempt {attempt}/3',flush=True)
@@ -272,7 +267,7 @@ def main():
         else 'finished_with_failures'),updated_unix_time=time.time())
     atomic_json_write(state,path)
     report(args.study_dir,state)
-    publish_evidence()
+    record_publication_command()
     print('QUEUE_'+state['status'].upper(),flush=True)
 
 
