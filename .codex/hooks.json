@@ -1,5 +1,5 @@
 {
-  "description": "Remind Codex to finish the DD2414 project handoff for local repository changes.",
+  "description": "Read-only advisory for scoped handoff; enforcement is opt-in via DD2414_ENFORCE_HANDOFF=1.",
   "hooks": {
     "Stop": [
       {

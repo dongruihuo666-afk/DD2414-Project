@@ -1,0 +1,546 @@
+{
+  "source_snapshot": "repository-snapshot-20261113T185518Z/dd2414-mini-baseline",
+  "original_record": "artifacts/official_full_data_results.json",
+  "queue_status": "complete",
+  "reporting": "Existing official validation results, not a new blind test or cleanup measurement",
+  "results": [
+    {
+      "name": "official_rgb_encoder_camera_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "camera_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": null
+      },
+      "final_validation": {
+        "vehicle_iou": 0.025914199954446562,
+        "precision": 0.21635676175441643,
+        "recall": 0.028598485808692526,
+        "f1": 0.05051923436793686,
+        "tp": 107176,
+        "fp": 388191,
+        "fn": 3640435,
+        "tn": 235334569,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.024483727541674525,
+        "predicted_positive_fraction": 0.002068594114300679,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain",
+      "status": "complete",
+      "configuration": {
+        "mode": "pretrain",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": null
+      },
+      "final_validation": {
+        "samples": 6019,
+        "losses": {
+          "loss": 0.6217432802753168,
+          "image": 0.36110688207018393,
+          "bev": 0.21073082928805875,
+          "radar_motion_auxiliary": 0.7618744724705486
+        },
+        "depth_anchors": 0,
+        "depth_mae_m": null,
+        "depth_rmse_m": null,
+        "depth_abs_rel": null,
+        "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_camera_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "camera_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.008574560322469333,
+        "precision": 0.20736769176034403,
+        "recall": 0.008865114335506007,
+        "f1": 0.017003324612367393,
+        "tp": 33223,
+        "fp": 126990,
+        "fn": 3714388,
+        "tn": 235595770,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.00717521163123998,
+        "predicted_positive_fraction": 0.0006690305749766429,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_fused_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.19331580583017005,
+        "precision": 0.4384042745475298,
+        "recall": 0.2569450244435722,
+        "f1": 0.323997729495728,
+        "tp": 962930,
+        "fp": 1233513,
+        "fn": 2784681,
+        "tn": 234489247,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.17659036066806114,
+        "predicted_positive_fraction": 0.009172086679566718,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_object_velocity_readout",
+      "status": "complete",
+      "configuration": {
+        "mode": "object-motion",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520"
+      },
+      "final_validation": {
+        "samples": 6019,
+        "metrics": {
+          "matched": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.6031314715971705,
+              "velocity_rmse_mps": 2.81991637954179,
+              "speed_mae_mps": 1.4593373077669687
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.300832772141462,
+              "velocity_rmse_mps": 5.309653354452981,
+              "speed_mae_mps": 3.9782854892715136
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.6550183370114382,
+              "velocity_rmse_mps": 0.9156216143386545,
+              "speed_mae_mps": 0.5740473552642793
+            }
+          },
+          "zero_velocity": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.3280827205356034,
+              "velocity_rmse_mps": 3.8772662940325815,
+              "speed_mae_mps": 1.9348328049916046
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 5.881285582487209,
+              "velocity_rmse_mps": 7.146888725727158,
+              "speed_mae_mps": 4.6082941153803745
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 1.079301655491734,
+              "velocity_rmse_mps": 1.5379076676343804,
+              "speed_mae_mps": 0.9952388689709798
+            }
+          },
+          "empty": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.099433046863744,
+              "velocity_rmse_mps": 3.734228868926411,
+              "speed_mae_mps": 1.9094152035923848
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 6.288008927054307,
+              "velocity_rmse_mps": 7.185593272147321,
+              "speed_mae_mps": 5.790365554467186
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.6273487184703725,
+              "velocity_rmse_mps": 0.8359625196494358,
+              "speed_mae_mps": 0.5454465530983132
+            }
+          },
+          "wrong_scene": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 2.1170643109372844,
+              "velocity_rmse_mps": 3.756660237906653,
+              "speed_mae_mps": 1.9086458691614674
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 6.279755250054507,
+              "velocity_rmse_mps": 7.204958053794433,
+              "speed_mae_mps": 5.708082139105301
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.654077302775275,
+              "velocity_rmse_mps": 0.9099340159344305,
+              "speed_mae_mps": 0.5733255240853242
+            }
+          }
+        },
+        "baselines": {
+          "zero_prediction": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8083585922993164
+          },
+          "train_mean": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8354531063418549
+          }
+        },
+        "protocol": "Supervised linear readout of frozen BEV features at GT box locations; not detection/mAVE/NDS",
+        "targets": "nuScenes box_velocity from temporal GT annotations; camera-XZ m/s; finite visible vehicles in ROI",
+        "wrong_scene_map": "full validation cross-scene bijection; fixed camera, calibration and GT targets"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_end_to_end_segmentation",
+      "status": "complete",
+      "configuration": {
+        "mode": "finetune",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.5108636346481087,
+        "precision": 0.6883439886176579,
+        "recall": 0.664580982391182,
+        "f1": 0.6762537967459818,
+        "tp": 2490591,
+        "fp": 1127645,
+        "fn": 1257020,
+        "tn": 234595115,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.5053367344204835,
+        "predicted_positive_fraction": 0.015109326405979468,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain",
+      "status": "complete",
+      "configuration": {
+        "mode": "pretrain",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "zero",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": null
+      },
+      "final_validation": {
+        "samples": 6019,
+        "losses": {
+          "loss": 0.7303264568609185,
+          "image": 0.40849248578944936,
+          "bev": 0.23007150723710768,
+          "radar_motion_auxiliary": 0.9291414999912355
+        },
+        "depth_anchors": 0,
+        "depth_mae_m": null,
+        "depth_rmse_m": null,
+        "depth_abs_rel": null,
+        "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_camera_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "zero",
+        "probe_location": "camera_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "2b4fca73d2a068793de812f498d065add83ec6d95af1451fb04b91aabcf9c2f1"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.011930330878196994,
+        "precision": 0.13112965218824024,
+        "recall": 0.012954386140930849,
+        "f1": 0.023579352281778796,
+        "tp": 48548,
+        "fp": 321681,
+        "fn": 3699063,
+        "tn": 235401079,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.009735119779655143,
+        "predicted_positive_fraction": 0.0015460325987468404,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_fused_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "zero",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "2b4fca73d2a068793de812f498d065add83ec6d95af1451fb04b91aabcf9c2f1"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.20544270638184034,
+        "precision": 0.4560252371572873,
+        "recall": 0.2721328334237465,
+        "f1": 0.3408585166166555,
+        "tp": 1019848,
+        "fp": 1216537,
+        "fn": 2727763,
+        "tn": 234506223,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.1970735696274047,
+        "predicted_positive_fraction": 0.009338879756443857,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_object_velocity_readout",
+      "status": "complete",
+      "configuration": {
+        "mode": "object-motion",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "zero",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "2b4fca73d2a068793de812f498d065add83ec6d95af1451fb04b91aabcf9c2f1"
+      },
+      "final_validation": {
+        "samples": 6019,
+        "metrics": {
+          "matched": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.686276872728457,
+              "velocity_rmse_mps": 2.9373443497018803,
+              "speed_mae_mps": 1.5478597574605386
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.4189228292190705,
+              "velocity_rmse_mps": 5.465736667436509,
+              "speed_mae_mps": 4.103389095420631
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.7258823609273884,
+              "velocity_rmse_mps": 1.0774680695431833,
+              "speed_mae_mps": 0.6497132759911898
+            }
+          },
+          "zero_velocity": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.686276872728457,
+              "velocity_rmse_mps": 2.9373443497018803,
+              "speed_mae_mps": 1.5478597574605386
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.4189228292190705,
+              "velocity_rmse_mps": 5.465736667436509,
+              "speed_mae_mps": 4.103389095420631
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.7258823609273884,
+              "velocity_rmse_mps": 1.0774680695431833,
+              "speed_mae_mps": 0.6497132759911898
+            }
+          },
+          "empty": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.9520186800838157,
+              "velocity_rmse_mps": 3.1761883562959494,
+              "speed_mae_mps": 1.7680636965665297
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.695179429742922,
+              "velocity_rmse_mps": 5.724746405275105,
+              "speed_mae_mps": 4.215072150579616
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.9879287207888053,
+              "velocity_rmse_mps": 1.4545230128651623,
+              "speed_mae_mps": 0.9080571216265871
+            }
+          },
+          "wrong_scene": {
+            "all": {
+              "objects": 63002,
+              "velocity_epe_mps": 1.9059006613746048,
+              "velocity_rmse_mps": 3.1695719933178803,
+              "speed_mae_mps": 1.735478100878174
+            },
+            "moving": {
+              "objects": 16384,
+              "velocity_epe_mps": 4.781320643147183,
+              "velocity_rmse_mps": 5.804683313563494,
+              "speed_mae_mps": 4.350767171852425
+            },
+            "stationary": {
+              "objects": 46618,
+              "velocity_epe_mps": 0.8953279001801752,
+              "velocity_rmse_mps": 1.3171892301039205,
+              "speed_mae_mps": 0.8163289280513257
+            }
+          }
+        },
+        "baselines": {
+          "zero_prediction": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8083585922993164
+          },
+          "train_mean": {
+            "objects": 63002,
+            "velocity_epe_mps": 1.8354531063418549
+          }
+        },
+        "protocol": "Supervised linear readout of frozen BEV features at GT box locations; not detection/mAVE/NDS",
+        "targets": "nuScenes box_velocity from temporal GT annotations; camera-XZ m/s; finite visible vehicles in ROI",
+        "wrong_scene_map": "full validation cross-scene bijection; fixed camera, calibration and GT targets"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_end_to_end_segmentation",
+      "status": "complete",
+      "configuration": {
+        "mode": "finetune",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "zero",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "2b4fca73d2a068793de812f498d065add83ec6d95af1451fb04b91aabcf9c2f1"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.5013882866672381,
+        "precision": 0.6929827405028012,
+        "recall": 0.6445687666089143,
+        "f1": 0.667899558188526,
+        "tp": 2415593,
+        "fp": 1070198,
+        "fn": 1332018,
+        "tn": 234652562,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.492344363964775,
+        "predicted_positive_fraction": 0.014556251721011448,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    }
+  ]
+}

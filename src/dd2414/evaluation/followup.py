@@ -182,7 +182,7 @@ def evaluate_predictions(predict, dataset, indices, args, manifest, output_dir,
     """Incremental full-val confusion counts and fixed-token qualitative panels."""
     output_dir.mkdir(parents=True, exist_ok=True)
     totals = dict(tp=0, fp=0, fn=0, tn=0)
-    selected = json.loads((ROOT / 'artifacts/fullsize_meeting_visuals.json').read_text())
+    selected = json.loads((ROOT / 'configs/visualization/qualitative_samples.json').read_text())
     selected = {row['sample_token'] for row in selected['samples']}
     rows = dataset_records(dataset)
     generator = torch.Generator().manual_seed(args.seed)

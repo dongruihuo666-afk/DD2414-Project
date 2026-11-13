@@ -1,0 +1,10 @@
+{
+  "branch": "dd2414-mini-baseline",
+  "project_root": "/path/to/this-experiment-checkout",
+  "python": "/path/to/mamba/env/bin/python",
+  "entry": "train",
+  "launcher": [],
+  "arguments": [
+    "--help"
+  ]
+}
