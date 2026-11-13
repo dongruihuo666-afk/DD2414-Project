@@ -1,50 +1,47 @@
-# This experiment: `experiment/rpl-depth-10sweep-velocity-study`
+# Experiment: `experiment/rpl-depth-10sweep-velocity-study`
 
-Independent ten-sweep depth/velocity study, including the random ResNet101 50-epoch metric-depth DDP protocol.
+This branch contains the ten-sweep depth and velocity studies, including the 50-epoch experiment that trains ResNet101 from scratch.
 
-The pre-cleanup source is `0f91e222d658439d253dde4babf9a353056eecd3`, saved under
-`repository-snapshot-20261113T185518Z/experiment/rpl-depth-10sweep-velocity-study`. The model/data implementation, loss weights, initialization,
-velocity coordinate transforms, sweeps, depth geometry and budget are preserved
-from that source. Engineering extraction does not add a new experiment or result.
+Original source: `0f91e222d658439d253dde4babf9a353056eecd3`.
+The corresponding source tag is listed in [reproducibility](REPRODUCIBILITY.md).
 
-## Configuration and evaluation
+## Model and training
 
-`MultiSweepTeacher` exposes existing image DINO and radar-supported BEV DINO
-objectives plus its existing motion/depth profiles. Frozen camera/fused probes,
-unfrozen readouts, full supervised segmentation and GT-box motion readouts are
-different protocols and must be reported separately. The official-initialized
-protocol uses only strict `encoder.*` weights from the official RGB checkpoint;
-absence of that explicit argument retains the branch's original initialization.
+`MultiSweepTeacher` supports image DINO distillation and radar-supported BEV
+DINO distillation, with the motion and depth profiles implemented in this
+branch. Supplying `--official-camera-checkpoint` strictly loads `encoder.*`
+from the official Simple-BEV RGB checkpoint. Otherwise the factory uses its
+original initialization.
 
-The random `random-metric-bev` profile is a distinct admitted fifty-total-epoch
-experiment, velocity supplied, ten sweeps, RGB 448x800, BF16, per-rank batch one.
-Both arms use probability-based depth lifting; only the treatment adds frozen
-metric Depth Anything supervision AFTER projection into the camera BEV volume,
-BEFORE fusion. No motion/relative-depth auxiliary loss is added to that fixed
-profile. Its original strict validator admits only the documented local rank
-counts and settings. Do not replace it with the older warm-start depth matrix.
-Historical continuation/recovery helpers remain scoped to their original source,
-admitted parent failures and total budget; they are not universal retries.
+The `random-metric-bev` profile trains for 50 total epochs with ten radar sweeps,
+velocity input, 448x800 RGB, BF16 and a per-rank batch size of one. Both arms
+use depth probabilities for lifting. The treatment adds metric Depth Anything
+supervision after projection into the camera BEV volume and before radar fusion.
+Its validator fixes the loss weights, rank counts and other protocol settings.
+Historical continuation helpers restore only their admitted parent runs.
 
-Full-data results use the official train/validation scene separation in the
-branch's recorded manifest. Public test labels are withheld; validation scores
-are not a new blind-test result. An older subset protocol in an older branch is
-not silently regenerated, relabeled as full data or removed as a method change.
-Use existing manifest validation and exact token order/hash.
+## Evaluation
 
-## Recommended entrypoints
+Frozen camera/fused probes measure representation quality under a fixed linear
+readout. Unfrozen readouts and supervised segmentation measure adaptation with
+labels. GT-box velocity readouts evaluate motion at known object locations.
+Report these protocols separately.
+
+Full-data results use the official train/validation scene split recorded in
+the manifest. Public test annotations are withheld, so these are validation
+scores. Keep the recorded sample order and manifest hashes when reproducing a run.
+
+## Commands
 
 ```bash
 dd2414 train --help
 ```
 
 
-All flags/defaults come verbatim from this branch's original parser. Existing
-`scripts/train_*.py` commands remain available. The original official
-`train_nuscenes.py` / `eval_nuscenes.py`, download scripts and checkpoint keys are
-unchanged. The upstream `eval.sh` defaults are not a universal reproduction recipe.
+The existing `scripts/train_*.py` commands remain available. Official Simple-BEV
+uses `train_nuscenes.py`, `eval_nuscenes.py` and its download scripts. Match
+their preprocessing and arguments to the checkpoint being evaluated.
 
-For exact historical commands/configuration/status snapshots, recover original
-documents from the tag rather than treating old RUNNING statements as live
-facts. No cluster query, new job or full-data retraining is part of this cleanup.
-Small curated evidence is indexed in [results](../results/README.md).
+[Results](../results/README.md) indexes the retained benchmark summaries.
+Original commands, detailed configurations and reports can be recovered from
+the source tag. Check running jobs directly before using an old status record.
