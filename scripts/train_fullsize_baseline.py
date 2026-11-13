@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Epoch-native 4,096/full trainer for the unchanged radar-scaling model."""
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
 
 import argparse
 import json
@@ -20,37 +23,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
-from compare_motion_target_bevcar_tiny import (  # noqa: E402
-    build_model,
-    official_voxelnet,
-    prepare_bevcar_inputs,
-)
-from dinov2_bev_demo import build_loaders, load_teacher  # noqa: E402
-from fullsize_training import (  # noqa: E402
-    AcknowledgedShuffleSampler,
-    atomic_json_write,
-    build_motion_targets_batched,
-    build_targets_batched,
-    build_targets_from_features_batched,
-    extract_teacher_features_batched,
-    learning_rate_at_step,
-    motion_loss_batched,
-    progress_status,
-    query_nvidia_smi,
-    semantic_loss_batched,
-)
-from radar_scaling_data import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
-from radar_evaluation import apply_radar_velocity_mode  # noqa: E402
-from train_radar_scaling import (  # noqa: E402
-    file_sha256,
-    prepare_train_log,
-    validation_summary,
-)
-from training_checkpoint import (  # noqa: E402
-    load_training_checkpoint,
-    save_periodic_checkpoint,
-    save_training_checkpoint,
-)
+from dd2414.models.legacy_motion import build_model, official_voxelnet, prepare_bevcar_inputs
+from dd2414.teachers.dino import build_loaders, load_teacher
+from dd2414.runtime.fullsize import AcknowledgedShuffleSampler, atomic_json_write, build_motion_targets_batched, build_targets_batched, build_targets_from_features_batched, extract_teacher_features_batched, learning_rate_at_step, motion_loss_batched, progress_status, query_nvidia_smi, semantic_loss_batched
+from dd2414.data.manifest import IndexedSubset, scale_indices, validate_scaling_manifest
+from dd2414.evaluation.radar_controls import apply_radar_velocity_mode
+from dd2414.evaluation.scaling import file_sha256, prepare_train_log, validation_summary
+from dd2414.runtime.checkpoints import load_training_checkpoint, save_periodic_checkpoint, save_training_checkpoint
 
 
 GIB = 1024 ** 3
@@ -306,6 +285,7 @@ def main():
         'num_workers': args.num_workers,
         'prefetch_factor': args.prefetch_factor,
     }
+    record_package_implementation(run_config, Path(__file__).resolve().parents[1])
     # Preserve byte-for-byte run-config compatibility with the already active
     # historical full-velocity run. The new field is required only for V0.
     if args.radar_velocity_mode != 'full':

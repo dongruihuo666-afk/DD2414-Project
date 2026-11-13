@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dd2414-research"
+version = "0.1.0"
+description = "Camera/radar BEV research with preserved Simple-BEV compatibility"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+license = {file = "LICENSE"}
+dependencies = ["numpy==1.23.5", "torch==2.5.1", "torchvision==0.20.1",
+                "pyquaternion==0.9.9", "Pillow==9.4.0"]
+
+[project.optional-dependencies]
+train = ["nuscenes-devkit==1.1.11", "opencv-python==4.6.0.66",
+         "tensorboard==2.10.0", "tensorboardX==2.2", "protobuf==3.19.4",
+         "matplotlib==3.5.1", "efficientnet-pytorch==0.7.1", "fire==0.4.0"]
+test = ["pytest==9.1.1", "PyYAML==6.0.3"]
+cluster = []  # Slurm, SSH and rsync are site tools; not Python dependencies.
+
+[project.scripts]
+dd2414 = "dd2414.cli.main:main"
+
+[tool.setuptools]
+packages = ["dd2414", "dd2414.cli", "dd2414.config", "dd2414.data",
+            "dd2414.evaluation", "dd2414.experiments", "dd2414.losses",
+            "dd2414.models", "dd2414.objectives", "dd2414.runtime", "dd2414.teachers",
+            "nets", "utils", "nets.ops", "nets.ops.functions", "nets.ops.modules"]
+py-modules = ["nuscenesdataset", "saverloader"]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+"" = "."
+dd2414 = "src/dd2414"
+nets = "nets"
+utils = "utils"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+addopts = "-ra"
