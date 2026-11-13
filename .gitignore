@@ -34,6 +34,17 @@ __pycache__/
 .env.*
 *.pem
 *.key
+# Local assistant and editor configuration; shared CI remains tracked.
+.codex/
+.agents/
+.claude/
+.cursor/
+.vscode/
+.idea/
+AGENTS.md
+CLAUDE.md
+*.code-workspace
+/.mcp.json
 # Legacy local records: consolidated in docs; originals are recoverable via tags.
 /FULLSIZE_MEETING_VISUALS.md
 /FULL_DATA_RADAR_SCALING_PLAN.md
