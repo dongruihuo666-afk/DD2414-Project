@@ -3,6 +3,7 @@
 The legacy path stays unchanged. A CPU equivalence test checks all three depth
 treatments against its actual pretrain_loss closure, including student gradients.
 """
+from dd2414.data.batch import as_batch
 import torch
 from torch import nn
 
@@ -31,7 +32,7 @@ class PretrainingForward(nn.Module):
 def pretraining_loss(batch, forward, teacher, depth_teacher, args, device):
     target_batch = recent_radar_target_batch(batch)
     with torch.no_grad():
-        features = extract_teacher_features_batched(teacher,batch[0][:,0],device,
+        features = extract_teacher_features_batched(teacher,as_batch(batch).images[:,0],device,
                                                    resolution=args.teacher_resolution)
         bev, mask = build_targets_from_features_batched(target_batch,features,device)
     bev, mask = bev.clone(), mask.clone()
@@ -42,7 +43,7 @@ def pretraining_loss(batch, forward, teacher, depth_teacher, args, device):
                  bev=semantic_loss_batched(outputs['bev'],bev,mask))
     loss = args.image_weight*parts['image']+args.bev_weight*parts['bev']
     info = dict(bev_mask_cells=int((mask>0).sum()),
-        radar_points_per_sample=(batch[16][:,0,:3].abs().sum(1)>0).sum(1).tolist(),
+        radar_points_per_sample=(as_batch(batch).radar[:,0,:3].abs().sum(1)>0).sum(1).tolist(),
         occupied_voxels_per_sample=inputs[-1][-1].tolist())
     if args.motion_weight:
         motion, coverage, _ = build_motion_targets_batched(target_batch,device)
@@ -59,7 +60,7 @@ def pretraining_loss(batch, forward, teacher, depth_teacher, args, device):
         info.update(diagnostics)
         loss = loss+args.depth_weight*parts['radar_depth']
         if depth_teacher is not None:
-            target = relative_depth_target(depth_teacher,batch[0][:,0],device,
+            target = relative_depth_target(depth_teacher,as_batch(batch).images[:,0],device,
                                            args.depth_teacher_resolution)
             parts['relative_depth'] = relative_depth_loss(depth,target)
             loss = loss+args.relative_depth_weight*parts['relative_depth']

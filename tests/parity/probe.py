@@ -25,14 +25,14 @@ if args.implementation=='package':
     sys.path.insert(0,str(args.source_root/'src'))
     from dd2414.losses.semantic import semantic_loss
     from dd2414.objectives.radar_motion import motion_loss
-    from dd2414.models.multisweep import MultiSweepTeacher,configure
+    from dd2414.models.multisweep import MultiSweepTeacher,configure,prepare_bevcar_inputs
     from dd2414.models.metric_bev import DepthProbabilityVox,project_teacher_depth,projected_depth_loss
     from dd2414.runtime.fullsize import AcknowledgedShuffleSampler,learning_rate_at_step
     from dd2414.runtime.checkpoints import save_training_checkpoint,load_training_checkpoint
 else:
     from semantic_distill_smoke import semantic_loss
     from compare_motion_target_bevcar_tiny import motion_loss
-    from multisweep_teacher import MultiSweepTeacher,configure
+    from multisweep_teacher import MultiSweepTeacher,configure,prepare_bevcar_inputs
     from metric_depth_bev import DepthProbabilityVox,project_teacher_depth,projected_depth_loss
     from fullsize_training import AcknowledgedShuffleSampler,learning_rate_at_step
     from training_checkpoint import save_training_checkpoint,load_training_checkpoint
@@ -45,6 +45,17 @@ def tensor(value):
     x=value.detach().cpu().contiguous()
     return dict(shape=list(x.shape),dtype=str(x.dtype),sha256=hashlib.sha256(x.numpy().tobytes()).hexdigest())
 result={}
+batch=[None]*18
+batch[0]=torch.linspace(0,1,6*3*4*8).reshape(1,1,6,3,4,8)
+batch[1]=torch.eye(3).repeat(1,1,6,1,1)
+batch[2]=torch.zeros(1,1,6,3)
+batch[3]=torch.eye(4).repeat(1,1,6,1,1)
+batch[16]=torch.zeros(1,1,19,12)
+batch[16][0,0,:3,:2]=torch.tensor([[2.,3.],[0.,0.],[10.,11.]])
+batch[16][0,0,8:10,:2]=torch.tensor([[2.,3.],[1.,-1.]])
+prepared=prepare_bevcar_inputs(batch,'cpu')
+result['prepared_inputs']=dict(images=tensor(prepared[0]),pixels=tensor(prepared[1]),
+    cameras=tensor(prepared[2]),voxels=[tensor(v) for v in prepared[-1]])
 prediction=torch.randn(2,7,4,5,requires_grad=True)
 loss,cosine=semantic_loss(prediction,torch.randn_like(prediction),torch.rand(2,4,5))
 loss.backward();result['semantic']=dict(loss=tensor(loss),cosine=tensor(cosine),gradient=tensor(prediction.grad))

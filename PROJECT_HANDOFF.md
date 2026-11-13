@@ -7,6 +7,29 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-13 — Named interfaces, installation and lazy CLI
+
+- Added zero-copy `NuScenesBatch` fields and optional boundary validation;
+  production geometry/targets use named reads while the original loader stays
+  unchanged. Added the caller-controlled feature API and documented actual
+  shapes, normalization, frames, velocity/age units, sweeps, BEV and output types
+  in [the interface contract](docs/INTERFACES.md).
+- Production drivers now import formal package helpers, including the remaining
+  streaming validation/log functions formerly imported from another trainer.
+  The research argument parser is shared with `dd2414 train`; help is stdlib-only.
+  `dd2414 evaluate` computes unchanged official binary counts from saved arrays.
+  Explicit package metadata separates core/train/test/site dependencies.
+- Validation: 111 legacy CPU regressions and 8 interface/provenance tests pass;
+  all TEN original/package parity groups match exactly, now including calibrated
+  input preparation/voxel tensors. Editable install and wheel build/install pass
+  in temporary environments; workstation/cluster environments are unchanged.
+  See [installation](docs/INSTALL.md). Gloo/shared-memory checks require local
+  socket/IPC permissions; the restricted sandbox alone cannot execute three
+  existing multiprocessing checks, which pass with those permissions.
+- Limits/next: no full retraining, GPU/data inference or cluster submission for
+  this cleanup. Training from a wheel requires matching source checkout bytes.
+  Next organize team documentation, CPU CI and deployment/publication boundaries.
+
 ### 2026-11-13 — Shared package extraction with verified numerical parity
 
 - Common teacher/target, semantic/motion/supervised loss, model wrapper, depth

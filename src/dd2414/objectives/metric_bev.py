@@ -1,4 +1,5 @@
 """Two DINO terms; optional metric pseudo-depth loss after camera projection."""
+from dd2414.data.batch import as_batch
 import torch
 from torch import nn
 
@@ -25,7 +26,7 @@ class MetricPretrainingForward(nn.Module):
 
 def metric_pretraining_loss(batch, forward, teacher, depth_teacher, args, device):
     with torch.no_grad():
-        features = extract_teacher_features_batched(teacher, batch[0][:, 0], device,
+        features = extract_teacher_features_batched(teacher, as_batch(batch).images[:, 0], device,
                                                     resolution=args.teacher_resolution)
         bev, mask = build_targets_from_features_batched(recent_radar_target_batch(batch), features, device)
     # Teacher extraction uses inference tensors in existing utilities; clone
@@ -33,7 +34,7 @@ def metric_pretraining_loss(batch, forward, teacher, depth_teacher, args, device
     features, bev, mask = features.clone(), bev.clone(), mask.clone()
     # Frozen teacher inference must finish before student activations are live.
     # The teacher is eval-only; this changes memory lifetime, not its targets.
-    depth = (metric_teacher_depth(depth_teacher, batch[0][:, 0], device,
+    depth = (metric_teacher_depth(depth_teacher, as_batch(batch).images[:, 0], device,
              args.depth_teacher_resolution) if depth_teacher is not None else None)
     outputs = forward(prepare_bevcar_inputs(batch, device))  # Full velocity; never zeroed.
     parts = dict(image=image_cosine_loss(outputs['image'], features),

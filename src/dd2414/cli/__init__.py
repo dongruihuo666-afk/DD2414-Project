@@ -1,0 +1,1 @@
+"""Lightweight explicit command dispatch."""

@@ -24,13 +24,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / 'scripts'))
 
-from compare_motion_target_bevcar_tiny import (  # noqa: E402
+from dd2414.models.legacy_motion import (  # noqa: E402
     build_model,
     official_voxelnet,
     prepare_bevcar_inputs,
 )
-from dinov2_bev_demo import build_loaders, load_teacher  # noqa: E402
-from fullsize_training import (  # noqa: E402
+from dd2414.teachers.dino import build_loaders, load_teacher  # noqa: E402
+from dd2414.runtime.fullsize import (  # noqa: E402
     AcknowledgedShuffleSampler,
     atomic_json_write,
     build_motion_targets_batched,
@@ -43,14 +43,14 @@ from fullsize_training import (  # noqa: E402
     query_nvidia_smi,
     semantic_loss_batched,
 )
-from radar_scaling_data import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
-from radar_evaluation import apply_radar_velocity_mode  # noqa: E402
-from train_radar_scaling import (  # noqa: E402
+from dd2414.data.manifest import IndexedSubset, scale_indices, validate_scaling_manifest  # noqa: E402
+from dd2414.evaluation.radar_controls import apply_radar_velocity_mode  # noqa: E402
+from dd2414.evaluation.scaling import (  # noqa: E402
     file_sha256,
     prepare_train_log,
     validation_summary,
 )
-from training_checkpoint import (  # noqa: E402
+from dd2414.runtime.checkpoints import (  # noqa: E402
     load_training_checkpoint,
     save_periodic_checkpoint,
     save_training_checkpoint,

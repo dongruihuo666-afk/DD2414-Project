@@ -1,4 +1,5 @@
 """Existing frozen-camera research model; initialization and attributes are unchanged."""
+from dd2414.data.batch import as_batch
 import importlib.util
 from pathlib import Path
 import torch
@@ -78,11 +79,11 @@ def build_model(device, seed, official_class, zero_camera=False):
 
 
 def prepare_bevcar_inputs(batch, device):
-    images = batch[0][:, 0].float().to(device)
-    rotations = batch[1][:, 0].to(device)
-    translations = batch[2][:, 0].to(device)
-    intrinsics = batch[3][:, 0].to(device)
-    radar_vehicle = batch[16][:, 0].to(device).permute(0, 2, 1)
+    images = as_batch(batch).images[:, 0].float().to(device)
+    rotations = as_batch(batch).camera_rotations[:, 0].to(device)
+    translations = as_batch(batch).camera_translations[:, 0].to(device)
+    intrinsics = as_batch(batch).intrinsics[:, 0].to(device)
+    radar_vehicle = as_batch(batch).radar[:, 0].to(device).permute(0, 2, 1)
     batch_size = images.shape[0]
     pack = lambda value: utils.basic.pack_seqdim(value, batch_size)
     unpack = lambda value: utils.basic.unpack_seqdim(value, batch_size)

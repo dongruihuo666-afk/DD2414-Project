@@ -54,8 +54,8 @@ python tests/parity/probe.py --implementation package --source-root "$PWD" > /tm
 python -c 'import json; assert json.load(open("/tmp/before.json")) == json.load(open("/tmp/after.json"))'
 ```
 
-Actual result: all NINE groups match exactly, including tensor hashes of losses,
+Actual result: all TEN groups match exactly, including tensor hashes of losses,
 gradients, toy-student wrapper state dictionaries, streamed projected depth,
 radar rotation, empty-motion connected gradients, sampling/LR schedule and
-post-resume optimizer/model state. These are controlled CPU fixtures, not full
+post-resume optimizer/model state and calibrated input/voxel preparation. These are controlled CPU fixtures, not full
 ResNet/VoxelNet CUDA inference or a scientific-quality comparison.

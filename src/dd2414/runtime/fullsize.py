@@ -1,4 +1,5 @@
 """Batch-safe helpers and progress records for the epoch-based full-size run."""
+from dd2414.data.batch import as_batch
 
 import json
 import math
@@ -124,7 +125,7 @@ def extract_teacher_features_batched(teacher, images, device, resolution=None):
 
 def build_targets_batched(batch, teacher, device):
     """Build one radar-anchored target per sample while batching DINO."""
-    images = batch[0][:, 0]
+    images = as_batch(batch).images[:, 0]
     with torch.inference_mode():
         features = extract_teacher_features_batched(teacher, images, device)
         return build_targets_from_features_batched(batch, features, device)
@@ -132,7 +133,7 @@ def build_targets_batched(batch, teacher, device):
 
 def build_targets_from_features_batched(batch, features, device):
     """Project already-extracted camera features into radar-anchored targets."""
-    images = batch[0][:, 0]
+    images = as_batch(batch).images[:, 0]
     if features.shape[:2] != images.shape[:2]:
         raise ValueError('features must match the batch and camera dimensions')
     with torch.inference_mode():
@@ -167,7 +168,7 @@ def build_motion_targets_batched(batch, device):
     fields = []
     coverages = []
     infos = []
-    for index in range(batch[0].shape[0]):
+    for index in range(as_batch(batch).images.shape[0]):
         field, coverage, info = motion_target(slice_batch(batch, index), device)
         fields.append(field)
         coverages.append(coverage)

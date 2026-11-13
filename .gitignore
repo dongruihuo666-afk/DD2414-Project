@@ -79,6 +79,9 @@ fullsize_baseline/teacher_overnight/
 .env.*
 *.pem
 *.key
+/build/
+/*.egg-info/
+/src/*.egg-info/
 !artifacts/trainval/
 artifacts/trainval/*
 !artifacts/trainval/motion_target_bevcar_heldout_trainval_train64_val16_nsweeps1_head.json

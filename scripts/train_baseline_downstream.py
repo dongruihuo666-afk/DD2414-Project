@@ -20,14 +20,14 @@ import torch
 from torch.utils.data import DataLoader, Subset
 from torch.utils.tensorboard import SummaryWriter
 
-from baseline_followup import (code_commit, digest_file, evaluate_predictions,
+from dd2414.evaluation.followup import (code_commit, digest_file, evaluate_predictions,
                                forward_loss, load_datasets, load_legacy, state_digest)
-from fullsize_training import (AcknowledgedShuffleSampler, atomic_json_write,
+from dd2414.runtime.fullsize import (AcknowledgedShuffleSampler, atomic_json_write,
                               learning_rate_at_step, query_nvidia_smi)
-from radar_scaling_data import scale_indices, validate_scaling_manifest
-from train_fullsize_linear_probe import reset_seeds
-from train_nuscenes import SimpleLoss
-from training_checkpoint import save_training_checkpoint, load_training_checkpoint
+from dd2414.data.manifest import scale_indices, validate_scaling_manifest
+from dd2414.evaluation.probe import reset_seeds
+from dd2414.losses.supervised import SimpleLoss
+from dd2414.runtime.checkpoints import save_training_checkpoint, load_training_checkpoint
 
 STOP = False
 

@@ -1,4 +1,5 @@
 """Opt-in downstream utilities for the historical full-data checkpoints."""
+from dd2414.data.batch import as_batch
 from dd2414.runtime.provenance import digest_file, state_digest, code_commit
 from dd2414.paths import repository_root
 
@@ -41,18 +42,14 @@ def load_datasets(args, manifest, sweeps, resolution=(112, 192), rotate=True):
 
 
 def labels_from_batch(batch, device):
-    return {key: batch[index][:, 0].to(device, non_blocking=True)
-            for key, index in [('segmentation', 12), ('valid', 13),
-                               ('center', 14), ('offset', 15)]}
+    view = as_batch(batch)
+    return {key: value[:, 0].to(device, non_blocking=True)
+            for key, value in [('segmentation', view.vehicle_mask),
+                               ('valid', view.valid_mask),
+                               ('center', view.centers), ('offset', view.offsets)]}
 
 
-def official_counts(logits, target, valid):
-    prediction = logits.sigmoid().round().bool()
-    truth, mask = target.gt(0.5), valid.gt(0.5)
-    return dict(tp=int((prediction & truth & mask).sum()),
-                fp=int((prediction & ~truth & mask).sum()),
-                fn=int((~prediction & truth & mask).sum()),
-                tn=int((~prediction & ~truth & mask).sum()))
+from dd2414.evaluation.segmentation import official_counts
 
 
 def supervised_loss(student, outputs, labels, segmentation_loss):
@@ -185,7 +182,7 @@ def evaluate_predictions(predict, dataset, indices, args, manifest, output_dir,
         for positions, batch in loader:
             logits = predict(batch)
             target, valid = (value.to(logits.device) for value in
-                             (batch[12][:, 0], batch[13][:, 0]))
+                             (as_batch(batch).vehicle_mask[:, 0], as_batch(batch).valid_mask[:, 0]))
             if not torch.isfinite(logits).all():
                 raise RuntimeError('non-finite validation prediction')
             for index, position in enumerate(positions.tolist()):

@@ -31,10 +31,10 @@ from compare_motion_target_bevcar_tiny import (  # noqa: E402
     official_voxelnet,
     prepare_bevcar_inputs,
 )
-from dinov2_bev_demo import build_loaders  # noqa: E402
-from fullsize_training import atomic_json_write, query_nvidia_smi  # noqa: E402
-from radar_evaluation import apply_radar_velocity_mode  # noqa: E402
-from radar_scaling_data import scale_indices, validate_scaling_manifest  # noqa: E402
+from dd2414.teachers.dino import build_loaders  # noqa: E402
+from dd2414.runtime.fullsize import atomic_json_write, query_nvidia_smi  # noqa: E402
+from dd2414.evaluation.radar_controls import apply_radar_velocity_mode  # noqa: E402
+from dd2414.data.manifest import scale_indices, validate_scaling_manifest  # noqa: E402
 
 
 def parse_args():

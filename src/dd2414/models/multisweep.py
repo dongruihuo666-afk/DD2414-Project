@@ -3,6 +3,7 @@
 No changes to Segnet or the official Simple-BEV execution/checkpoint path.
 The depth proxy only wraps this experiment's Vox_util instance.
 """
+from dd2414.data.batch import as_batch
 
 import math
 import sys
@@ -35,11 +36,11 @@ def prepare_bevcar_inputs(batch,device):
     bound admits every possible ten-sweep input without truncating evidence.
     It changes no VoxelNet parameter or spatial feature resolution.
     """
-    images = batch[0][:,0].float().to(device)
-    rotations = batch[1][:,0].to(device)
-    translations = batch[2][:,0].to(device)
-    intrinsics = batch[3][:,0].to(device)
-    radar_vehicle = batch[16][:,0].to(device).permute(0,2,1)
+    images = as_batch(batch).images[:,0].float().to(device)
+    rotations = as_batch(batch).camera_rotations[:,0].to(device)
+    translations = as_batch(batch).camera_translations[:,0].to(device)
+    intrinsics = as_batch(batch).intrinsics[:,0].to(device)
+    radar_vehicle = as_batch(batch).radar[:,0].to(device).permute(0,2,1)
     b = images.shape[0]
     pack = lambda value: utils.basic.pack_seqdim(value,b)
     unpack = lambda value: utils.basic.unpack_seqdim(value,b)
@@ -173,12 +174,12 @@ def projected_radar_depth(batch, height, width, device, max_age=.1):
     Multi-sweep encoder input is unchanged. Supervision uses compensated ego
     coordinates and per-camera calibration; no box/segmentation labels enter.
     """
-    images = batch[0][:, 0]
+    images = as_batch(batch).images[:, 0]
     b, s = images.shape[:2]
     rots, trans, intrinsics = (batch[i][:, 0].to(device).float() for i in [1, 2, 3])
     camera_from_ego = utils.geom.safe_inverse(
         utils.geom.merge_rtlist(rots, trans).flatten(0, 1)).reshape(b, s, 4, 4)
-    radar = batch[16][:, 0].to(device).float().transpose(1, 2)
+    radar = as_batch(batch).radar[:, 0].to(device).float().transpose(1, 2)
     targets = []
     for bi in range(b):
         valid = (radar[bi, :, :3].abs().sum(-1) > 0) & torch.isfinite(radar[bi]).all(-1)
@@ -202,7 +203,7 @@ def projected_radar_depth(batch, height, width, device, max_age=.1):
 def recent_radar_target_batch(batch, max_age=.1):
     """Keep teacher targets identical between 5/10-sweep input experiments."""
     output = list(batch)
-    radar = batch[16].clone()
+    radar = as_batch(batch).radar.clone()
     recent = radar[:,:,18:19].abs() <= max_age
     output[16] = torch.where(recent,radar,torch.zeros_like(radar))
     return tuple(output)

@@ -1,4 +1,5 @@
 """Original compensated-radar auxiliary target and masked Huber loss."""
+from dd2414.data.batch import as_batch
 import torch
 import torch.nn.functional as F
 import utils.basic
@@ -16,9 +17,9 @@ def motion_target(batch, device):
     reference-camera frame, matching the BEVCar input axes, and splatted at the point's
     camera0-frame (Z, X) cell — the same grid the shared BEV lives on.
     """
-    radar_vehicle = batch[16][:, 0].to(device).permute(0, 2, 1)
-    rotations = batch[1][:, 0].to(device)
-    translations = batch[2][:, 0].to(device)
+    radar_vehicle = as_batch(batch).radar[:, 0].to(device).permute(0, 2, 1)
+    rotations = as_batch(batch).camera_rotations[:, 0].to(device)
+    translations = as_batch(batch).camera_translations[:, 0].to(device)
     vehicle_from_cameras = utils.geom.merge_rtlist(rotations, translations)
     batch_size = radar_vehicle.shape[0]
     cameras_from_vehicle = utils.basic.unpack_seqdim(

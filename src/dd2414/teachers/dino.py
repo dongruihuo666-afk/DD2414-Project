@@ -1,4 +1,5 @@
 """Frozen DINO teacher and calibrated BEV targets, extracted from the visualization script."""
+from dd2414.data.batch import as_batch
 from pathlib import Path
 import torch
 import torch.nn.functional as F
@@ -82,10 +83,10 @@ def extract_teacher_features(teacher, images, device):
 
 
 def camera_geometry(batch, feature_height, feature_width, device):
-    images = batch[0][:, 0]
-    rotations = batch[1][:, 0].to(device)
-    translations = batch[2][:, 0].to(device)
-    intrinsics = batch[3][:, 0].to(device)
+    images = as_batch(batch).images[:, 0]
+    rotations = as_batch(batch).camera_rotations[:, 0].to(device)
+    translations = as_batch(batch).camera_translations[:, 0].to(device)
+    intrinsics = as_batch(batch).intrinsics[:, 0].to(device)
     batch_size, cameras, _, image_height, image_width = images.shape
     assert batch_size == 1
 
@@ -149,7 +150,7 @@ def project_teacher_to_bev(features, pixel_from_camera, cameras_from_camera0, de
 
 
 def make_radar_bev(batch, cameras_from_vehicle, vox_util, device):
-    radar = batch[16][:, 0].to(device).permute(0, 2, 1)
+    radar = as_batch(batch).radar[:, 0].to(device).permute(0, 2, 1)
     valid_points = radar[:, :, :3].abs().sum(dim=2).gt(0)
     radar_xyz_vehicle = radar[:, valid_points[0], :3]
     radar_camera0 = utils.geom.apply_4x4(
@@ -246,3 +247,37 @@ def radar_anchored_soft_targets(features, pixel_from_camera,
 
     soft_targets = soft_sum / soft_weight.clamp_min(1e-6)[None]
     return soft_targets, soft_weight, point_view_count[:, 0]
+
+
+def build_targets(batches, teacher, device):
+    """Return (fusion_targets, confidences, image_targets) for a list of batches.
+
+    ``image_targets`` are the raw DINOv2 patch features (S, 384, 14, 24); the
+    fusion target is the radar-anchored soft BEV target (384, Z, X).
+    """
+    fusion_targets = []
+    confidences = []
+    image_targets = []
+    with torch.inference_mode():
+        for batch in batches:
+            images = as_batch(batch).images[:, 0]
+            features = extract_teacher_features(teacher, images, device)
+            _, pixel_from_camera, cameras_from_camera0, cameras_from_vehicle = camera_geometry(
+                batch, features.shape[-2], features.shape[-1], device
+            )
+            vox_util = utils.vox.Vox_util(
+                Z, Y, X, scene_centroid=scene_centroid.to(device),
+                bounds=bounds, assert_cube=False,
+            )
+            _, radar_vehicle, radar_camera0 = make_radar_bev(
+                batch, cameras_from_vehicle, vox_util, device
+            )
+            target, confidence, _ = radar_anchored_soft_targets(
+                features, pixel_from_camera, cameras_from_vehicle,
+                radar_vehicle, radar_camera0, vox_util,
+            )
+            fusion_targets.append(target.half())
+            confidences.append(confidence.half())
+            image_targets.append(features.half())
+            del features, vox_util
+    return fusion_targets, confidences, image_targets
