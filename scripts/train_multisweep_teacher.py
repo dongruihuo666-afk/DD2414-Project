@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Full-split, resumable baseline multi-sweep teacher and downstream training."""
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
 
 import argparse
 import json
@@ -12,28 +15,26 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from dd2414.cli.args_train_multisweep_teacher import parse_args
+import sys
+if __name__ == '__main__' and any(v in sys.argv[1:] for v in ('--help','-h')):
+    parse_args()
+
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from baseline_followup import (code_commit, digest_file, evaluate_predictions,
-    labels_from_batch, load_datasets, state_digest, supervised_loss)
-from dinov2_bev_demo import load_teacher
-from fullsize_training import (AcknowledgedShuffleSampler, atomic_json_write,
-    build_targets_from_features_batched, extract_teacher_features_batched,
-    learning_rate_at_step, query_nvidia_smi, semantic_loss_batched,
-    build_motion_targets_batched, motion_loss_batched)
-from multisweep_teacher import (Downstream, build_model, configure,
-    image_cosine_loss, load_depth_teacher, load_official_camera_encoder, object_targets, pool_objects,
-    prepare_bevcar_inputs, projected_radar_depth, relative_depth_loss,
-    relative_depth_target, sparse_depth_loss, recent_radar_target_batch)
-from radar_evaluation import (RADAR_MODES, radar_for_mode, wrong_scene_dataset_indices,
-                              apply_radar_velocity_mode)
-from radar_scaling_data import IndexedSubset, validate_scaling_manifest
-from train_fullsize_linear_probe import reset_seeds
-from train_nuscenes import SimpleLoss
-from training_checkpoint import load_training_checkpoint, save_training_checkpoint
+from dd2414.runtime.provenance import code_commit, digest_file, state_digest
+from dd2414.evaluation.followup import evaluate_predictions, labels_from_batch, load_datasets, supervised_loss
+from dd2414.teachers.dino import load_teacher
+from dd2414.runtime.fullsize import AcknowledgedShuffleSampler, atomic_json_write, build_targets_from_features_batched, extract_teacher_features_batched, learning_rate_at_step, query_nvidia_smi, semantic_loss_batched, build_motion_targets_batched, motion_loss_batched
+from dd2414.models.multisweep import Downstream, build_model, configure, image_cosine_loss, load_depth_teacher, load_official_camera_encoder, object_targets, pool_objects, prepare_bevcar_inputs, projected_radar_depth, relative_depth_loss, relative_depth_target, sparse_depth_loss, recent_radar_target_batch
+from dd2414.evaluation.radar_controls import RADAR_MODES, radar_for_mode, wrong_scene_dataset_indices, apply_radar_velocity_mode
+from dd2414.data.manifest import IndexedSubset, validate_scaling_manifest
+from dd2414.evaluation.probe import reset_seeds
+from dd2414.losses.supervised import SimpleLoss
+from dd2414.runtime.checkpoints import load_training_checkpoint, save_training_checkpoint
 
 STOP = False
 
@@ -44,44 +45,7 @@ def request_stop(signum, frame):
     print(f'SIGNAL {signum}: saving at the next update boundary', flush=True)
 
 
-def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument('--data-root', type=Path, required=True)
-    p.add_argument('--bevcar-source', type=Path, required=True)
-    p.add_argument('--manifest', type=Path, required=True)
-    p.add_argument('--run-dir', type=Path, required=True)
-    p.add_argument('--mode', choices=['pretrain','frozen-probe','unfrozen-probe',
-                                    'finetune','object-motion'], required=True)
-    p.add_argument('--checkpoint', type=Path)
-    p.add_argument('--official-camera-checkpoint', type=Path)
-    p.add_argument('--image-resolution', type=int, nargs=2, default=[112,192])
-    p.add_argument('--teacher-resolution', type=int, nargs=2, default=[196,336])
-    p.add_argument('--velocity-mode', choices=['full','zero'], default='full')
-    p.add_argument('--probe-location', choices=['camera_bev','fused_bev'], default='fused_bev')
-    p.add_argument('--initial-camera-probe', action='store_true')
-    p.add_argument('--nsweeps', type=int, choices=[5,10], default=5)
-    p.add_argument('--depth-mode', choices=['none','radar','radar-dav2'], default='none')
-    p.add_argument('--epochs', type=int, default=2)
-    p.add_argument('--batch-size', type=int, default=3)
-    p.add_argument('--num-workers', type=int, default=8)
-    p.add_argument('--seed', type=int, default=125)
-    p.add_argument('--learning-rate', type=float, default=2e-4)
-    p.add_argument('--camera-lr', type=float, default=1e-5)
-    p.add_argument('--probe-lr', type=float, default=1e-3)
-    p.add_argument('--image-weight', type=float, default=.2)
-    p.add_argument('--bev-weight', type=float, default=.8)
-    p.add_argument('--motion-weight', type=float, default=.5)
-    p.add_argument('--depth-weight', type=float, default=.2)
-    p.add_argument('--relative-depth-weight', type=float, default=.05)
-    p.add_argument('--precision', choices=['bf16','fp16'], default='bf16')
-    p.add_argument('--train-samples', type=int, choices=(0,28130), default=0,
-                   help='Full split only; subset training has been removed.')
-    p.add_argument('--val-samples', type=int, choices=(6019,), default=6019)
-    p.add_argument('--checkpoint-every', type=int, default=250)
-    p.add_argument('--print-every', type=int, default=25)
-    p.add_argument('--stop-after-updates', type=int, default=0)
-    p.add_argument('--resume', action='store_true')
-    return p.parse_args()
+from dd2414.cli.args_train_multisweep_teacher import parse_args
 
 
 @torch.no_grad()

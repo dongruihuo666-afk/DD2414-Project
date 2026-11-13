@@ -7,6 +7,30 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-14 — Independent branch cleanup: shared code stage
+
+- This branch remains the independent experiment `dd2414-mini-baseline`. No merges,
+  cherry-picks from other experiments, branch renames, or main updates occurred.
+  Each extracted function comes from THIS branch's preserved `0225bbef5f69ae04e0d52adbd4ee9d393cb1678e`.
+- The rejected standalone handoff/snapshot branches were retired after verified
+  remote tags and an all-refs bundle. All original experiments remain separate.
+  Recovery tag: `repository-snapshot-20261113T185518Z/dd2414-mini-baseline`.
+- Shared teacher/target/model/loss/state helpers now live in `src/dd2414`;
+  old helper modules remain aliases and experiment programs keep their CLIs.
+  Named batch views do not copy, reorder or convert inputs. Installation uses
+  explicit namespaces; new CLI help is stdlib-only. Model/manifest/parameter
+  semantics remain branch-local. New config records bind actual package bytes;
+  strict historical resume requires the original source, with no state reset.
+- Reproduction: `PYTHONPATH=src:.:scripts:cluster_rpl:cluster_experiment
+  CUDA_VISIBLE_DEVICES='' python tools/testing/run_cpu.py` (runner added in the
+  documentation stage); parity fixture: `tests/parity/probe.py --implementation
+  legacy|package --source-root /path/to/the/corresponding/source`.
+- Actual baseline before/after extraction: 73 CPU tests passed on each
+  side, including this branch's existing regression assertions. Gloo/worker IPC
+  checks need local socket/shared-memory permissions. Fixed-input parity now matches exactly in 9 groups, including gradients,
+  calibrated voxel inputs and optimizer resume; portable docs are next. No data/CUDA training or cluster mutation.
+
+
 2026-11-04 branch housekeeping: the owner withdrew the isolated
 `experiment/official-rgb-double-distill-cluster` deployment. Its local branch
 and clean worktree have been removed after saving a verified recovery bundle.

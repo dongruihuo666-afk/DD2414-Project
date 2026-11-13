@@ -13,6 +13,8 @@ radar velocity channels. Expectation: the motion-target penalty becomes large, o
 same order as the BEVCar result in compare_radar_velocity_tiny.py, proving the recipe
 (motion target + velocity-preserving radar encoder). Small-sample overfit diagnostic.
 """
+from _bootstrap import enable_source_package
+enable_source_package()
 
 import argparse
 import importlib.util
@@ -66,179 +68,22 @@ def parse_args():
     return parser.parse_args()
 
 
-def official_voxelnet(source):
-    path = source / 'nets' / 'voxelnet.py'
-    if not path.is_file():
-        raise FileNotFoundError(f'official BEVCar source missing: {path}')
-    spec = importlib.util.spec_from_file_location('official_bevcar_voxelnet', path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.VoxelNet
+from dd2414.models.legacy_motion import official_voxelnet
 
 
-class MotionBevcarModel(SemanticDistillationModel):
-    """SemanticDistillationModel plus a 2-channel velocity head on the shared BEV."""
-
-    def __init__(self, student):
-        super().__init__(student, image_distill=False)
-        self.motion_head = nn.Conv2d(student.latent_dim, 2, 1)
-
-    def forward(self, rgb, pixel_from_cameras, camera0_from_cameras,
-                vox_util, bevcar_voxels):
-        shared_bev, _, image_features = self.student(
-            rgb_camXs=rgb,
-            pix_T_cams=pixel_from_cameras,
-            cam0_T_camXs=camera0_from_cameras,
-            vox_util=vox_util,
-            bevcar_voxels=bevcar_voxels,
-            return_shared_bev=True,
-        )
-        fusion_prediction = self.semantic_head(shared_bev)
-        motion_prediction = self.motion_head(shared_bev)
-        return fusion_prediction, motion_prediction
+from dd2414.models.legacy_motion import MotionBevcarModel
 
 
-def build_model(device, seed, official_class, zero_camera=False):
-    torch.manual_seed(seed)
-    vox_util = utils.vox.Vox_util(
-        Z, Y, X, scene_centroid=scene_centroid.to(device),
-        bounds=bounds, assert_cube=False,
-    )
-    bevcar_encoder = official_class(
-        use_col=False, reduced_zx=False, output_dim=128,
-        use_radar_occupancy_map=False,
-    )
-    student = Segnet(
-        Z, Y, X, vox_util=vox_util,
-        use_bevcar_encoder=True, bevcar_encoder=bevcar_encoder,
-        do_rgbcompress=True, encoder_type='res101', rand_flip=False,
-        pretrained_backbone=False, zero_camera_bev=zero_camera,
-    ).to(device)
-    model = MotionBevcarModel(student).to(device)
-    for parameter in model.parameters():
-        parameter.requires_grad_(False)
-    # Trainable: the radar branch (VoxelNet + compressor) and both heads. The camera
-    # encoder stays frozen so velocity must reach the motion head through the radar
-    # branch, which is what the ablation tests.
-    for parameter in model.student.bevcar_encoder.parameters():
-        parameter.requires_grad_(True)
-    for parameter in model.student.bev_compressor.parameters():
-        parameter.requires_grad_(True)
-    for parameter in model.semantic_head.parameters():
-        parameter.requires_grad_(True)
-    for parameter in model.motion_head.parameters():
-        parameter.requires_grad_(True)
-    return model
+from dd2414.models.legacy_motion import build_model
 
 
-def prepare_bevcar_inputs(batch, device):
-    images = batch[0][:, 0].float().to(device)
-    rotations = batch[1][:, 0].to(device)
-    translations = batch[2][:, 0].to(device)
-    intrinsics = batch[3][:, 0].to(device)
-    radar_vehicle = batch[16][:, 0].to(device).permute(0, 2, 1)
-    batch_size = images.shape[0]
-    pack = lambda value: utils.basic.pack_seqdim(value, batch_size)
-    unpack = lambda value: utils.basic.unpack_seqdim(value, batch_size)
-
-    pixel_from_cameras = unpack(utils.geom.merge_intrinsics(
-        *utils.geom.split_intrinsics(pack(intrinsics))
-    ))
-    vehicle_from_cameras = utils.geom.merge_rtlist(rotations, translations)
-    cameras_from_vehicle = unpack(utils.geom.safe_inverse(pack(vehicle_from_cameras)))
-    camera0_from_cameras = utils.geom.get_camM_T_camXs(vehicle_from_cameras, ind=0)
-
-    # BEVCar expects XYZ and velocity already rotated into the reference-camera frame.
-    radar_camera = transform_radar_to_camera_bev(radar_vehicle, cameras_from_vehicle[:, 0])
-    vox_util = utils.vox.Vox_util(
-        Z, Y, X, scene_centroid=scene_centroid.to(device),
-        bounds=bounds, assert_cube=False,
-    )
-    features, coords, counts, _ = prepare_bevcar_voxels(
-        radar_camera, vox_util, quality_filter=False,
-    )
-    bevcar_voxels = (features, coords, counts)
-    return (
-        images - 0.5, pixel_from_cameras, camera0_from_cameras,
-        vox_util, bevcar_voxels,
-    )
+from dd2414.models.legacy_motion import prepare_bevcar_inputs
 
 
-def motion_target(batch, device):
-    """Splat moving-return compensated velocity into a (2, Z, X) field.
-
-    Velocity is read from radar cols 8:10 (vx_comp, vy_comp) after rotation into the
-    reference-camera frame, matching the BEVCar input axes, and splatted at the point's
-    camera0-frame (Z, X) cell — the same grid the shared BEV lives on.
-    """
-    radar_vehicle = batch[16][:, 0].to(device).permute(0, 2, 1)
-    rotations = batch[1][:, 0].to(device)
-    translations = batch[2][:, 0].to(device)
-    vehicle_from_cameras = utils.geom.merge_rtlist(rotations, translations)
-    batch_size = radar_vehicle.shape[0]
-    cameras_from_vehicle = utils.basic.unpack_seqdim(
-        utils.geom.safe_inverse(utils.basic.pack_seqdim(vehicle_from_cameras, batch_size)),
-        batch_size,
-    )
-    radar_camera = transform_radar_to_camera_bev(
-        radar_vehicle, cameras_from_vehicle[:, 0]
-    )
-    vox_util = utils.vox.Vox_util(
-        Z, Y, X, scene_centroid=scene_centroid.to(device),
-        bounds=bounds, assert_cube=False,
-    )
-    xyz = radar_camera[..., :3]
-    mem = vox_util.Ref2Mem(xyz, Z, Y, X, assert_cube=False)[0]  # (R, 3)
-    grid_max = torch.tensor((X, Y, Z), device=device)
-    velocity = radar_camera[0, :, 8:10].clamp(-VELOCITY_CLIP, VELOCITY_CLIP)  # (R, 2)
-    moving = velocity.norm(dim=-1).gt(MOVING_THRESHOLD)
-    valid = (
-        torch.isfinite(radar_camera[0]).all(dim=-1)
-        & xyz[0].abs().sum(dim=-1).gt(0)
-        & (mem > -0.5).all(dim=-1)
-        & (mem < grid_max - 0.5).all(dim=-1)
-        & radar_camera[0, :, 10].gt(0.5)
-        & radar_camera[0, :, 11].round().eq(3)
-        & radar_camera[0, :, 14].round().eq(0)
-        & moving
-    )
-    x_cell = mem[:, 0].round().long()
-    z_cell = mem[:, 2].round().long()
-    field = torch.zeros((2, Z, X), device=device)
-    count = torch.zeros((Z, X), device=device)
-    index = torch.where(valid)[0]
-    if index.numel() > 0:
-        flat = z_cell[index] * X + x_cell[index]
-        field_flat = field.view(2, -1)
-        count_flat = count.view(-1)
-        field_flat[0].index_add_(0, flat, velocity[index, 0])
-        field_flat[1].index_add_(0, flat, velocity[index, 1])
-        count_flat.index_add_(0, flat, torch.ones_like(flat, dtype=torch.float32))
-        field = field_flat.view(2, Z, X)
-        count = count_flat.view(Z, X)
-    coverage = count.gt(0)
-    field[0, coverage] = field[0, coverage] / count[coverage]
-    field[1, coverage] = field[1, coverage] / count[coverage]
-    info = {
-        'moving_points': int(valid.sum()),
-        'covered_cells': int(coverage.sum()),
-    }
-    return field, coverage.float(), info
+from dd2414.objectives.radar_motion import motion_target
 
 
-def motion_loss(prediction, target, coverage):
-    """Huber loss over moving-return cells, normalized by the cell count."""
-    prediction = prediction.float()
-    if prediction.dim() == 4:
-        prediction = prediction.squeeze(0)
-    mask = coverage.gt(0)
-    if not mask.any():
-        # Keep the graph connected with a true zero: a plain torch.zeros(()) is a leaf
-        # with no grad, which crashes .backward() when it is the only loss term
-        # (motion_only on a sample with no moving points).
-        return prediction.sum() * 0.0, 0
-    loss = F.smooth_l1_loss(prediction[:, mask], target[:, mask], reduction='mean')
-    return loss, int(mask.sum())
+from dd2414.objectives.radar_motion import motion_loss
 
 
 def ablate_bevcar_voxels(bevcar_voxels, mode):
