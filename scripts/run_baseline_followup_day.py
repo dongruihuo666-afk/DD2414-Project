@@ -85,12 +85,7 @@ def main():
 
     def report_and_publish():
         build_report(study)
-        # Git/network failures never discard a training result or stop the queue.
-        # The exact blocking message remains visible for later manual recovery.
-        result = subprocess.run([sys.executable, 'scripts/publish_baseline_followup.py',
-            '--study-dir', str(study)], cwd=ROOT, capture_output=True, text=True)
-        state['publication'] = dict(returncode=result.returncode,
-            message=(result.stdout+result.stderr)[-3000:])
+        state['publication'] = dict(status='manual_only', note='Invoke an explicit reviewed publisher separately.')
         atomic_json_write(state, state_path)
 
     def execute(name, command, expected_summary, *, retry=True, budget_seconds=None):

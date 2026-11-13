@@ -1,0 +1,157 @@
+{
+  "source_snapshot": "repository-snapshot-20261113T185518Z/experiment/rpl-depth-10sweep-velocity-study",
+  "original_record": "artifacts/official_full_data_results.json",
+  "queue_status": "running",
+  "reporting": "Existing official validation results, not a new blind test or cleanup measurement",
+  "results": [
+    {
+      "name": "official_rgb_encoder_camera_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "camera_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": null
+      },
+      "final_validation": {
+        "vehicle_iou": 0.025914199954446562,
+        "precision": 0.21635676175441643,
+        "recall": 0.028598485808692526,
+        "f1": 0.05051923436793686,
+        "tp": 107176,
+        "fp": 388191,
+        "fn": 3640435,
+        "tn": 235334569,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.024483727541674525,
+        "predicted_positive_fraction": 0.002068594114300679,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain",
+      "status": "complete",
+      "configuration": {
+        "mode": "pretrain",
+        "epochs": 5,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "fused_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": null
+      },
+      "final_validation": {
+        "samples": 6019,
+        "losses": {
+          "loss": 0.6217432802753168,
+          "image": 0.36110688207018393,
+          "bev": 0.21073082928805875,
+          "radar_motion_auxiliary": 0.7618744724705486
+        },
+        "depth_anchors": 0,
+        "depth_mae_m": null,
+        "depth_rmse_m": null,
+        "depth_abs_rel": null,
+        "scope": "Frozen-teacher / radar-anchor diagnostics, NOT segmentation accuracy or independent depth GT"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_camera_bev_frozen_probe",
+      "status": "complete",
+      "configuration": {
+        "mode": "frozen-probe",
+        "epochs": 10,
+        "seed": 125,
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "probe_location": "camera_bev",
+        "image_resolution": [
+          448,
+          800
+        ],
+        "camera_initialization": "official nuScenes-supervised Simple-BEV RGB encoder; trainable during DINO distillation",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "source_checkpoint_sha256": "ae9daf1124a03ee5a47f5fac68886334bcdd12dcbe5684c8a64167982c632520"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.008574560322469333,
+        "precision": 0.20736769176034403,
+        "recall": 0.008865114335506007,
+        "f1": 0.017003324612367393,
+        "tp": 33223,
+        "fp": 126990,
+        "fn": 3714388,
+        "tn": 235595770,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.00717521163123998,
+        "predicted_positive_fraction": 0.0006690305749766429,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      }
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_fused_bev_frozen_probe",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_object_velocity_readout",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_full_pretrain_end_to_end_segmentation",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_camera_bev_frozen_probe",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_fused_bev_frozen_probe",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_object_velocity_readout",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    },
+    {
+      "name": "official_rgb_double_dino_10sweep_velocity_zero_pretrain_end_to_end_segmentation",
+      "status": "pending",
+      "configuration": {},
+      "final_validation": null
+    }
+  ]
+}
