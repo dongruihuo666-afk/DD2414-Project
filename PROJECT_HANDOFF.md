@@ -7,6 +7,25 @@ reproduction method, evidence, limitations, and handoff decisions.
 
 ## Current state
 
+### 2026-11-13 — Shared package extraction with verified numerical parity
+
+- Common teacher/target, semantic/motion/supervised loss, model wrapper, depth
+  geometry, batch scheduling, checkpoint and provenance code now lives under
+  `src/dd2414`. Formal modules do not import demo/tiny/smoke programs or training
+  entrypoints. Original helpers remain module aliases and experiments re-export
+  shared functions; original Simple-BEV model/data files remain unchanged.
+- Fixed-input CPU parity against the tagged depth checkout matches EXACTLY in
+  nine groups: losses/gradients, wrapper state names/values, streamed depth,
+  radar rotation, empty motion, sampler/schedule and resumed optimizer state.
+  Existing CPU baseline passes 103 tests after updating the loader AST test's
+  source location without removing assertions. GPU/data inference is not claimed.
+- New checkpoint-producing entries bind actual package bytes to the existing
+  implementation-hash field. Historical exact resumes remain restricted to
+  original source revisions; strict/config/RNG checks are not relaxed. See
+  [compatibility](docs/integration/COMPATIBILITY.md) and the preserved-source
+  parity command. Next: named adapters, packaging/entrypoints and team-facing
+  data/interface documentation; original runs stay on fixed code.
+
 ### 2026-11-13 — Verified backup and isolated integration consolidation
 
 - Owner authorized engineering cleanup, scoped staged/untracked project records,

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Full-split, resumable baseline multi-sweep teacher and downstream training."""
 
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
+
 import argparse
 import json
 import math
@@ -371,6 +375,7 @@ def main():
     if continuation:
         config['camera_initialization'] = ('Complete five-epoch double-distillation model; '
             'all model tensors loaded strictly for a new equal-budget pretraining phase')
+    record_package_implementation(config, ROOT)
     directory = args.run_dir
     directory.mkdir(parents=True, exist_ok=True)
     checkpoint = directory/'checkpoints/latest.pt'

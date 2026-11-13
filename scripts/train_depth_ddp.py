@@ -3,6 +3,10 @@
 No automatic Slurm submission. The old single-GPU/downstream trainer stays
 available. Completed checkpoints expose unprefixed backbone tensors for it.
 """
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
+
 import datetime
 import fcntl
 import json
@@ -179,6 +183,7 @@ def run(args):
             config.update(metric_config(args, ROOT, initialization))
         elif depth_teacher is not None:
             config['dav2_weight_sha256'] = digest_file(ROOT/'.cache/depth_anything_v2_vits.pth')
+        record_package_implementation(config, ROOT)
         checkpoint = directory/'checkpoints/latest.pt'
         progress = dict(epoch=0,update=0,samples_seen=0,training_seconds=0.,wall_seconds=0.,
                         validations={},latest={})

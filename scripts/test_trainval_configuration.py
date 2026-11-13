@@ -2,9 +2,11 @@
 """CPU-only configuration checks: no project model or dataset is executed."""
 
 import ast
+import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 from torch.utils.data import DataLoader, Subset
@@ -83,17 +85,18 @@ class TrainvalConfigurationTests(unittest.TestCase):
         def compile_data(*args, **kwargs):
             seen.append((args, kwargs))
             return 'train-loader', 'val-loader'
-        scope = definitions('scripts/dinov2_bev_demo.py', {'build_loaders', 'build_loader'},
+        scope = definitions('src/dd2414/teachers/dino.py', {'build_loaders', 'build_loader'},
                             {'nuscenesdataset': SimpleNamespace(compile_data=compile_data),
                              'scene_centroid_py': [0, 1, 0], 'bounds': (), 'Z': 200, 'Y': 8, 'X': 200})
-        self.assertEqual(scope['build_loader']('/unused', 0, 1), 'train-loader')
-        self.assertEqual(seen[-1][0][0], 'mini')
-        self.assertEqual(scope['build_loader']('/unused', 0, 10, split='val', dset='trainval'), 'val-loader')
-        self.assertEqual(seen[-1][0], ('trainval', '/unused'))
-        self.assertEqual(seen[-1][1]['nsweeps'], 10)
-        self.assertEqual(seen[-1][1]['nworkers_val'], 0)
-        with self.assertRaises(ValueError):
-            scope['build_loader']('/unused', 0, 1, dset='test')
+        with patch.dict(sys.modules, {'nuscenesdataset': SimpleNamespace(compile_data=compile_data)}):
+            self.assertEqual(scope['build_loader']('/unused', 0, 1), 'train-loader')
+            self.assertEqual(seen[-1][0][0], 'mini')
+            self.assertEqual(scope['build_loader']('/unused', 0, 10, split='val', dset='trainval'), 'val-loader')
+            self.assertEqual(seen[-1][0], ('trainval', '/unused'))
+            self.assertEqual(seen[-1][1]['nsweeps'], 10)
+            self.assertEqual(seen[-1][1]['nworkers_val'], 0)
+            with self.assertRaises(ValueError):
+                scope['build_loader']('/unused', 0, 1, dset='test')
 
 
 if __name__ == '__main__':

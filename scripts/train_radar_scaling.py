@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Opt-in streaming BEVCar semantic+motion trainer for the scaling study."""
 
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
+
 import argparse
 import hashlib
 import json
@@ -350,6 +354,7 @@ def main():
         'checkpoint_every': args.checkpoint_every,
         'num_workers': 0,
     }
+    record_package_implementation(run_config, REPO_ROOT)
     progress = {
         'epoch': 0,
         'update': 0,

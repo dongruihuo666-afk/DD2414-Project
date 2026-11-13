@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Resumable full-data supervised finetuning of legacy baseline checkpoints."""
 
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
+
 import argparse
 import json
 import math
@@ -130,6 +134,7 @@ def main():
                       for name in ['train_baseline_downstream.py', 'baseline_followup.py']},
                   source_code_commit=code_commit(),
                   loss='official Simple-BEV multi-task' if args.mode == 'finetune' else 'legacy balanced BCE')
+    record_package_implementation(config, ROOT)
     if config['source_manifest_sha256'] != config['manifest_sha256']:
         raise ValueError('source checkpoint and downstream manifest differ')
     # The source commit is recorded once, not a reason to invalidate an otherwise

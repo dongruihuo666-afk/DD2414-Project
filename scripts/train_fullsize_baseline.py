@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Epoch-native 4,096/full trainer for the unchanged radar-scaling model."""
 
+from _bootstrap import enable_source_package
+enable_source_package()
+from dd2414.runtime.provenance import record_package_implementation
+
 import argparse
 import json
 import math
@@ -306,10 +310,11 @@ def main():
         'num_workers': args.num_workers,
         'prefetch_factor': args.prefetch_factor,
     }
-    # Preserve byte-for-byte run-config compatibility with the already active
-    # historical full-velocity run. The new field is required only for V0.
+    # Historical exact resumes use their preserved source revision. New runs
+    # also bind the formal package implementation; velocity semantics are unchanged.
     if args.radar_velocity_mode != 'full':
         run_config['radar_velocity_mode'] = args.radar_velocity_mode
+    record_package_implementation(run_config, REPO_ROOT)
     progress = {
         'epoch': 0,
         'update': 0,
