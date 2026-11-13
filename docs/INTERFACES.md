@@ -1,6 +1,6 @@
 # Tensor and Python interface
 
-`dd2414.data.batch.as_batch(sequence)` is a zero-copy named view of the unchanged
+`dd2414.data.batch.as_batch(sequence)` is a zero-copy named view of the
 18-field `NuScenesData` collated tuple. Construction does not validate, move,
 normalize or reorder values. `.validate()` is an explicit boundary shape check.
 
@@ -28,7 +28,7 @@ swaps slots zero/one: FRONT then FRONT_LEFT, not a cyclic rotation. Official
 training may shuffle/reference-select; always retain paired calibration.
 `A_from_B` maps B column coordinates to A. Rotations/translations give
 ego_from_camera; inverse gives camera_from_ego. Camera-0 is x-right, y-down,
-z-forward. Pixels and metres are distinct. No extrinsic direction was changed.
+z-forward. Pixels and metres are distinct.
 
 Radar fields are `x,y,z,dyn_prop,id,rcs,vx,vy,vx_comp,vy_comp,is_quality_valid,
 ambig_state,x_rms,y_rms,invalid_state,pdh0,vx_rms,vy_rms,age`. Coordinates are
@@ -61,12 +61,12 @@ Prepared inputs retain `(centered_rgb, pixel_from_cameras,
 camera0_from_cameras, vox_util, (voxel_features, coordinates, counts))`.
 Fused features are `[B,128,Z,X]`, NOT vehicle logits or a depth GT map.
 One-channel probe/segmentation logits and 2-channel camera-plane velocity
-outputs retain their existing branch APIs. No inference HTTP service is added.
+outputs retain their existing branch APIs.
 
 This historical hybrid wrapper exposes fused features via `shared_bev(*inputs)`.
 The integration API supports that existing location only; a camera-before-fusion
-API is not invented. Existing mean-per-frame IoU and auxiliary global IoU retain
-their separate threshold/aggregation conventions.
+API is not invented. The historical mean-per-frame IoU and global IoU use different aggregation
+and threshold conventions; see the metric note in [the experiment](EXPERIMENT.md).
 
 GT vehicle labels, frozen DINO features, radar-derived soft targets and depth
 pseudo-labels are different evidence. Low reconstruction loss is not vehicle

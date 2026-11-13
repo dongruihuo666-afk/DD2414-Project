@@ -31,8 +31,8 @@ class HybridTeacherProtocolTest(unittest.TestCase):
         loss = image_distillation_loss(prediction, teacher)
         self.assertAlmostEqual(float(loss), 2.0, places=5)
 
-    def test_simplebev_iou_is_mean_of_frame_values_not_global_iou(self):
-        # Frame 1 has IoU 1/1. Frame 2 has IoU 1/3, so official mean is 2/3.
+    def test_legacy_report_averages_frame_ious(self):
+        # The per-frame mean is 2/3; global intersection/union is 2/4.
         prediction = torch.tensor([
             [[[1.0, 0.0], [0.0, 0.0]]],
             [[[1.0, 1.0], [1.0, 0.0]]],

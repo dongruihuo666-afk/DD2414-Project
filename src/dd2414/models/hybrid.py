@@ -229,7 +229,10 @@ def label_tensors(batch, device):
 
 
 def simplebev_per_frame_iou(logits, target, valid):
-    """Exact Simple-BEV binary vehicle-IoU formula, one value per frame."""
+    """Per-frame vehicle IoU used by the historical hybrid reports.
+
+    Official validation instead aggregates intersection and union across frames.
+    """
     prediction = torch.sigmoid(logits).round()
     intersection = (prediction * target * valid).sum(dim=(1, 2, 3))
     union = ((prediction + target) * valid).clamp(0, 1).sum(dim=(1, 2, 3))

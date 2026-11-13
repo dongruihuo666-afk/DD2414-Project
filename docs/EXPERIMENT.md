@@ -1,27 +1,39 @@
-# This experiment: `experiment/hybrid-teacher-10sweep-cluster`
+# Experiment: `experiment/hybrid-teacher-10sweep-cluster`
 
-Independent historical full hybrid-teacher experiment, its own model/readout and RPL environment protocol.
+This branch implements the original hybrid-teacher experiment and its RPL cluster setup.
 
-The pre-cleanup source is `33f2d86d70286c514cede6539f991825dde726ee`, saved under
-`repository-snapshot-20261113T185518Z/experiment/hybrid-teacher-10sweep-cluster`. The model/data implementation, loss weights, initialization,
-velocity coordinate transforms, sweeps, depth geometry and budget are preserved
-from that source. Engineering extraction does not add a new experiment or result.
+Original source: `33f2d86d70286c514cede6539f991825dde726ee`.
+The corresponding source tag is listed in [reproducibility](REPRODUCIBILITY.md).
 
-## Configuration and evaluation
+## Model and training
 
-The legacy hybrid path uses `HybridTeacherModel`, its own heads and original
-initialization flag; do not substitute the later metric-depth model. Its
-historical manifest/scale selectors are retained exactly for reproduction.
-The frozen probe, supervised adaptation and Simple-BEV mean-per-frame metric
-remain separate from auxiliary global confusion-count metrics.
+`HybridTeacherModel` combines the camera encoder, BEVCar radar encoder and
+image/BEV distillation heads. It has separate pretraining and downstream
+commands. The original initialization flags, heads and manifest selectors are
+retained for this experiment.
 
-Full-data results use the official train/validation scene separation in the
-branch's recorded manifest. Public test labels are withheld; validation scores
-are not a new blind-test result. An older subset protocol in an older branch is
-not silently regenerated, relabeled as full data or removed as a method change.
-Use existing manifest validation and exact token order/hash.
+## Evaluation
 
-## Recommended entrypoints
+A frozen 1x1 probe reads the fused BEV representation. End-to-end segmentation
+trains the student with ground-truth labels. These are the two downstream modes
+implemented in this branch.
+
+Full-data results use the official train/validation scene split recorded in
+the manifest. Public test annotations are withheld, so these are validation
+scores. Keep the recorded sample order and manifest hashes when reproducing a run.
+
+### Historical IoU naming issue
+
+`scripts/train_hybrid_teacher_downstream.py` labels the mean of per-frame IoUs
+as `official_simplebev.vehicle_bev_iou`. The original `eval_nuscenes.py` instead
+sums intersection and union over the validation set before dividing. These
+aggregations generally differ. The historical global-confusion result also uses
+`>=0.5`, whereas official inference uses `sigmoid().round()`, which differs at
+exactly zero logits. Treat the old field as mean per-frame IoU, not a matched
+official score. Historical numbers and field names are retained pending a
+separate correction and re-evaluation.
+
+## Commands
 
 ```bash
 dd2414 downstream --help
@@ -32,12 +44,10 @@ dd2414 pretrain --help
 ```
 
 
-All flags/defaults come verbatim from this branch's original parser. Existing
-`scripts/train_*.py` commands remain available. The original official
-`train_nuscenes.py` / `eval_nuscenes.py`, download scripts and checkpoint keys are
-unchanged. The upstream `eval.sh` defaults are not a universal reproduction recipe.
+The existing `scripts/train_*.py` commands remain available. Official Simple-BEV
+uses `train_nuscenes.py`, `eval_nuscenes.py` and its download scripts. Match
+their preprocessing and arguments to the checkpoint being evaluated.
 
-For exact historical commands/configuration/status snapshots, recover original
-documents from the tag rather than treating old RUNNING statements as live
-facts. No cluster query, new job or full-data retraining is part of this cleanup.
-Small curated evidence is indexed in [results](../results/README.md).
+[Results](../results/README.md) indexes the retained benchmark summaries.
+Original commands, detailed configurations and reports can be recovered from
+the source tag. Check running jobs directly before using an old status record.
