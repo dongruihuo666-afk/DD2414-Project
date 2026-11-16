@@ -6,6 +6,38 @@ This branch contains the ten-sweep depth and velocity studies, including the 50-
 Experiment settings are in [EXPERIMENT.md](docs/EXPERIMENT.md); source and asset
 recovery details are in [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
 
+## Direct checkpoint evaluation — 2026-11-16
+
+- Owner requests Simple-BEV-aligned Vehicle IoU/Precision/Recall/F1 as primary
+  reporting, without further frozen-probe training. Historical probes remain
+  preserved; do not restart them or silently equate their results with direct
+  inference. The new request evaluates BOTH untouched fifty-epoch pretraining
+  checkpoints with no additional GT training, optimizer or fitted readout.
+- `tools/evaluate_pretrained_checkpoint.py` uses the original immutable
+  `a31f9039f9fe` model/data/metric code, verified archive hashes, strict tensor
+  loading and full completion/source/config checks. The archived decoder must
+  match its random initialization, and full-model parameter/BN hashes must
+  remain unchanged after inference. This decoder received no segmentation GT
+  during pretraining; any raw-checkpoint score must carry that qualification.
+- [Experiment protocol](docs/EXPERIMENT.md) contains the exact CLI template.
+  Runtime: all 6,019 validation frames, 448x800, ten sweeps with velocity,
+  FP32/TF32 off, batch four, two loader workers, original valid-cell 0.5 decision.
+  Different inference precision from the historical BF16 downstream runs is
+  explicit; no threshold calibration or model modification is performed.
+- Actual CPU validation: three new integrity/protocol tests passed; CLI help,
+  compilation and source-boundary checks passed. One actual CUDA batch-four
+  pilot passed in 1.83 s, peak tensor allocation 4.964 GiB; it reports NO subset
+  IoU. Generated runtime/results stay ignored under
+  `.cache/pretrained_direct_eval_20261116`. Both archived checkpoints were copied
+  read-only to this workstation and their file hashes checked before loading.
+- Full validation is launched in persistent USER service
+  `dd2414-raw-pretrain-iou-20261116`, on the idle workstation GPU, sequentially
+  for control and depth. `pipeline.json`, per-arm `status.json`, console logs
+  and `summary.json` are under that ignored runtime directory. Do not duplicate
+  the evaluator. Next: verify 6,019-frame coverage, final counts and unchanged
+  learned state for both arms, then append actual raw-checkpoint scores to the
+  report. A runtime pilot or partial validation is not a final result.
+
 ## Verified experiment results — 2026-11-16
 
 - Both random-student 50-epoch pretrains and six GT readouts completed, with
