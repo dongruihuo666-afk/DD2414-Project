@@ -306,8 +306,8 @@ class Segnet(nn.Module):
         self.latent_dim = latent_dim
         self.encoder_type = encoder_type
 
-        self.mean = torch.as_tensor([0.485, 0.456, 0.406]).reshape(1,3,1,1).float().cuda()
-        self.std = torch.as_tensor([0.229, 0.224, 0.225]).reshape(1,3,1,1).float().cuda()
+        self.mean = torch.as_tensor([0.485, 0.456, 0.406]).reshape(1,3,1,1).float()
+        self.std = torch.as_tensor([0.229, 0.224, 0.225]).reshape(1,3,1,1).float()
         
         # Encoder
         self.feat2d_dim = feat2d_dim = latent_dim
@@ -372,7 +372,7 @@ class Segnet(nn.Module):
         else:
             self.xyz_camA = None
         
-    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util, rad_occ_mem0=None):
+    def forward(self, rgb_camXs, pix_T_cams, cam0_T_camXs, vox_util, rad_occ_mem0=None, return_bev=False):
         '''
         B = batch size, S = number of cameras, C = 3, H = img height, W = img width
         rgb_camXs: (B,S,C,H,W)
@@ -462,6 +462,10 @@ class Segnet(nn.Module):
                 feat_bev = self.bev_compressor(feat_bev_)
             else:
                 feat_bev = torch.sum(feat_mem, dim=3)
+
+        if return_bev:
+            # 128-d BEV after the compressor: the feature probed by probe_bev.py
+            return feat_bev
 
         # bev decoder
         out_dict = self.decoder(feat_bev, (self.bev_flip1_index, self.bev_flip2_index) if self.rand_flip else None)

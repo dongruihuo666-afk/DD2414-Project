@@ -18,6 +18,9 @@ class Vox_util(object):
         self.YMAX += y_centroid
         self.ZMIN += z_centroid
         self.ZMAX += z_centroid
+        # plain floats: newer torch refuses numpy.float32 in tensor item assignment
+        self.XMIN, self.XMAX, self.YMIN, self.YMAX, self.ZMIN, self.ZMAX = map(
+            float, (self.XMIN, self.XMAX, self.YMIN, self.YMAX, self.ZMIN, self.ZMAX))
 
         self.default_vox_size_X = (self.XMAX-self.XMIN)/float(X)
         self.default_vox_size_Y = (self.YMAX-self.YMIN)/float(Y)

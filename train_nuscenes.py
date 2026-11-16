@@ -5,6 +5,8 @@ import numpy as np
 import saverloader
 from fire import Fire
 from nets.segnet import Segnet
+from nets.ssl_bev import SSLBEVNet
+from nets.radar_uncertainty import radar_ego_to_cam0
 import utils.misc
 import utils.improc
 import utils.vox
@@ -76,7 +78,7 @@ def balanced_mse_loss(pred, gt, valid=None):
     
 def run_model(model, loss_fn, d, device='cuda:0', sw=None):
     metrics = {}
-    total_loss = torch.tensor(0.0, requires_grad=True).to(device)
+    total_loss = torch.zeros((), device=device)
 
     imgs, rots, trans, intrins, pts0, extra0, pts, extra, lrtlist_velo, vislist, tidlist, scorelist, seg_bev_g, valid_bev_g, center_bev_g, offset_bev_g, radar_data, egopose = d
 
@@ -159,7 +161,16 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None):
     rad_occ_mem0 = vox_util.voxelize_xyz(rad_xyz_cam0, Z, Y, X, assert_cube=False)
     metarad_occ_mem0 = vox_util.voxelize_xyz_and_feats(rad_xyz_cam0, meta_rad, Z, Y, X, assert_cube=False)
 
-    if not (model.module.use_radar or model.module.use_lidar):
+    if isinstance(model.module, SSLBEVNet):
+        # radar velocities were rotated into the ego frame by the loader
+        radar_cam0, radar_valid = radar_ego_to_cam0(radar_data.to(device), cams_T_velo[:,0])
+        _, feat_bev_e, seg_bev_e, center_bev_e, offset_bev_e = model(
+            rgb_camXs, pix_T_cams, cam0_T_camXs,
+            radar=radar_cam0 if model.module.use_radar else None,
+            radar_valid=radar_valid if model.module.use_radar else None,
+            mode='seg')
+        in_occ_mem0 = None
+    elif not (model.module.use_radar or model.module.use_lidar):
         in_occ_mem0 = None
     elif model.module.use_lidar:
         assert(model.module.use_radar==False) # either lidar or radar, not both
@@ -176,12 +187,13 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None):
 
     lrtlist_cam0_g = lrtlist_cam0
 
-    _, feat_bev_e, seg_bev_e, center_bev_e, offset_bev_e = model(
-            rgb_camXs=rgb_camXs,
-            pix_T_cams=pix_T_cams,
-            cam0_T_camXs=cam0_T_camXs,
-            vox_util=vox_util,
-            rad_occ_mem0=in_occ_mem0)
+    if not isinstance(model.module, SSLBEVNet):
+        _, feat_bev_e, seg_bev_e, center_bev_e, offset_bev_e = model(
+                rgb_camXs=rgb_camXs,
+                pix_T_cams=pix_T_cams,
+                cam0_T_camXs=cam0_T_camXs,
+                vox_util=vox_util,
+                rad_occ_mem0=in_occ_mem0)
 
     ce_loss = loss_fn(seg_bev_e, seg_bev_g, valid_bev_g)
     center_loss = balanced_mse_loss(center_bev_e, center_bev_g)
@@ -221,7 +233,7 @@ def run_model(model, loss_fn, d, device='cuda:0', sw=None):
     metrics['iou'] = iou.item()
 
     if sw is not None and sw.save_this:
-        if model.module.use_radar or model.module.use_lidar:
+        if model.module.use_radar or getattr(model.module, 'use_lidar', False):
             sw.summ_occ('0_inputs/rad_occ_mem0', rad_occ_mem0)
         sw.summ_occ('0_inputs/occ_mem0', occ_mem0)
         sw.summ_rgb('0_inputs/rgb_camXs', torch.cat(rgb_camXs[0:1].unbind(1), dim=-1))
@@ -281,6 +293,12 @@ def main(
         use_metaradar=False,
         do_rgbcompress=True,
         do_shuffle_cams=True,
+        # SSL fine-tuning / low-label protocol
+        model_type='segnet',     # 'segnet' (Simple-BEV) or 'ssl' (SSLBEVNet)
+        init_ckpt='',            # SSL pretraining checkpoint dir/file (model_type='ssl')
+        encoder_pretrained=True, # ImageNet init for SSLBEVNet when no init_ckpt
+        label_frac=1.0,          # fraction of labelled training frames
+        freeze_backbone=False,   # train only the decoder (frozen-backbone probe)
         # cuda
         device_ids=[0,1,2,3],
     ):
@@ -347,7 +365,16 @@ def main(
         nsweeps=nsweeps,
         do_shuffle_cams=do_shuffle_cams,
         get_tids=True,
+        rotate_radar_velocity=(model_type == 'ssl'),
     )
+    if label_frac < 1.0:
+        n_train = len(train_dataloader.dataset)
+        keep = np.sort(np.random.RandomState(125).permutation(n_train)[:max(B, int(round(label_frac * n_train)))])
+        print('label_frac %.4f: %d / %d training frames' % (label_frac, len(keep), n_train))
+        train_dataloader = torch.utils.data.DataLoader(
+            torch.utils.data.Subset(train_dataloader.dataset, keep.tolist()),
+            batch_size=B, shuffle=shuffle, num_workers=nworkers, drop_last=True,
+            worker_init_fn=nuscenesdataset.worker_rnd_init, pin_memory=False)
     train_iterloader = iter(train_dataloader)
     val_iterloader = iter(val_dataloader)
 
@@ -359,12 +386,34 @@ def main(
 
     # set up model & seg loss
     seg_loss_fn = SimpleLoss(2.13).to(device) # value from lift-splat
-    model = Segnet(Z, Y, X, vox_util, use_radar=use_radar, use_lidar=use_lidar, use_metaradar=use_metaradar, do_rgbcompress=do_rgbcompress, encoder_type=encoder_type, rand_flip=rand_flip)
+    if model_type == 'ssl':
+        model = SSLBEVNet(Z, Y, X, vox_util, use_radar=use_radar, rand_flip=rand_flip,
+                          encoder_pretrained=encoder_pretrained and not init_ckpt)
+        if init_ckpt:
+            import pathlib
+            path = pathlib.Path(init_ckpt)
+            if path.is_dir():
+                path = sorted(path.glob('model-*.pth'), key=lambda p: int(p.stem.split('-')[1]))[-1]
+            state = torch.load(path, map_location='cpu', weights_only=False)['model_state_dict']
+            # the supervised decoder / loss weights are trained here, not in pretraining
+            state = {k: v for k, v in state.items()
+                     if not k.startswith(('decoder.', 'ce_weight', 'center_weight', 'offset_weight'))}
+            missing, unexpected = model.load_state_dict(state, strict=False)
+            print('loaded SSL checkpoint', path)
+            print('  missing (expected: decoder + loss weights only):', missing)
+            print('  unexpected:', unexpected)
+            assert all(k.startswith(('decoder.', 'ce_weight', 'center_weight', 'offset_weight'))
+                       for k in missing), 'SSL checkpoint does not match SSLBEVNet'
+    else:
+        model = Segnet(Z, Y, X, vox_util, use_radar=use_radar, use_lidar=use_lidar, use_metaradar=use_metaradar, do_rgbcompress=do_rgbcompress, encoder_type=encoder_type, rand_flip=rand_flip)
     model = model.to(device)
+    if freeze_backbone:
+        for name, p in model.named_parameters():
+            p.requires_grad = name.startswith(('decoder.', 'ce_weight', 'center_weight', 'offset_weight'))
     model = torch.nn.DataParallel(model, device_ids=device_ids)
-    parameters = list(model.parameters())
+    parameters = [p for p in model.parameters() if p.requires_grad]
     if use_scheduler:
-        optimizer, scheduler = fetch_optimizer(lr, weight_decay, 1e-8, max_iters, model.parameters())
+        optimizer, scheduler = fetch_optimizer(lr, weight_decay, 1e-8, max_iters, parameters)
     else:
         optimizer = torch.optim.Adam(parameters, lr=lr, weight_decay=weight_decay)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -382,6 +431,10 @@ def main(
             global_step = 0
     requires_grad(parameters, True)
     model.train()
+    if freeze_backbone:
+        # keep frozen BatchNorm statistics fixed; only the decoder trains
+        model.module.apply(lambda m: m.eval() if isinstance(m, nn.modules.batchnorm._BatchNorm) else None)
+        model.module.decoder.train()
 
     # set up running logging pools
     n_pool = 10
@@ -516,6 +569,9 @@ def main(
             sw_v.summ_scalar('pooled/offset_loss', offset_pool_v.mean())
 
             model.train()
+            if freeze_backbone:
+                model.module.apply(lambda m: m.eval() if isinstance(m, nn.modules.batchnorm._BatchNorm) else None)
+                model.module.decoder.train()
         
         # save model checkpoint
         if np.mod(global_step, save_freq)==0:
