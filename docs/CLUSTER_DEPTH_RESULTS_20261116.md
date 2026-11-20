@@ -1,10 +1,63 @@
 # Full-data double-distillation and metric-depth results
 
-Verified on 16 November 2026. These are official nuScenes **validation** results,
-not hidden-test results. All numbers below are final-epoch scores unless marked
-as best validation epoch. Percentage-point differences are treatment minus control.
+Training results verified on 16 November 2026; direct checkpoint evaluation
+completed on 16 November and verified/published on 20 November. These are official
+nuScenes **validation** results, not hidden-test results. Historical trained-readout
+numbers are final-epoch scores unless marked as best validation epoch.
+Percentage-point differences are treatment minus control.
 
-## Main finding
+## Direct pretrained-checkpoint results: no probe or GT adaptation
+
+This is the owner's requested primary reporting protocol. Load the completed
+50-epoch pretraining checkpoint strictly and run its archived segmentation
+decoder as-is: no fitted probe, optimizer, further training or threshold tuning.
+GT is used only to compute metrics after prediction.
+
+| Pretrained checkpoint | Vehicle IoU | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| DINO only, no metric-depth supervision | **1.9571%** | 2.0128% | 41.4258% | 3.8391% |
+| DINO + metric-depth supervision | **1.6342%** | 1.6527% | 59.3254% | 3.2159% |
+
+Both evaluate exactly **6,019 unique validation samples / 150 scenes**, with
+448x800 RGB, ten sweeps and velocity, FP32/TF32 disabled, batch four and two
+loader workers. Metrics use the original Simple-BEV-style global valid-cell
+confusion counts and fixed `sigmoid().round()` decision. These share metric
+definitions, not the supervised training conditions of official Simple-BEV.
+Historical trained-readout runs below use BF16 instead; that precision difference
+is explicit.
+
+The direct readout severely overpredicts foreground: predicted vehicle cells
+occupy **32.2087% / 56.1744%** of valid cells, while GT vehicles occupy **1.5650%**.
+This explains the very low precision despite nonzero recall. Depth lowers raw
+Vehicle IoU by 0.3229 pp in this readout, but this is not an isolated estimate
+of its effect on useful semantic representations.
+
+**Critical limitation:** both archived segmentation decoders exactly match the
+same original random initialization. The pretraining losses taught the encoder,
+radar/fusion representation and distillation/depth heads, not a GT vehicle
+segmentation decoder. Thus these are genuine untouched-checkpoint outputs, not
+GT-trained segmentation capability. Their low scores must not be presented as
+proof that every useful pretrained feature is absent. The **50.89% / 45.94%**
+figures below are a separate protocol with five additional supervised epochs.
+Historical frozen probes are retained only as auxiliary records.
+
+The [reviewed machine-readable record](../results/pretrained_direct_evaluation_20261116.json)
+includes exact fractional metrics, TP/FP/FN/TN, source/checkpoint hashes, decoder
+and before/after model hashes, coverage and hashes of the local evidence files.
+Verification reproduced all counts from 6,019 archived per-frame records per arm,
+recomputed all four metrics, freshly hashed both input checkpoints, and confirmed
+unchanged model parameters/BN buffers. No new inference or training was performed
+while publishing this record. Both evaluation subprocesses exited successfully.
+
+Runtime artifacts remain ignored under `.cache/pretrained_direct_eval_20261116`:
+`pipeline.json`, per-arm `summary.json`, `validation/per_frame.jsonl` and logs.
+Evaluation took 1008.57 / 1011.05 seconds, completed at 15:08 UTC on 16 November.
+The exact inference-only reproduction command is in
+[the experiment protocol](EXPERIMENT.md); use the corresponding checkpoint hash
+in the reviewed record and a fresh output directory. No full evaluation rerun
+is required to inspect these published results.
+
+## Historical supervised-adaptation and probe findings
 
 Metric depth supervision improved both frozen linear probes, but reduced the
 five-epoch end-to-end segmentation result. The DINO-only control reached
@@ -71,7 +124,7 @@ the fused probe, and **-4.95 pp** after full supervised adaptation.
 | Fused probe | 7.60% / 8 | 12.92% / 4 |
 | Full segmentation | 50.89% / 5 | 47.29% / 4 |
 
-The primary comparison uses the preset final epochs consistently. Even comparing
+The historical trained-readout comparison uses the preset final epochs consistently. Even comparing
 best validation epochs, the depth-supervised full segmentation remains lower
 by **3.60 pp**. Best-epoch selection uses the validation set; it is not an
 independent test estimate. The preset budgets were not changed after inspection.

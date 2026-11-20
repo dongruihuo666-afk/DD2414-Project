@@ -6,7 +6,37 @@ This branch contains the ten-sweep depth and velocity studies, including the 50-
 Experiment settings are in [EXPERIMENT.md](docs/EXPERIMENT.md); source and asset
 recovery details are in [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
 
-## Direct checkpoint evaluation — 2026-11-16
+## Published direct checkpoint results — 2026-11-20
+
+- Both requested untouched-checkpoint evaluations completed on 16 November;
+  verified/publication update is 20 November. Raw Vehicle IoU is **1.9571%**
+  for DINO only and **1.6342%** with metric-depth supervision. Each covers all
+  6,019 validation samples / 150 scenes, with ZERO added training updates and
+  no probe. Both decoders match the same original random initialization; before/
+  after model and BN hashes are equal. These are not the separately GT-adapted
+  50.89% / 45.94% scores. Frozen probes remain historical auxiliary records.
+- Changed files: the [results report](docs/CLUSTER_DEPTH_RESULTS_20261116.md),
+  [curated exact metric record](results/pretrained_direct_evaluation_20261116.json),
+  this handoff and the results index. The report leads with the requested direct
+  metrics and records extreme foreground overprediction and the untrained decoder
+  limitation. Generated PDFs, per-frame data, logs and weights remain ignored;
+  no other experiment branch or official path is changed.
+- Actual validation: freshly rehashed both checkpoint files against archived
+  SHA-256; checked both successful final summaries, 6,019 unique tokens and
+  150 scenes; summed per-frame TP/FP/FN/TN and recomputed IoU/Precision/Recall/F1;
+  verified model-state equality and common decoder identity. Published JSON,
+  all eight reported percentages and evidence hashes match local summaries;
+  documentation links and diff checks pass. No training or new inference was
+  run for publication. Reproduce the inference with
+  `tools/evaluate_pretrained_checkpoint.py` and the command in
+  [EXPERIMENT.md](docs/EXPERIMENT.md), or inspect the published fractional metrics
+  and evidence hashes without rerunning. Raw local files remain under
+  `.cache/pretrained_direct_eval_20261116` in this worktree.
+- Limitations/next: the archived segmentation decoder never received vehicle GT;
+  same metric definitions do not imply matched supervised capability. Explain
+  that boundary before designing further training. No new experiment is queued.
+
+## Direct checkpoint evaluation protocol — 2026-11-16
 
 - Owner requests Simple-BEV-aligned Vehicle IoU/Precision/Recall/F1 as primary
   reporting, without further frozen-probe training. Historical probes remain
@@ -30,13 +60,13 @@ recovery details are in [REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).
   IoU. Generated runtime/results stay ignored under
   `.cache/pretrained_direct_eval_20261116`. Both archived checkpoints were copied
   read-only to this workstation and their file hashes checked before loading.
-- Full validation is launched in persistent USER service
+- Full validation was run to completion in persistent USER service
   `dd2414-raw-pretrain-iou-20261116`, on the idle workstation GPU, sequentially
   for control and depth. `pipeline.json`, per-arm `status.json`, console logs
-  and `summary.json` are under that ignored runtime directory. Do not duplicate
-  the evaluator. Next: verify 6,019-frame coverage, final counts and unchanged
-  learned state for both arms, then append actual raw-checkpoint scores to the
-  report. A runtime pilot or partial validation is not a final result.
+  and `summary.json` are under that ignored runtime directory. Both stages are
+  complete with successful exits; the full results and actual checks are now
+  published above. Do not duplicate the evaluator. A runtime pilot or partial
+  validation is not a final result.
 
 ## Verified experiment results — 2026-11-16
 

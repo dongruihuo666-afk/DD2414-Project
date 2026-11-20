@@ -1,0 +1,118 @@
+{
+  "experiment": "raw_pretraining_checkpoint_segmentation",
+  "evaluated_on": "2026-11-16",
+  "verified_on": "2026-11-20",
+  "reporting": "Official nuScenes validation, not hidden test; no fitted probe or GT adaptation",
+  "evaluator_commit": "6057b7a45b37d609be2aea00f6a08c69aec0ba89",
+  "original_trainer_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+  "metric_units": "Fractions in [0,1]; multiply by 100 for percentages",
+  "decoder_limitation": "Segmentation decoder exactly matches its random initialization; scores do not measure a GT-trained decoder or isolate representation quality",
+  "results": [
+    {
+      "treatment": "dino-only",
+      "status": "complete",
+      "protocol": {
+        "kind": "untouched_pretraining_checkpoint_segmentation",
+        "treatment": "dino-only",
+        "checkpoint_sha256": "2654533831a5920c8a01a1db55b48618b8f7981ab57808ab0a815b5c626867a8",
+        "original_trainer_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+        "decoder_matches_random_initialization": true,
+        "decoder_sha256": "918116a29c0d3062b37ff0f865417dbd73b9487e4c3a0b33f9b5a43e45d6d263",
+        "model_before_sha256": "50f681f5c47d989201bee06d9ab9a9f3dc80b83859cb194e87b3740bc56029a5",
+        "training_updates": 0,
+        "fitted_probe": false,
+        "pretrained_epochs": 50,
+        "validation_samples": 6019,
+        "image_resolution": [
+          448,
+          800
+        ],
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "precision": "float32",
+        "tf32": false,
+        "batch_size": 4,
+        "num_workers": 2,
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "metric": "global valid-cell binary Vehicle IoU; fixed sigmoid.round threshold"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.01957102654189818,
+        "precision": 0.020128019305319954,
+        "recall": 0.4142583101607931,
+        "f1": 0.0383907075278074,
+        "tp": 1552479,
+        "fp": 75577763,
+        "fn": 2195132,
+        "tn": 160144997,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.018569423075334515,
+        "predicted_positive_fraction": 0.32208678542532515,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      },
+      "unchanged_model": true,
+      "model_after_sha256": "50f681f5c47d989201bee06d9ab9a9f3dc80b83859cb194e87b3740bc56029a5",
+      "scene_count": 150,
+      "ground_truth_positive_fraction": 0.015649581133358664,
+      "elapsed_seconds": 1008.5736324419267,
+      "evidence_sha256": {
+        "summary": "2bb555b69c774ba221e66c6317c03cfb941ea3db7456c5dc64c25e88dc348c0e",
+        "per_frame": "c0155f2f3042ddca401cf69a92bd087f851462ccbdae5b08421bed722a511a6a"
+      }
+    },
+    {
+      "treatment": "dino-metric-depth-bev",
+      "status": "complete",
+      "protocol": {
+        "kind": "untouched_pretraining_checkpoint_segmentation",
+        "treatment": "dino-metric-depth-bev",
+        "checkpoint_sha256": "158e52894f58c892f2cdbbca7b23e9b42c96e7a4cfc5a6a62afc0dc15a9d352c",
+        "original_trainer_commit": "a31f9039f9fe3e265a503a1ffdedc03b71e361a0",
+        "decoder_matches_random_initialization": true,
+        "decoder_sha256": "918116a29c0d3062b37ff0f865417dbd73b9487e4c3a0b33f9b5a43e45d6d263",
+        "model_before_sha256": "d23e2f9b0c4031afd3cdfb87faf562cf1ee287012f500f9df9b5b970a86c7e21",
+        "training_updates": 0,
+        "fitted_probe": false,
+        "pretrained_epochs": 50,
+        "validation_samples": 6019,
+        "image_resolution": [
+          448,
+          800
+        ],
+        "nsweeps": 10,
+        "velocity_mode": "full",
+        "precision": "float32",
+        "tf32": false,
+        "batch_size": 4,
+        "num_workers": 2,
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d",
+        "metric": "global valid-cell binary Vehicle IoU; fixed sigmoid.round threshold"
+      },
+      "final_validation": {
+        "vehicle_iou": 0.016342239980931074,
+        "precision": 0.016527421846425253,
+        "recall": 0.593254475984834,
+        "f1": 0.03215893099402755,
+        "tp": 2223287,
+        "fp": 132297815,
+        "fn": 1524324,
+        "tn": 103424945,
+        "samples": 6019,
+        "mean_per_frame_iou_auxiliary": 0.016384586252917426,
+        "predicted_positive_fraction": 0.5617442418377512,
+        "metric_definition": "global valid-cell intersection / union; sigmoid.round threshold",
+        "manifest_sha256": "dc39006dffbf036d5ea7728dad9348b822c78cd47cd02c226b638271c3420c5d"
+      },
+      "unchanged_model": true,
+      "model_after_sha256": "d23e2f9b0c4031afd3cdfb87faf562cf1ee287012f500f9df9b5b970a86c7e21",
+      "scene_count": 150,
+      "ground_truth_positive_fraction": 0.015649581133358664,
+      "elapsed_seconds": 1011.049951266963,
+      "evidence_sha256": {
+        "summary": "b4e9a06fabb7c983be9fa45c67728b05acb8ef08008c3573cbe9159f122557d3",
+        "per_frame": "33dcbed9949f3bd000877bdae29d1d20a88184a1550729584bfe3691ab66d3df"
+      }
+    }
+  ]
+}
